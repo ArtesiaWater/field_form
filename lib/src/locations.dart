@@ -36,17 +36,17 @@ class Location {
 @JsonSerializable()
 class Locations {
   Locations({
-    required this.locations,
+    this.locations,
   });
 
   factory Locations.fromJson(Map<String, dynamic> json) =>
       _$LocationsFromJson(json);
   Map<String, dynamic> toJson() => _$LocationsToJson(this);
 
-  final List<Location> locations;
+  final List<Location>? locations;
 }
 
 Future<Locations> getLocations(context) async {
-  String data = await DefaultAssetBundle.of(context).loadString("assets/locations.json");
+  var data = await DefaultAssetBundle.of(context).loadString('assets/locations.json');
   return Locations.fromJson(json.decode(data));
 }
