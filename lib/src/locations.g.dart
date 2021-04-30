@@ -32,14 +32,39 @@ Map<String, dynamic> _$LocationToJson(Location instance) => <String, dynamic>{
       'name': instance.name,
     };
 
-Locations _$LocationsFromJson(Map<String, dynamic> json) {
-  return Locations(
-    locations: (json['locations'] as List<dynamic>)
-        .map((e) => Location.fromJson(e as Map<String, dynamic>))
+LocationFile _$LocationFileFromJson(Map<String, dynamic> json) {
+  return LocationFile(
+    locations: (json['locations'] as List<dynamic>?)
+        ?.map((e) => Location.fromJson(e as Map<String, dynamic>))
+        .toList(),
+    inputfields: (json['inputfields'] as List<dynamic>?)
+        ?.map((e) => InputField.fromJson(e as Map<String, dynamic>))
         .toList(),
   );
 }
 
-Map<String, dynamic> _$LocationsToJson(Locations instance) => <String, dynamic>{
+Map<String, dynamic> _$LocationFileToJson(LocationFile instance) =>
+    <String, dynamic>{
       'locations': instance.locations,
+      'inputfields': instance.inputfields,
+    };
+
+InputField _$InputFieldFromJson(Map<String, dynamic> json) {
+  return InputField(
+    id: json['id'] as String,
+    type: json['type'] as String,
+    hint: json['hint'] as String?,
+    name: json['name'] as String?,
+    options:
+        (json['options'] as List<dynamic>?)?.map((e) => e as String).toList(),
+  );
+}
+
+Map<String, dynamic> _$InputFieldToJson(InputField instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'type': instance.type,
+      'hint': instance.hint,
+      'name': instance.name,
+      'options': instance.options,
     };

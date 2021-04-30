@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:field_form/src/measurements.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,12 +18,20 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final Map<String, Marker> markers = {};
   var locations = <locs.Location>[];
+  var inputFields = <locs.InputField>[];
   CameraPosition? initialCameraPosition;
+  late MeasurementProvider measurementProvider;
 
   Future<void> _onMapCreated(GoogleMapController controller) async {
-    final location_file = await locs.getLocations(context);
+    final location_file = await locs.getLocationFile(context);
     if (location_file.locations != null) {
       locations = location_file.locations!;
+    }
+    if (location_file.inputfields == null) {
+      inputFields.add(locs.InputField(id:'head',type:'number',hint:'from top of tube'));
+      inputFields.add(locs.InputField(id:'comment',type:'text',hint:'place a comment'));
+    } else {
+      inputFields = location_file.inputfields!;
     }
 
     setState(() {
@@ -36,19 +45,22 @@ class _MyAppState extends State<MyApp> {
             onTap:() {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => AddMeasurements()),
+                MaterialPageRoute(builder: (context) {
+                  return AddMeasurements(location: location,
+                    inputFields:inputFields,
+                    measurementProvider: measurementProvider);
+                }),
               );
             },
           ),
         );
         markers[location.id] = marker;
       }
-
     });
   }
 
   void getInitialCameraPosition() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
+    var prefs = await SharedPreferences.getInstance();
     setState(() {
       initialCameraPosition = CameraPosition(
         target: LatLng(prefs.getDouble('latitude') ?? 30,
@@ -62,6 +74,8 @@ class _MyAppState extends State<MyApp> {
   void initState(){
     super.initState();
     getInitialCameraPosition();
+    measurementProvider = MeasurementProvider();
+    measurementProvider.open();
   }
 
   @override
@@ -145,10 +159,10 @@ Future newLocationDialog(BuildContext context, latlng, locations) async {
         ),
         actions: [
           TextButton(
-            child: Text('Ok'),
             onPressed: () {
               Navigator.of(context).pop(teamName);
             },
+            child: Text('Ok'),
           ),
         ],
       );

@@ -34,19 +34,41 @@ class Location {
 }
 
 @JsonSerializable()
-class Locations {
-  Locations({
+class LocationFile {
+  LocationFile({
     this.locations,
+    this.inputfields
   });
 
-  factory Locations.fromJson(Map<String, dynamic> json) =>
-      _$LocationsFromJson(json);
-  Map<String, dynamic> toJson() => _$LocationsToJson(this);
+  factory LocationFile.fromJson(Map<String, dynamic> json) =>
+      _$LocationFileFromJson(json);
+  Map<String, dynamic> toJson() => _$LocationFileToJson(this);
 
   final List<Location>? locations;
+  final List<InputField>? inputfields;
 }
 
-Future<Locations> getLocations(context) async {
+Future<LocationFile> getLocationFile(context) async {
   var data = await DefaultAssetBundle.of(context).loadString('assets/locations.json');
-  return Locations.fromJson(json.decode(data));
+  return LocationFile.fromJson(json.decode(data));
+}
+
+@JsonSerializable()
+class InputField {
+  InputField({
+    required this.id,
+    required this.type,
+    this.hint,
+    this.name,
+    this.options,
+  });
+
+  factory InputField.fromJson(Map<String, dynamic> json) => _$InputFieldFromJson(json);
+  Map<String, dynamic> toJson() => _$InputFieldToJson(this);
+
+  final String id;
+  final String type;
+  final String? hint;
+  final String? name;
+  final List<String>? options;
 }
