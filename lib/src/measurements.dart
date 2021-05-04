@@ -73,8 +73,8 @@ create table measurements (
     return measurements;
   }
 
-  Future<int> delete(int id) async {
-    return await db.delete('measurements', where: 'id = ?', whereArgs: [id]);
+  Future<int> delete(Measurement measurement) async {
+    return await db.delete('measurements', where: 'id = ?', whereArgs: [measurement.id]);
   }
 
   Future<int> update(Measurement measurement) async {

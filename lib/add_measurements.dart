@@ -100,15 +100,15 @@ class _AddMeasurementsState extends State<AddMeasurements> {
 
     rows.add(Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          ElevatedButton(
+        children: [Expanded(
+          child: ElevatedButton(
             onPressed: () {
               for (var inputfield in widget.inputFields!){
                 if (values.containsKey(inputfield.id)){
                   var measurement = Measurement(
                       location: widget.location.id,
                       datetime: now,
-                      type: inputfield.type,
+                      type: inputfield.id,
                       value:values[inputfield.id]!);
                   widget.measurementProvider.insert(measurement);
                 }
@@ -119,7 +119,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
             },
             child: Text('Done'),
           )
-        ]
+      )]
     ));
 
     // Add previous measurements
@@ -128,13 +128,34 @@ class _AddMeasurementsState extends State<AddMeasurements> {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             Expanded(
-              flex: 1,
+              flex: 2,
+              child: Text(date_format.format(measurement.datetime)),
+            ),
+            Expanded(
+              flex: 2,
+              child: Text(time_format.format(measurement.datetime)),
+            ),
+            Expanded(
+              flex: 2,
+              child: Text(measurement.value),
+            ),
+            Expanded(
+              flex: 2,
               child: Text(measurement.type),
             ),
             Expanded(
               flex: 1,
-              child: Text(measurement.value),
-            )
+              child: ElevatedButton(
+                onPressed: () {
+                  //TODO: First ask if user wants to delete measurement
+                  widget.measurementProvider.delete(measurement);
+                  measurements.remove(measurement);
+                  setState(() {
+                  });
+                },
+                child: Text('x'),
+              )
+            ),
           ]
       ));
     }

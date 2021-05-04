@@ -1,10 +1,13 @@
 import 'dart:async';
 
+import 'package:field_form/settings.dart';
 import 'package:field_form/src/measurements.dart';
 import 'package:flutter/material.dart';
+import 'package:ftpconnect/ftpconnect.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'add_measurements.dart';
+import 'dialogs.dart';
 import 'src/locations.dart' as locs;
 
 //void main() => runApp(MyApp());
@@ -99,6 +102,19 @@ class _MyAppState extends State<MyApp> {
         appBar: AppBar(
           title: const Text('FieldForm'),
           backgroundColor: Colors.green[700],
+          actions: <Widget>[
+            Padding(
+                padding: EdgeInsets.only(right: 20.0),
+                child: GestureDetector(
+                  onTap: () {
+                    synchroniseWithFtp(context);
+                  },
+                  child: Icon(
+                    Icons.sync,
+                  ),
+                )
+            ),
+          ],
         ),
         body: GoogleMap(
           onMapCreated: _onMapCreated,
@@ -131,9 +147,68 @@ class _MyAppState extends State<MyApp> {
             await prefs.setDouble('zoom', position.zoom);
           },
         ),
+        drawer: Drawer(
+          // Add a ListView to the drawer. This ensures the user can scroll
+          // through the options in the drawer if there isn't enough vertical
+          // space to fit everything.
+          child: ListView(
+            // Important: Remove any padding from the ListView.
+            padding: EdgeInsets.zero,
+            children: <Widget>[
+              DrawerHeader(
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                ),
+                child: Text('Menu'),
+              ),
+              ListTile(
+                title: Text('Add file'),
+                onTap: () {
+                  // Close the drawer
+                  Navigator.pop(context);
+                },
+                leading: Icon(Icons.insert_drive_file),
+              ),
+              ListTile(
+                title: Text('Settings'),
+                onTap: () {
+                  // Close the drawer
+                  Navigator.pop(context);
+                  // Open the settings screen
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) {
+                      return SettingScreen();
+                    }),
+                  );
+                },
+                leading: Icon(Icons.settings),
+              ),
+            ],
+          ),
+        ),
       );
     }
   }
+}
+
+synchroniseWithFtp(context) async {
+  showLoaderDialog(context, text: 'Synchronising with FTP server');
+  var prefs = await SharedPreferences.getInstance();
+  var host = prefs.getString('ftp_hostname')!;
+  var user = prefs.getString('ftp_username')!;
+  var pass = prefs.getString('ftp_password')!;
+  var ftpConnect = FTPConnect(host, user:user, pass:pass);
+  try {
+    await ftpConnect.connect();
+    await ftpConnect.listDirectoryContentOnlyNames();
+    await ftpConnect.disconnect();
+  } catch (e) {
+    Navigator.pop(context);
+    showErrorDialog(context, e.toString());
+    return;
+  }
+  Navigator.pop(context);
 }
 
 Future newLocationDialog(BuildContext context, latlng, locations) async {

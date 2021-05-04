@@ -25,6 +25,7 @@ dependencies:
     sdk: flutter
   google_maps_flutter: any # or the latest version on Pub
   json_serializable: ^4.1.0
+  settings_ui: ^1.0.0
 
 
   # The following adds the Cupertino Icons font to your application.
@@ -34,6 +35,7 @@ dependencies:
   intl: ^0.17.0
   sqflite:
   path:
+  ftpconnect: ^1.0.0
 
 dev_dependencies:
   flutter_test:
