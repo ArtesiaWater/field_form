@@ -5,12 +5,12 @@ import 'package:ftpconnect/ftpconnect.dart';
 
 import 'dialogs.dart';
 
-class SettingScreen extends StatefulWidget {
+class SettingsScreen extends StatefulWidget {
   @override
-  _SettingScreenState createState() => _SettingScreenState();
+  _SettingsScreenState createState() => _SettingsScreenState();
 }
 
-class _SettingScreenState extends State<SettingScreen> {
+class _SettingsScreenState extends State<SettingsScreen> {
   bool  value = true;
 
   SharedPreferences? prefs;
@@ -28,6 +28,12 @@ class _SettingScreenState extends State<SettingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    var password = '';
+    if (prefs != null) {
+      if (prefs!.containsKey('ftp_password')) {
+        password = prefs!.getString('ftp_password')!;
+      };
+    }
     return Scaffold(
         appBar: AppBar(
           title: Text('Settings'),
@@ -56,10 +62,11 @@ class _SettingScreenState extends State<SettingScreen> {
               ),
               SettingsTile(
                 title: 'Password',
-                subtitle: prefs?.getString('ftp_password'),
+                subtitle: '*' * password.length,
+                subtitleTextStyle: TextStyle(),
                 leading: Icon(Icons.lock),
                 onPressed: (BuildContext context) {
-                  editStringSetting(context, 'ftp_password', 'Change ftp password');
+                  editStringSetting(context, 'ftp_password', 'Change ftp password', password: true);
                 },
               ),
               SettingsTile(
@@ -79,9 +86,9 @@ class _SettingScreenState extends State<SettingScreen> {
   }
 
   Future<void> chooseFtpPath(context) async {
-    var host = prefs!.getString('ftp_hostname')!;
-    var user = prefs!.getString('ftp_username')!;
-    var pass = prefs!.getString('ftp_password')!;
+    var host = prefs!.getString('ftp_hostname') ?? '';
+    var user = prefs!.getString('ftp_username') ?? '';
+    var pass = prefs!.getString('ftp_password') ?? '';
     var ftpConnect = FTPConnect(host, user:user, pass:pass);
     var names;
     showLoaderDialog(context);
@@ -120,7 +127,7 @@ class _SettingScreenState extends State<SettingScreen> {
     );
   }
 
-  void editStringSetting(BuildContext context, String key, String title) async {
+  void editStringSetting(BuildContext context, String key, String title, {bool password=false}) async {
     var settingValue = prefs?.getString(key) ?? '';
     return showDialog(
       context: context,
@@ -132,6 +139,7 @@ class _SettingScreenState extends State<SettingScreen> {
             onChanged: (value) {
               settingValue = value;
             },
+            obscureText: password,
           ),
           actions: <Widget>[
             TextButton(

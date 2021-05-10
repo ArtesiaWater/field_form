@@ -1,3 +1,4 @@
+import 'package:field_form/properties.dart';
 import 'package:field_form/src/locations.dart';
 import 'package:field_form/src/measurements.dart';
 import 'package:flutter/material.dart';
@@ -88,7 +89,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
           children: [
             Expanded(
               flex: 1,
-              child: Text(inputField.id)
+              child: Text(inputField.id),
             ),
             Expanded(
               flex: 2,
@@ -149,7 +150,8 @@ class _AddMeasurementsState extends State<AddMeasurements> {
                 onPressed: () {
                   //TODO: First ask if user wants to delete measurement
                   widget.measurementProvider.delete(measurement);
-                  measurements.remove(measurement);
+                  measurement.value = '';
+                  //measurements.remove(measurement);
                   setState(() {
                   });
                 },
@@ -160,9 +162,30 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       ));
     }
 
+    var actions = <Widget>[];
+    if (widget.location.properties != null){
+      actions.add(Padding(
+        padding: EdgeInsets.only(right: 20.0),
+        child: GestureDetector(
+          onTap: () {
+            // Open the settings screen
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) {
+                return PropertiesScreen(location: widget.location);
+              }),
+            );
+          },
+          child: Icon(
+            Icons.info,
+          ),
+        )
+      ));
+    }
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.location.id),
+        actions: actions,
       ),
 
       body:  ListView(

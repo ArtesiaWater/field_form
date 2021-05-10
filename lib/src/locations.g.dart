@@ -23,6 +23,9 @@ Location _$LocationFromJson(Map<String, dynamic> json) {
     coords: LatLng.fromJson(json['coords'] as Map<String, dynamic>),
     id: json['id'] as String,
     name: json['name'] as String?,
+    properties: (json['properties'] as List<dynamic>?)
+        ?.map((e) => Property.fromJson(e as Map<String, dynamic>))
+        .toList(),
   );
 }
 
@@ -30,6 +33,7 @@ Map<String, dynamic> _$LocationToJson(Location instance) => <String, dynamic>{
       'coords': instance.coords,
       'id': instance.id,
       'name': instance.name,
+      'properties': instance.properties,
     };
 
 LocationFile _$LocationFileFromJson(Map<String, dynamic> json) {
@@ -67,4 +71,16 @@ Map<String, dynamic> _$InputFieldToJson(InputField instance) =>
       'hint': instance.hint,
       'name': instance.name,
       'options': instance.options,
+    };
+
+Property _$PropertyFromJson(Map<String, dynamic> json) {
+  return Property(
+    name: json['name'] as String,
+    value: json['value'] as String,
+  );
+}
+
+Map<String, dynamic> _$PropertyToJson(Property instance) => <String, dynamic>{
+      'name': instance.name,
+      'value': instance.value,
     };

@@ -23,6 +23,7 @@ class Location {
     required this.coords,
     required this.id,
     this.name,
+    this.properties,
   });
 
   factory Location.fromJson(Map<String, dynamic> json) => _$LocationFromJson(json);
@@ -31,6 +32,7 @@ class Location {
   final LatLng coords;
   final String id;
   final String? name;
+  final List<Property>? properties;
 }
 
 @JsonSerializable()
@@ -71,4 +73,27 @@ class InputField {
   final String? hint;
   final String? name;
   final List<String>? options;
+}
+
+List<InputField> getDefaultInputFields(){
+  var inputFields = <InputField>[];
+  inputFields.add(InputField(
+      id: 'head', type: 'number', hint: 'from top of tube'));
+  inputFields.add(InputField(
+      id: 'comment', type: 'text', hint: 'place a comment'));
+  return inputFields;
+}
+
+@JsonSerializable()
+class Property {
+  Property({
+    required this.name,
+    required this.value
+  });
+
+  factory Property.fromJson(Map<String, dynamic> json) => _$PropertyFromJson(json);
+  Map<String, dynamic> toJson() => _$PropertyToJson(this);
+
+  final String name;
+  final String value;
 }
