@@ -1,3 +1,4 @@
+import 'package:field_form/dialogs.dart';
 import 'package:field_form/properties.dart';
 import 'package:field_form/src/locations.dart';
 import 'package:field_form/src/measurements.dart';
@@ -125,6 +126,9 @@ class _AddMeasurementsState extends State<AddMeasurements> {
 
     // Add previous measurements
     for (var measurement in measurements){
+      if (measurement.value == ''){
+        continue;
+      }
       rows.add(Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
@@ -147,13 +151,12 @@ class _AddMeasurementsState extends State<AddMeasurements> {
             Expanded(
               flex: 1,
               child: ElevatedButton(
-                onPressed: () {
-                  //TODO: First ask if user wants to delete measurement
-                  widget.measurementProvider.delete(measurement);
-                  measurement.value = '';
-                  //measurements.remove(measurement);
-                  setState(() {
-                  });
+                onPressed: () async {
+                  var text = 'Are you sure you want to delete this measurement?';
+                  var action = await showContinueDialog(context, text);
+                  if (action == DialogAction.yes) {
+                    deleteMeasurement(measurement);
+                  }
                 },
                 child: Text('x'),
               )
@@ -192,5 +195,12 @@ class _AddMeasurementsState extends State<AddMeasurements> {
         children: rows,
       )
     );
+  }
+
+  void deleteMeasurement(Measurement measurement){
+    setState(() {
+      measurement.value = '';
+      widget.measurementProvider.update(measurement);
+    });
   }
 }

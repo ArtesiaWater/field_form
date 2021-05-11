@@ -43,19 +43,20 @@ void showErrorDialog(BuildContext context, String text, {String title = 'Error'}
   );
 }
 
-void showContinueDialog(BuildContext context, String text, onPressed, {String title = 'Continue?'}) {
+enum DialogAction  {yes, no}
+
+Future<DialogAction> showContinueDialog(BuildContext context, String text, {String title = 'Continue?'}) async {
 
   // set up the buttons
   Widget cancelButton = TextButton(
     onPressed:  () {
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(DialogAction.no);
     },
     child: Text('Cancel'),
   );
   Widget continueButton = TextButton(
     onPressed:  () {
-      onPressed();
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(DialogAction.yes);
     },
     child: Text('Continue'),
   );
@@ -71,10 +72,11 @@ void showContinueDialog(BuildContext context, String text, onPressed, {String ti
   );
 
   // show the dialog
-  showDialog(
+  var action = await showDialog(
     context: context,
     builder: (BuildContext context) {
       return alert;
     },
   );
+  return action;
 }

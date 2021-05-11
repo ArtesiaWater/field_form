@@ -200,10 +200,13 @@ class _MyAppState extends State<MyApp> {
               ),
               ListTile(
                 title: Text('Delete all data'),
-                onTap: () {
+                onTap: () async {
                   // Close the drawer
                   Navigator.pop(context);
-                  showContinueDialog(context, 'Are you sure you want to delete all data?', deleteAllData);
+                  final action = await showContinueDialog(context, 'Are you sure you want to delete all data?');
+                  if (action == DialogAction.yes){
+                    deleteAllData();
+                  }
                 },
                 leading: Icon(Icons.delete),
               )
