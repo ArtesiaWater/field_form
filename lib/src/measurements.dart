@@ -7,6 +7,8 @@ import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'dart:async';
 
+import 'package:sqflite/utils/utils.dart';
+
 class Measurement{
   Measurement({
     required this.location,
@@ -47,6 +49,7 @@ class Measurement{
 
 class MeasurementProvider {
   late Database db;
+  static String table = 'measurements';
 
   Future open() async {
     var path = join(await getDatabasesPath(), 'measurements.db');
@@ -65,7 +68,7 @@ create table measurements (
   }
 
   Future<Measurement> insert(Measurement measurement) async {
-    measurement.id = await db.insert('measurements', measurement.toMap());
+    measurement.id = await db.insert(table, measurement.toMap());
     return measurement;
   }
 
@@ -75,7 +78,7 @@ create table measurements (
 
   Future<List<Measurement>> getMeasurements(
       {String? where, List<Object?>? whereArgs}) async {
-    List<Map> maps = await db.query('measurements',
+    List<Map> maps = await db.query(table,
         columns: ['id', 'location', 'datetime', 'type', 'value', 'exported'],
         where: where,
         whereArgs: whereArgs);
@@ -90,17 +93,36 @@ create table measurements (
 
   Future<int> delete(Measurement measurement) async {
     return await db.delete(
-        'measurements', where: 'id = ?', whereArgs: [measurement.id]);
+        table, where: 'id = ?', whereArgs: [measurement.id]);
   }
 
   Future<int> update(Measurement measurement) async {
-    return await db.update('measurements', measurement.toMap(),
+    return await db.update(table, measurement.toMap(),
         where: 'id = ?', whereArgs: [measurement.id]);
+  }
+
+  Future<int> setAllExported() async {
+    return await db.update(table, {'exported': 1});
+  }
+
+  Future<int> deleteAllMeasurements() async {
+    return await db.delete(table);
+  }
+
+  Future <bool> areThereMessagesToBeSent(prefs) async {
+    var only_export_new_data = prefs.getBool('only_export_new_data') ?? true;
+    var result;
+    if (only_export_new_data) {
+      result = db.rawQuery('select count(*) from ? where exported=?', [table, 0]);
+    } else {
+      result = db.rawQuery('select count(*) from ?', [table]);
+    }
+    return firstIntValue(await result)! > 0;
   }
 
   Future close() async => db.close();
 
-  Future<File> exportToCsv(File file,
+  Future<File?> exportToCsv(File file,
       {bool only_export_new_data = true}) async {
     // get measurements
     List<Measurement> measurements;
@@ -109,6 +131,9 @@ create table measurements (
       await getMeasurements(where: 'exported = ?', whereArgs: [0]);
     } else {
       measurements = await getMeasurements();
+    }
+    if (measurements.isEmpty){
+      return null;
     }
 
     // create a list of lists for csv-output
@@ -163,7 +188,7 @@ create table measurements (
 
   void update_or_insert(meas) async{
     // check if measurement is already defined
-    List<Map> maps = await db.query('measurements',
+    List<Map> maps = await db.query(table,
         columns: ['id'],
         where: 'location = ? and datetime = ? and type = ?',
         whereArgs: [

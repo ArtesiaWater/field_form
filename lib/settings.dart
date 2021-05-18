@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:settings_ui/settings_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:ftpconnect/ftpconnect.dart';
 
-import 'dialogs.dart';
+import 'ftp.dart';
 
 class SettingsScreen extends StatefulWidget {
   @override
@@ -73,57 +72,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 title: 'Path',
                 subtitle: prefs?.getString('ftp_path'),
                 leading: Icon(Icons.folder),
-                onPressed: (BuildContext context) {
-                  chooseFtpPath(context);
+                onPressed: (BuildContext context) async {
+                  var ftpConnect = await connectToFtp(context, prefs, path:'');
+                  var ftp_path = await chooseFtpPath(ftpConnect, context, prefs);
+                  if (ftp_path != null) {
+                    setState(() {
+                      prefs!.setString('ftp_path', ftp_path);
+                    });
+                  }
                   //editStringSetting(context, 'ftp_path', 'Change ftp path');
+                },
+              ),
+              SettingsTile.switchTile(
+                title: 'Only export new measurements',
+                leading: Icon(Icons.fiber_new),
+                switchValue: prefs?.getBool('only_export_new_data') ?? true,
+                onToggle: (bool value) {
+                  setState(() {
+                    prefs!.setBool('only_export_new_data', value);
+                  });
                 },
               ),
             ],
           ),
         ],
       )
-    );
-  }
-
-  Future<void> chooseFtpPath(context) async {
-    var host = prefs!.getString('ftp_hostname') ?? '';
-    var user = prefs!.getString('ftp_username') ?? '';
-    var pass = prefs!.getString('ftp_password') ?? '';
-    var ftpConnect = FTPConnect(host, user:user, pass:pass);
-    var names;
-    showLoaderDialog(context);
-    try {
-      //Get directory content
-      await ftpConnect.connect();
-      names = await ftpConnect.listDirectoryContentOnlyNames();
-      await ftpConnect.disconnect();
-    } catch (e) {
-      Navigator.pop(context);
-      showErrorDialog(context, e.toString());
-      return;
-    }
-    var options = <Widget>[];
-    for (var name in names){
-      options.add(SimpleDialogOption(
-        onPressed: () {
-          setState(() {
-            prefs!.setString('ftp_path', name);
-          });
-          Navigator.of(context).pop();
-        },
-        child: Text(name),
-      ));
-    }
-    Navigator.pop(context);
-
-    await showDialog(
-      context: context,
-      builder: (context) {
-        return SimpleDialog(
-          title: const Text('Choose a folder'),
-          children: options,
-        );
-      }
     );
   }
 

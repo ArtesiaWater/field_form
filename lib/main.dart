@@ -5,13 +5,14 @@ import 'dart:io';
 import 'package:field_form/settings.dart';
 import 'package:field_form/src/measurements.dart';
 import 'package:flutter/material.dart';
-import 'package:ftpconnect/ftpconnect.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:share/share.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'add_measurements.dart';
 import 'dialogs.dart';
+import 'ftp.dart';
 import 'src/locations.dart' as locs;
 import 'package:path/path.dart' as p;
 
@@ -31,7 +32,13 @@ class _MyAppState extends State<MyApp> {
   late MeasurementProvider measurementProvider;
 
   Future<void> _onMapCreated(GoogleMapController controller) async {
-    final location_file = await locs.getLocationFile(context);
+    //final location_file = await locs.getLocationFile(context);
+    var docsDir = await getApplicationDocumentsDirectory();
+    var file = File(p.join(docsDir.path, 'locations.json'));
+    if (! await file.exists()) {
+      return;
+    }
+    var location_file = locs.LocationFile.fromJson(json.decode(await file.readAsString()));
     if (location_file.locations != null) {
       locations = location_file.locations!;
     }
@@ -170,7 +177,7 @@ class _MyAppState extends State<MyApp> {
                 onTap: () {
                   // Close the drawer
                   Navigator.pop(context);
-                  showErrorDialog(context, 'Not inplemented yet');
+                  showErrorDialog(context, 'Not implemented yet');
                 },
                 leading: Icon(Icons.insert_drive_file),
               ),
@@ -179,7 +186,7 @@ class _MyAppState extends State<MyApp> {
                 onTap: () {
                   // Close the drawer
                   Navigator.pop(context);
-                  showErrorDialog(context, 'Not inplemented yet');
+                  share_data();
                 },
                 leading: Icon(Icons.share),
               ),
@@ -199,13 +206,23 @@ class _MyAppState extends State<MyApp> {
                 leading: Icon(Icons.settings),
               ),
               ListTile(
+                title: Text('Change FTP Folder'),
+                onTap: () async {
+                  // Close the drawer
+                  Navigator.pop(context);
+                  await switchFtpFolder(context);
+                },
+                leading: Icon(Icons.reset_tv),
+              ),
+              ListTile(
                 title: Text('Delete all data'),
                 onTap: () async {
                   // Close the drawer
                   Navigator.pop(context);
-                  final action = await showContinueDialog(context, 'Are you sure you want to delete all data?');
+                  final action = await showContinueDialog(context, 'Do you want te upload existing measurements first',
+                    title:'Upload existing measurements', yesButton: 'Yes', noButton: 'No');
                   if (action == DialogAction.yes){
-                    deleteAllData();
+
                   }
                 },
                 leading: Icon(Icons.delete),
@@ -218,80 +235,106 @@ class _MyAppState extends State<MyApp> {
   }
 
   void deleteAllData(){
+    // delete all locations
     locations.clear();
     inputFields = locs.getDefaultInputFields();
     save_locations(locations, inputFields);
-    setMarkers();
+    setState(() {
+      setMarkers();
+    });
+
+    // delete all measurements
+    measurementProvider.deleteAllMeasurements();
   }
 
+  Future<void> switchFtpFolder(context) async{
+    // connect to ftp folder
+    var prefs = await SharedPreferences.getInstance();
+    var ftpConnect = await connectToFtp(context, prefs);
+    // First upload existing measurements
 
+    if (await measurementProvider.areThereMessagesToBeSent(prefs)){
+      // Check if user wants to send unsent measurements
+      var action = await showContinueDialog(context, 'There are unsent measurements. Do you want to upload these first? Otherwise they will be lost.',
+          yesButton: 'Yes', noButton: 'No', title: 'Unsent measurements');
+      var ftpConnect;
+      if (action == DialogAction.yes){
+        // connect to the current ftp folder and send the measurements
+        ftpConnect = await connectToFtp(context, prefs);
+        await sendMeasurementsToFtp(ftpConnect, prefs);
+        // Go to root of ftp server
+        ftpConnect.changeDirectory('..');
+      } else {
+        // Connect to the root of the ftp folder
+        ftpConnect = await connectToFtp(context, prefs, path: '');
+      }
+    } else {
+      // Connect to the root of the ftp folder
+      ftpConnect = await connectToFtp(context, prefs, path:'');
+    }
+
+    // Choose FTP folder
+    var path = await chooseFtpPath(ftpConnect, context, prefs);
+    if (path != null) {
+      // Delete all data
+      deleteAllData();
+
+      // Go to the specified folder
+      await changeDirectory(ftpConnect, context, path);
+
+      // sync with the new ftp folder
+      await downloadDataFromFtp(ftpConnect, context, prefs);
+    }
+  }
+
+  Future<void> sendMeasurementsToFtp(ftpConnect, prefs) async {
+    var only_export_new_data = prefs.getBool('only_export_new_data') ?? true;
+    var formattedDate =
+    DateFormat('yyyy-MM-dd-HH:mm:ss').format(DateTime.now());
+    var new_file_name = 'measurements-' + formattedDate + '.csv';
+    var tempDir = await getTemporaryDirectory();
+    File? file = File(p.join(tempDir.path, new_file_name));
+    file = await measurementProvider.exportToCsv(file,
+        only_export_new_data: only_export_new_data);
+    if (file != null) {
+      displayInformation(context, 'Sending measurements');
+      // file is null when there are no (new) measurements
+      bool success = await ftpConnect.uploadFile(file);
+      if (!success) {
+        await ftpConnect.disconnect();
+        Navigator.pop(context);
+        showErrorDialog(context, 'Unable to upload measurements');
+        return;
+      }
+      var importedMeasurementFiles = prefs.getStringList('imported_measurement_files') ?? [];
+      importedMeasurementFiles.add(new_file_name);
+      await prefs.setStringList(
+          'imported_measurement_files', importedMeasurementFiles);
+      // set all measurements to exported
+      await measurementProvider.setAllExported();
+    }
+  }
 
   void synchroniseWithFtp(context) async {
     var ftpConnect;
     try {
       showLoaderDialog(context, text: 'Synchronising with FTP server');
       var prefs = await SharedPreferences.getInstance();
-      var host = prefs.getString('ftp_hostname') ?? '';
-      var user = prefs.getString('ftp_username') ?? '';
-      var pass = prefs.getString('ftp_password') ?? '';
-      var path = prefs.getString('ftp_path') ?? '';
-      ftpConnect = FTPConnect(host, user: user, pass: pass);
-
-      await ftpConnect.connect();
-      var snackBar = SnackBar(content: Text('Connected, retreiving file list'));
-      ScaffoldMessenger.of(context).showSnackBar(snackBar);
-      if (path.isNotEmpty) {
-        bool success = await ftpConnect.changeDirectory(path);
-        if (!success) {
-          await ftpConnect.disconnect();
-          Navigator.pop(context);
-          showErrorDialog(context, 'Unable to find FTP-path: ' + path);
-          return;
-        }
+      ftpConnect = await connectToFtp(context, prefs);
+      if (ftpConnect==null){
+        Navigator.pop(context);
+        return;
       }
-
-      var tempDir = await getTemporaryDirectory();
 
       // send measurements
-      var only_export_new_data = prefs.getBool('only_export_new_data') ?? true;
-      var formattedDate =
-          DateFormat('yyyy-MM-dd-HH:mm:ss').format(DateTime.now());
-      var file =
-          File(p.join(tempDir.path, 'measurements-' + formattedDate + '.csv'));
-      await measurementProvider.exportToCsv(file,
-            only_export_new_data: only_export_new_data);
-      ftpConnect.uploadFile(file);
+      await sendMeasurementsToFtp(ftpConnect, prefs);
 
-      // download measurements and (new) locations
-      snackBar = SnackBar(content: Text('Connected, retreiving file list'));
-      ScaffoldMessenger.of(context).showSnackBar(snackBar);
-      var names = await ftpConnect.listDirectoryContentOnlyNames();
-      snackBar = SnackBar(content: Text('Retreived files'));
-      ScaffoldMessenger.of(context).showSnackBar(snackBar);
-      snackBar = SnackBar(content: Text('Retreived files 2'));
-      ScaffoldMessenger.of(context).showSnackBar(snackBar);
-      if (names.contains('locations.json')) {
-        // download locations
-        var file = File(p.join(tempDir.path, 'locations.json'));
-        await ftpConnect.downloadFile('locations.json', file);
-        // read locations
-        var location_file =
-            locs.LocationFile.fromJson(json.decode(await file.readAsString()));
-        if (location_file.locations != null) {
-          locations = location_file.locations!;
-        }
-        // save locations
-        save_locations(locations, inputFields);
-      }
-      for (var name in names) {
-        if (name.startsWith('measurements')) {
-          // download measurements
-          var file = File(p.join(tempDir.path, name));
-          await ftpConnect.downloadFile(name, file);
-          // read measurements
-          measurementProvider.importFromCsv(file);
-        }
-      }
+      // download (new) locations and measurements
+      await downloadDataFromFtp(ftpConnect, context, prefs);
+
+      // close loading screen
+      Navigator.pop(context);
+
     } catch (e) {
       await ftpConnect.disconnect();
       Navigator.pop(context);
@@ -300,6 +343,62 @@ class _MyAppState extends State<MyApp> {
     }
     await ftpConnect.disconnect();
     Navigator.pop(context);
+    displayInformation(context, 'Synchronisation complete');
+  }
+
+  Future <void> downloadDataFromFtp(ftpConnect, context, prefs) async{
+    var importedMeasurementFiles = prefs.getStringList('imported_measurement_files') ?? [];
+    //var importedLocationFiles = prefs.getStringList('imported_location_files') ?? [];
+    var tempDir = await getTemporaryDirectory();
+
+    displayInformation(context, 'Retrieving file list');
+    var names = await ftpConnect.listDirectoryContentOnlyNames();
+    displayInformation(context, 'Retrieved files');
+
+    if (names.contains('locations.json')) {
+      displayInformation(context, 'Downloading locations.json');
+      // download locations
+
+      var file = File(p.join(tempDir.path, 'locations.json'));
+      bool success = await ftpConnect.downloadFile('locations.json', file);
+      if (!success){
+        await ftpConnect.disconnect();
+        showErrorDialog(context, 'Unable to download locations.json');
+        return;
+      }
+      // read locations
+      var location_file =
+      locs.LocationFile.fromJson(json.decode(await file.readAsString()));
+      if (location_file.locations != null) {
+        locations = location_file.locations!;
+        setState((){
+          setMarkers();
+        });
+      }
+      // save locations
+      save_locations(locations, inputFields);
+    }
+
+    for (var name in names) {
+      if (name.startsWith('measurements')) {
+        if (importedMeasurementFiles.contains(name)){
+          continue;
+        }
+        displayInformation(context, 'Downloading ' + name);
+        // download measurements
+        var file = File(p.join(tempDir.path, name));
+        bool success = await ftpConnect.downloadFile(name, file);
+        if (!success){
+          await ftpConnect.disconnect();
+          showErrorDialog(context, 'Unable to download ' + name);
+          return;
+        }
+        // read measurements
+        measurementProvider.importFromCsv(file);
+        importedMeasurementFiles.add(name);
+        await prefs.setStringList('imported_measurement_files', importedMeasurementFiles);
+      }
+    }
   }
 
   void save_locations(locations, inputFields) async {
@@ -309,11 +408,29 @@ class _MyAppState extends State<MyApp> {
         inputfields: inputFields);
     await file.writeAsString(json.encode(location_file.toJson()));
   }
+
+  Future share_data() async {
+    final directory = await getApplicationDocumentsDirectory();
+    var files = <String>[];
+    var measurement_path = '${directory.path}/locations.json';
+    if (await File(measurement_path).exists()){
+      files.add(measurement_path);
+    }
+    var formattedDate =
+    DateFormat('yyyy-MM-dd-HH:mm:ss').format(DateTime.now());
+    var new_file_name = 'measurements-' + formattedDate + '.csv';
+    var tempDir = await getTemporaryDirectory();
+    File? file = File(p.join(tempDir.path, new_file_name));
+    file = await measurementProvider.exportToCsv(file,
+        only_export_new_data: false);
+    if (file != null) {
+      files.add(file.path);
+    }
+    await Share.shareFiles(files);
+  }
+
 }
 
-Future share_data() async {
-  final directory = await getApplicationDocumentsDirectory();
-}
 
 Future newLocationDialog(BuildContext context, latlng, locations) async {
   var teamName = '';

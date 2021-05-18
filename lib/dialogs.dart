@@ -45,20 +45,22 @@ void showErrorDialog(BuildContext context, String text, {String title = 'Error'}
 
 enum DialogAction  {yes, no}
 
-Future<DialogAction> showContinueDialog(BuildContext context, String text, {String title = 'Continue?'}) async {
+Future<DialogAction> showContinueDialog(BuildContext context, String text,
+    {String title = 'Continue?', String yesButton = 'Continue',
+    String noButton = 'Cancel'}) async {
 
   // set up the buttons
   Widget cancelButton = TextButton(
     onPressed:  () {
       Navigator.of(context).pop(DialogAction.no);
     },
-    child: Text('Cancel'),
+    child: Text(noButton),
   );
   Widget continueButton = TextButton(
     onPressed:  () {
       Navigator.of(context).pop(DialogAction.yes);
     },
-    child: Text('Continue'),
+    child: Text(yesButton),
   );
 
   // set up the AlertDialog
@@ -79,4 +81,10 @@ Future<DialogAction> showContinueDialog(BuildContext context, String text, {Stri
     },
   );
   return action;
+}
+
+void displayInformation(context, text){
+  var snackBar = SnackBar(content: Text(text));
+  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+  ScaffoldMessenger.of(context).showSnackBar(snackBar);
 }
