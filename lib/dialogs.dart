@@ -45,7 +45,7 @@ void showErrorDialog(BuildContext context, String text, {String title = 'Error'}
 
 enum DialogAction  {yes, no}
 
-Future<DialogAction> showContinueDialog(BuildContext context, String text,
+Future<DialogAction?> showContinueDialog(BuildContext context, String text,
     {String title = 'Continue?', String yesButton = 'Continue',
     String noButton = 'Cancel'}) async {
 

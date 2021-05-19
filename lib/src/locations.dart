@@ -24,6 +24,7 @@ class Location {
     required this.id,
     this.name,
     this.properties,
+    this.photo,
   });
 
   factory Location.fromJson(Map<String, dynamic> json) => _$LocationFromJson(json);
@@ -33,6 +34,7 @@ class Location {
   final String id;
   final String? name;
   final List<Property>? properties;
+  final String? photo;
 }
 
 @JsonSerializable()

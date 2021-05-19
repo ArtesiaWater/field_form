@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:field_form/settings.dart';
 import 'package:field_form/src/measurements.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
@@ -31,6 +32,180 @@ class _MyAppState extends State<MyApp> {
   CameraPosition? initialCameraPosition;
   late MeasurementProvider measurementProvider;
 
+  @override
+  void initState() {
+    super.initState();
+    getInitialCameraPosition();
+    measurementProvider = MeasurementProvider();
+    measurementProvider.open();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (initialCameraPosition == null) {
+      return buildLoadingScreen();
+    } else {
+      return Scaffold(
+        appBar: buildAppBar(),
+        drawer: buildDrawer(),
+        body: buildMap(),
+      );
+    }
+  }
+
+  Scaffold buildLoadingScreen(){
+    return Scaffold(
+      body: Container(
+        child: Center(
+          child: Text(
+            'loading map..',
+            style:
+            TextStyle(fontFamily: 'Avenir-Medium', color: Colors.grey[400]),
+          ),
+        ),
+      )
+    );
+  }
+
+  AppBar buildAppBar() {
+    return AppBar(
+      title: const Text('FieldForm'),
+      backgroundColor: Colors.green[700],
+      actions: <Widget>[
+        Padding(
+            padding: EdgeInsets.only(right: 20.0),
+            child: GestureDetector(
+              onTap: () {
+                synchroniseWithFtp(context);
+              },
+              child: Icon(
+                Icons.sync,
+              ),
+            )),
+      ],
+    );
+  }
+
+  Drawer buildDrawer() {
+    return Drawer(
+      // Add a ListView to the drawer. This ensures the user can scroll
+      // through the options in the drawer if there isn't enough vertical
+      // space to fit everything.
+      child: ListView(
+        // Important: Remove any padding from the ListView.
+        padding: EdgeInsets.zero,
+        children: <Widget>[
+          DrawerHeader(
+            decoration: BoxDecoration(
+              color: Colors.green,
+            ),
+            child: Text('Menu'),
+          ),
+          ListTile(
+            title: Text('Add data from file'),
+            onTap: () {
+              // Close the drawer
+              Navigator.pop(context);
+              choose_file();
+            },
+            leading: Icon(Icons.insert_drive_file),
+          ),
+          ListTile(
+            title: Text('Share data'),
+            onTap: () {
+              // Close the drawer
+              Navigator.pop(context);
+              share_data();
+            },
+            leading: Icon(Icons.share),
+          ),
+          ListTile(
+            title: Text('Change FTP Folder'),
+            onTap: () async {
+              // Close the drawer
+              Navigator.pop(context);
+              await switchFtpFolder(context);
+            },
+            leading: Icon(Icons.reset_tv),
+          ),
+          ListTile(
+            title: Text('Delete all data'),
+            onTap: () async {
+              // Close the drawer
+              Navigator.pop(context);
+              final action = await showContinueDialog(context, 'Are you sure you wish to delete all data?',
+                  title:'Delete all data', yesButton: 'Yes', noButton: 'No');
+              if (action == DialogAction.yes) {
+                var prefs = await SharedPreferences.getInstance();
+                if (await measurementProvider.areThereMessagesToBeSent(prefs)) {
+                  final action = await showContinueDialog(context,
+                      'There are still unsent measurements. Are you really sure you want to delete all data?',
+                      title: 'Delete all data',
+                      yesButton: 'Yes',
+                      noButton: 'No');
+                  if (action == DialogAction.yes) {
+                    deleteAllData();
+                  }
+                } else {
+                  deleteAllData();
+                }
+              }
+            },
+            leading: Icon(Icons.delete),
+          ),
+          ListTile(
+            title: Text('Settings'),
+            onTap: () {
+              // Close the drawer
+              Navigator.pop(context);
+              // Open the settings screen
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) {
+                  return SettingsScreen();
+                }),
+              );
+            },
+            leading: Icon(Icons.settings),
+          ),
+        ],
+      ),
+    );
+  }
+
+  GoogleMap buildMap() {
+    return GoogleMap(
+      onMapCreated: _onMapCreated,
+      myLocationEnabled: true,
+      initialCameraPosition: initialCameraPosition!,
+      markers: markers.values.toSet(),
+      onLongPress: (latlng) {
+        setState(() {
+          final id = 'new_marker';
+          final marker = Marker(
+            markerId: MarkerId(id),
+            position: latlng,
+            infoWindow: InfoWindow(
+              title: 'New marker',
+              onTap: () {
+                newLocationDialog(context, latlng, locations);
+              },
+            ),
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+                BitmapDescriptor.hueBlue),
+          );
+          markers[id] = marker;
+        });
+      },
+      onCameraMove: (CameraPosition position) async {
+        var prefs = await SharedPreferences.getInstance();
+        await prefs.setDouble('latitude', position.target.latitude);
+        await prefs.setDouble('longitude', position.target.longitude);
+        await prefs.setDouble('zoom', position.zoom);
+      },
+    );
+  }
+
   Future<void> _onMapCreated(GoogleMapController controller) async {
     //final location_file = await locs.getLocationFile(context);
     var docsDir = await getApplicationDocumentsDirectory();
@@ -38,6 +213,10 @@ class _MyAppState extends State<MyApp> {
     if (! await file.exists()) {
       return;
     }
+    await read_location_file(file);
+  }
+
+  Future <void> read_location_file(File file) async {
     var location_file = locs.LocationFile.fromJson(json.decode(await file.readAsString()));
     if (location_file.locations != null) {
       locations = location_file.locations!;
@@ -47,7 +226,6 @@ class _MyAppState extends State<MyApp> {
     } else {
       inputFields = location_file.inputfields!;
     }
-
     setState(() {
       setMarkers();
     });
@@ -89,162 +267,57 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  @override
-  void initState() {
-    super.initState();
-    getInitialCameraPosition();
-    measurementProvider = MeasurementProvider();
-    measurementProvider.open();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (initialCameraPosition == null) {
-      return Scaffold(
-          body: Container(
-        child: Center(
-          child: Text(
-            'loading map..',
-            style:
-                TextStyle(fontFamily: 'Avenir-Medium', color: Colors.grey[400]),
-          ),
-        ),
-      ));
-    } else {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('FieldForm'),
-          backgroundColor: Colors.green[700],
-          actions: <Widget>[
-            Padding(
-                padding: EdgeInsets.only(right: 20.0),
-                child: GestureDetector(
-                  onTap: () {
-                    synchroniseWithFtp(context);
-                  },
-                  child: Icon(
-                    Icons.sync,
-                  ),
-                )),
-          ],
-        ),
-        body: GoogleMap(
-          onMapCreated: _onMapCreated,
-          myLocationEnabled: true,
-          initialCameraPosition: initialCameraPosition!,
-          markers: markers.values.toSet(),
-          onLongPress: (latlng) {
-            setState(() {
-              final id = 'new_marker';
-              final marker = Marker(
-                markerId: MarkerId(id),
-                position: latlng,
-                infoWindow: InfoWindow(
-                  title: 'New marker',
-                  onTap: () {
-                    newLocationDialog(context, latlng, locations);
-                  },
-                ),
-                icon: BitmapDescriptor.defaultMarkerWithHue(
-                    BitmapDescriptor.hueBlue),
-              );
-              markers[id] = marker;
-            });
-          },
-          onCameraMove: (CameraPosition position) async {
-            var prefs = await SharedPreferences.getInstance();
-            await prefs.setDouble('latitude', position.target.latitude);
-            await prefs.setDouble('longitude', position.target.longitude);
-            await prefs.setDouble('zoom', position.zoom);
-          },
-        ),
-        drawer: Drawer(
-          // Add a ListView to the drawer. This ensures the user can scroll
-          // through the options in the drawer if there isn't enough vertical
-          // space to fit everything.
-          child: ListView(
-            // Important: Remove any padding from the ListView.
-            padding: EdgeInsets.zero,
-            children: <Widget>[
-              DrawerHeader(
-                decoration: BoxDecoration(
-                  color: Colors.green,
-                ),
-                child: Text('Menu'),
-              ),
-              ListTile(
-                title: Text('Add data from file'),
-                onTap: () {
-                  // Close the drawer
-                  Navigator.pop(context);
-                  showErrorDialog(context, 'Not implemented yet');
-                },
-                leading: Icon(Icons.insert_drive_file),
-              ),
-              ListTile(
-                title: Text('Share data'),
-                onTap: () {
-                  // Close the drawer
-                  Navigator.pop(context);
-                  share_data();
-                },
-                leading: Icon(Icons.share),
-              ),
-              ListTile(
-                title: Text('Settings'),
-                onTap: () {
-                  // Close the drawer
-                  Navigator.pop(context);
-                  // Open the settings screen
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) {
-                      return SettingsScreen();
-                    }),
-                  );
-                },
-                leading: Icon(Icons.settings),
-              ),
-              ListTile(
-                title: Text('Change FTP Folder'),
-                onTap: () async {
-                  // Close the drawer
-                  Navigator.pop(context);
-                  await switchFtpFolder(context);
-                },
-                leading: Icon(Icons.reset_tv),
-              ),
-              ListTile(
-                title: Text('Delete all data'),
-                onTap: () async {
-                  // Close the drawer
-                  Navigator.pop(context);
-                  final action = await showContinueDialog(context, 'Do you want te upload existing measurements first',
-                    title:'Upload existing measurements', yesButton: 'Yes', noButton: 'No');
-                  if (action == DialogAction.yes){
-
-                  }
-                },
-                leading: Icon(Icons.delete),
-              )
-            ],
-          ),
-        ),
-      );
+  void choose_file() async {
+    var result = await FilePicker.platform.pickFiles();
+    if (result != null) {
+      var file = File(result.files.single.path!);
+      var is_location_file;
+      if (file.path.startsWith('locations')) {
+        is_location_file = true;
+      } else if (file.path.startsWith('measurements')) {
+        is_location_file = false;
+      } else {
+        // Ask whether the file contains locations or measurements
+        var action = await showContinueDialog(context, 'Does this file contain locations or measurements?',
+            yesButton: 'Locations', noButton: 'Measurements', title: 'Locations or measurements');
+        if (action == DialogAction.yes){
+          is_location_file = true;
+        } else if (action == DialogAction.no){
+          is_location_file = false;
+        } else {
+          // the dialog was cancelled
+          return;
+        }
+      }
+      if (is_location_file) {
+        if (file.path.endsWith('.json')) {
+          await read_location_file(file);
+        } else if (file.path.endsWith('.csv')) {
+          showErrorDialog(context, 'csv-loction files not implemented yet. Use json-files instead');
+        }
+      } else {
+        measurementProvider.importFromCsv(file);
+      }
     }
   }
 
-  void deleteAllData(){
+  void deleteAllData() async {
+    var prefs = await SharedPreferences.getInstance();
+
     // delete all locations
     locations.clear();
     inputFields = locs.getDefaultInputFields();
+    //TODO: delete all data in the documents-directory (for the photos)
+
     save_locations(locations, inputFields);
     setState(() {
       setMarkers();
     });
+    await prefs.remove('imported_measurement_files');
 
     // delete all measurements
-    measurementProvider.deleteAllMeasurements();
+    await measurementProvider.deleteAllMeasurements();
+    await prefs.remove('imported_location_files');
   }
 
   Future<void> switchFtpFolder(context) async{
@@ -306,7 +379,7 @@ class _MyAppState extends State<MyApp> {
         showErrorDialog(context, 'Unable to upload measurements');
         return;
       }
-      var importedMeasurementFiles = prefs.getStringList('imported_measurement_files') ?? [];
+      var importedMeasurementFiles = prefs.getStringList('imported_measurement_files') ?? <String>[];
       importedMeasurementFiles.add(new_file_name);
       await prefs.setStringList(
           'imported_measurement_files', importedMeasurementFiles);
@@ -332,9 +405,6 @@ class _MyAppState extends State<MyApp> {
       // download (new) locations and measurements
       await downloadDataFromFtp(ftpConnect, context, prefs);
 
-      // close loading screen
-      Navigator.pop(context);
-
     } catch (e) {
       await ftpConnect.disconnect();
       Navigator.pop(context);
@@ -342,41 +412,37 @@ class _MyAppState extends State<MyApp> {
       return;
     }
     await ftpConnect.disconnect();
+    // close loading screen
     Navigator.pop(context);
     displayInformation(context, 'Synchronisation complete');
   }
 
-  Future <void> downloadDataFromFtp(ftpConnect, context, prefs) async{
-    var importedMeasurementFiles = prefs.getStringList('imported_measurement_files') ?? [];
-    //var importedLocationFiles = prefs.getStringList('imported_location_files') ?? [];
+  Future <bool> downloadDataFromFtp(ftpConnect, context, prefs) async{
+    var importedMeasurementFiles = prefs.getStringList('imported_measurement_files') ?? <String>[];
+    var importedLocationFiles = prefs.getStringList('imported_location_files') ?? <String>[];
     var tempDir = await getTemporaryDirectory();
 
     displayInformation(context, 'Retrieving file list');
     var names = await ftpConnect.listDirectoryContentOnlyNames();
     displayInformation(context, 'Retrieved files');
 
-    if (names.contains('locations.json')) {
+    var name = 'locations.json';
+    if (names.contains(name) & !importedLocationFiles.contains(name)) {
       displayInformation(context, 'Downloading locations.json');
       // download locations
-
-      var file = File(p.join(tempDir.path, 'locations.json'));
-      bool success = await ftpConnect.downloadFile('locations.json', file);
+      var file = File(p.join(tempDir.path, name));
+      bool success = await ftpConnect.downloadFile(name, file);
       if (!success){
         await ftpConnect.disconnect();
-        showErrorDialog(context, 'Unable to download locations.json');
-        return;
+        showErrorDialog(context, 'Unable to download ' + name);
+        return false;
       }
       // read locations
-      var location_file =
-      locs.LocationFile.fromJson(json.decode(await file.readAsString()));
-      if (location_file.locations != null) {
-        locations = location_file.locations!;
-        setState((){
-          setMarkers();
-        });
-      }
+      await read_location_file(file);
       // save locations
       save_locations(locations, inputFields);
+      importedLocationFiles.add(name);
+      await prefs.setStringList('imported_location_files', importedLocationFiles);
     }
 
     for (var name in names) {
@@ -391,7 +457,7 @@ class _MyAppState extends State<MyApp> {
         if (!success){
           await ftpConnect.disconnect();
           showErrorDialog(context, 'Unable to download ' + name);
-          return;
+          return false;
         }
         // read measurements
         measurementProvider.importFromCsv(file);
@@ -399,6 +465,7 @@ class _MyAppState extends State<MyApp> {
         await prefs.setStringList('imported_measurement_files', importedMeasurementFiles);
       }
     }
+    return true;
   }
 
   void save_locations(locations, inputFields) async {
@@ -428,7 +495,6 @@ class _MyAppState extends State<MyApp> {
     }
     await Share.shareFiles(files);
   }
-
 }
 
 
@@ -459,6 +525,7 @@ Future newLocationDialog(BuildContext context, latlng, locations) async {
           TextButton(
             onPressed: () {
               Navigator.of(context).pop(teamName);
+              showErrorDialog(context, 'Not implemented yet');
             },
             child: Text('Ok'),
           ),

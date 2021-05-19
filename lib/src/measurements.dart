@@ -113,9 +113,9 @@ create table measurements (
     var only_export_new_data = prefs.getBool('only_export_new_data') ?? true;
     var result;
     if (only_export_new_data) {
-      result = db.rawQuery('select count(*) from ? where exported=?', [table, 0]);
+      result = db.rawQuery('select count(*) from $table where exported=?', [0]);
     } else {
-      result = db.rawQuery('select count(*) from ?', [table]);
+      result = db.rawQuery('select count(*) from $table');
     }
     return firstIntValue(await result)! > 0;
   }
@@ -168,8 +168,9 @@ create table measurements (
   }
 
   void importFromCsv(File file) async {
-    var datetime_format = DateFormat('dd-MM-yyyy' 'HH:mm:ss');
-    var converter = const CsvToListConverter(fieldDelimiter: ';');
+    var datetime_format = DateFormat('dd-MM-yyyy HH:mm:ss');
+    var converter = const CsvToListConverter(fieldDelimiter: ';',
+        shouldParseNumbers: false);
     var rows = converter.convert(await file.readAsString());
     var LOCATION = rows[0].indexOf('LOCATION');
     var DATE = rows[0].indexOf('DATE');
@@ -177,7 +178,7 @@ create table measurements (
     var TYPE = rows[0].indexOf('TYPE');
     var VALUE = rows[0].indexOf('VALUE');
     for (var row in rows.sublist(1)) {
-      var date = datetime_format.parse(row[DATE] + '' + row[TIME]);
+      var date = datetime_format.parse(row[DATE] + ' ' + row[TIME]);
       var meas = Measurement(location: row[LOCATION],
           datetime: date,
           value: row[VALUE],

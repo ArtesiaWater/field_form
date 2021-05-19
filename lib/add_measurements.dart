@@ -1,9 +1,16 @@
+import 'dart:io';
+
 import 'package:field_form/dialogs.dart';
+import 'package:field_form/photo.dart';
 import 'package:field_form/properties.dart';
 import 'package:field_form/src/locations.dart';
 import 'package:field_form/src/measurements.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path/path.dart' as p;
+import 'ftp.dart';
 
 class AddMeasurements extends StatefulWidget {
   AddMeasurements({key, required this.location, required this.inputFields,
@@ -166,12 +173,26 @@ class _AddMeasurementsState extends State<AddMeasurements> {
     }
 
     var actions = <Widget>[];
+    if (widget.location.photo != null){
+      actions.add(Padding(
+          padding: EdgeInsets.only(right: 20.0),
+          child: GestureDetector(
+            onTap: () {
+              var name = widget.location.photo!;
+              displayPhoto(name);
+            },
+            child: Icon(
+              Icons.photo,
+            ),
+          )
+      ));
+    }
     if (widget.location.properties != null){
       actions.add(Padding(
         padding: EdgeInsets.only(right: 20.0),
         child: GestureDetector(
           onTap: () {
-            // Open the settings screen
+            // Open the properties screen
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) {
@@ -185,6 +206,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
         )
       ));
     }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.location.id),
@@ -202,5 +224,44 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       measurement.value = '';
       widget.measurementProvider.update(measurement);
     });
+  }
+
+  Future<void> displayPhoto(String name) async {
+    if (!name.endsWith('.jpg') & !name.endsWith('.png') & !name.endsWith('.jpg')){
+      showErrorDialog(context, 'Current file $name is not supported. Only jpg, png and pdf are supported');
+    }
+    var prefs = await SharedPreferences.getInstance();
+    var ftpConnect = await connectToFtp(context, prefs);
+    if (ftpConnect == null) {
+      showErrorDialog(context, 'Unable to connect to ftp-server');
+      return;
+    }
+    // check if photo exists in documents-directory
+    var docsDir = await getApplicationDocumentsDirectory();
+    File? file = File(p.join(docsDir.path, name));
+    // check if photo exists on ftp-server
+    if (!file.existsSync()){
+      if (await ftpConnect.existFile(name)) {
+        // Download photo
+        showLoaderDialog(context, text: 'Downloading $name');
+        bool success = await ftpConnect.downloadFile(name, file);
+        await ftpConnect.disconnect();
+        Navigator.pop(context);
+        if (!success){
+          showErrorDialog(context, 'Unable to download ' + name);
+          return;
+        }
+      } else {
+        showErrorDialog(context, 'Unable to find on ftp-server: ' + name);
+        return;
+      }
+    }
+    // Open the photo screen
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) {
+        return PhotoScreen(file: file);
+      }),
+    );
   }
 }
