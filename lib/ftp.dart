@@ -9,26 +9,34 @@ Future<FTPConnect?> connectToFtp(context, prefs, {path}) async {
   var pass = prefs.getString('ftp_password') ?? '';
 
   var ftpConnect = FTPConnect(host, user: user, pass: pass, timeout: 5);
-  await ftpConnect.connect();
-  if (path == null) {
-    path = prefs.getString('ftp_path') ?? '';
-    if (path.isEmpty) {
-      displayInformation(context, 'Connected');
-      return ftpConnect;
-    }
-    displayInformation(context, 'Connected, changing path');
-    await changeDirectory(ftpConnect, context, path);
+  var success = await ftpConnect.connect();
+  if (!success){
+    showErrorDialog(context, 'Cannot connect of ftp-server');
+    return null;
+  }
+  path ??= prefs.getString('ftp_path') ?? '';
+  if (path.isEmpty) {
+    // we do not need to change path
+    displayInformation(context, 'Connected');
     return ftpConnect;
   }
+  // we do need to change path
+  displayInformation(context, 'Connected, changing path');
+  success = await changeDirectory(ftpConnect, context, path);
+  if (!success){
+    await ftpConnect.disconnect();
+    return null;
+  }
+  return ftpConnect;
 }
 
-Future<void> changeDirectory(ftpConnect, context, path) async {
+Future<bool> changeDirectory(ftpConnect, context, path) async {
   var success = await ftpConnect.changeDirectory(path);
   if (!success) {
     await ftpConnect.disconnect();
     showErrorDialog(context, 'Unable to find FTP-path: ' + path);
-    return null;
   }
+  return success;
 }
 
 Future<String?> chooseFtpPath(ftpConnect, context, prefs) async {
@@ -37,8 +45,8 @@ Future<String?> chooseFtpPath(ftpConnect, context, prefs) async {
   try {
     //Get directory content
     names = await ftpConnect.listDirectoryContentOnlyNames();
-    await ftpConnect.disconnect();
   } catch (e) {
+    await ftpConnect.disconnect();
     Navigator.pop(context);
     showErrorDialog(context, e.toString());
     return null;
@@ -52,6 +60,7 @@ Future<String?> chooseFtpPath(ftpConnect, context, prefs) async {
       child: Text(name),
     ));
   }
+  // remove loader dialog
   Navigator.pop(context);
 
   var action = await showDialog(

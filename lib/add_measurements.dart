@@ -70,6 +70,13 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       var input;
       if (inputField.type == 'choice'){
         var items = <DropdownMenuItem<String>>[];
+        // add an empty value
+        items.add(
+            DropdownMenuItem(
+              value: '',
+              child: Text(''),
+            )
+        );
         for (var option in inputField.options!) {
           items.add(
             DropdownMenuItem(
@@ -79,7 +86,14 @@ class _AddMeasurementsState extends State<AddMeasurements> {
           );
         }
         input = DropdownButton(
-          items: items
+          isExpanded: true,
+          items: items,
+          onChanged: (String? text) {
+            setState(() {
+              values[inputField.id] = text!;
+            });
+          },
+          value: values[inputField.id],
         );
       } else {
         input = TextField(
@@ -178,8 +192,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
           padding: EdgeInsets.only(right: 20.0),
           child: GestureDetector(
             onTap: () {
-              var name = widget.location.photo!;
-              displayPhoto(name);
+              displayPhoto(widget.location.photo!);
             },
             child: Icon(
               Icons.photo,
@@ -209,7 +222,8 @@ class _AddMeasurementsState extends State<AddMeasurements> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.location.id),
+        title: Text(widget.location.name ?? widget.location.id),
+        backgroundColor: Colors.green[700],
         actions: actions,
       ),
 
@@ -229,11 +243,6 @@ class _AddMeasurementsState extends State<AddMeasurements> {
   Future<void> displayPhoto(String name) async {
     if (!name.endsWith('.jpg') & !name.endsWith('.png') & !name.endsWith('.jpg')){
       showErrorDialog(context, 'Current file $name is not supported. Only jpg, png and pdf are supported');
-    }
-    var prefs = await SharedPreferences.getInstance();
-    var ftpConnect = await connectToFtp(context, prefs);
-    if (ftpConnect == null) {
-      showErrorDialog(context, 'Unable to connect to ftp-server');
       return;
     }
     // check if photo exists in documents-directory
@@ -241,10 +250,16 @@ class _AddMeasurementsState extends State<AddMeasurements> {
     File? file = File(p.join(docsDir.path, name));
     // check if photo exists on ftp-server
     if (!file.existsSync()){
+      var prefs = await SharedPreferences.getInstance();
+      var ftpConnect = await connectToFtp(context, prefs);
+      if (ftpConnect == null) {
+        showErrorDialog(context, 'Unable to connect to ftp-server');
+        return;
+      }
       if (await ftpConnect.existFile(name)) {
         // Download photo
         showLoaderDialog(context, text: 'Downloading $name');
-        bool success = await ftpConnect.downloadFile(name, file);
+        var success = await ftpConnect.downloadFile(name, file);
         await ftpConnect.disconnect();
         Navigator.pop(context);
         if (!success){
@@ -257,7 +272,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       }
     }
     // Open the photo screen
-    Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) {
         return PhotoScreen(file: file);

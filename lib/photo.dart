@@ -28,12 +28,18 @@ class PhotoScreen extends StatelessWidget {
       );
     } else {
       // display a picture
-      body = Image.file(file);
+      body = InteractiveViewer(
+        minScale: 1,
+        maxScale: 5,
+        child: Center(
+            child: Image.file(file)
+        )
+      );
     }
 
     return Scaffold(
         appBar: AppBar(
-          title: const Text('Properties'),
+          title: const Text('Photo'),
           backgroundColor: Colors.green[700],
         ),
         body: body,

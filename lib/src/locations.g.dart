@@ -6,34 +6,26 @@ part of 'locations.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-LatLng _$LatLngFromJson(Map<String, dynamic> json) {
-  return LatLng(
-    lat: (json['lat'] as num).toDouble(),
-    lng: (json['lng'] as num).toDouble(),
-  );
-}
-
-Map<String, dynamic> _$LatLngToJson(LatLng instance) => <String, dynamic>{
-      'lat': instance.lat,
-      'lng': instance.lng,
-    };
-
 Location _$LocationFromJson(Map<String, dynamic> json) {
   return Location(
-    coords: LatLng.fromJson(json['coords'] as Map<String, dynamic>),
     id: json['id'] as String,
+    lat: (json['lat'] as num?)?.toDouble(),
+    lon: (json['lon'] as num?)?.toDouble(),
     name: json['name'] as String?,
     properties: (json['properties'] as List<dynamic>?)
         ?.map((e) => Property.fromJson(e as Map<String, dynamic>))
         .toList(),
+    photo: json['photo'] as String?,
   );
 }
 
 Map<String, dynamic> _$LocationToJson(Location instance) => <String, dynamic>{
-      'coords': instance.coords,
       'id': instance.id,
+      'lat': instance.lat,
+      'lon': instance.lon,
       'name': instance.name,
       'properties': instance.properties,
+      'photo': instance.photo,
     };
 
 LocationFile _$LocationFileFromJson(Map<String, dynamic> json) {
@@ -61,6 +53,7 @@ InputField _$InputFieldFromJson(Map<String, dynamic> json) {
     name: json['name'] as String?,
     options:
         (json['options'] as List<dynamic>?)?.map((e) => e as String).toList(),
+    required: json['required'] as bool?,
   );
 }
 
@@ -71,6 +64,7 @@ Map<String, dynamic> _$InputFieldToJson(InputField instance) =>
       'hint': instance.hint,
       'name': instance.name,
       'options': instance.options,
+      'required': instance.required,
     };
 
 Property _$PropertyFromJson(Map<String, dynamic> json) {

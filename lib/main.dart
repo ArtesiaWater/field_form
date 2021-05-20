@@ -14,7 +14,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'add_measurements.dart';
 import 'dialogs.dart';
 import 'ftp.dart';
-import 'src/locations.dart' as locs;
+import 'src/locations.dart';
 import 'package:path/path.dart' as p;
 
 //void main() => runApp(MyApp());
@@ -27,8 +27,8 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   final Map<String, Marker> markers = {};
-  var locations = <locs.Location>[];
-  var inputFields = <locs.InputField>[];
+  var locations = <Location>[];
+  var inputFields = <InputField>[];
   CameraPosition? initialCameraPosition;
   late MeasurementProvider measurementProvider;
 
@@ -207,22 +207,27 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _onMapCreated(GoogleMapController controller) async {
-    //final location_file = await locs.getLocationFile(context);
+    //final location_file = await getLocationFile(context);
     var docsDir = await getApplicationDocumentsDirectory();
     var file = File(p.join(docsDir.path, 'locations.json'));
     if (! await file.exists()) {
       return;
     }
-    await read_location_file(file);
+    try {
+      await read_location_file(file);
+    } catch (e) {
+      showErrorDialog(context, e.toString());
+    }
   }
 
   Future <void> read_location_file(File file) async {
-    var location_file = locs.LocationFile.fromJson(json.decode(await file.readAsString()));
+    var location_file = LocationFile.fromJson(
+        json.decode(await file.readAsString()));
     if (location_file.locations != null) {
       locations = location_file.locations!;
     }
     if (location_file.inputfields == null) {
-      inputFields = locs.getDefaultInputFields();
+      inputFields = getDefaultInputFields();
     } else {
       inputFields = location_file.inputfields!;
     }
@@ -234,9 +239,13 @@ class _MyAppState extends State<MyApp> {
   void setMarkers(){
     markers.clear();
     for (final location in locations) {
+      if ((location.lat == null) | (location.lon==null)){
+        continue;
+      }
+      print(location.lat);
       final marker = Marker(
         markerId: MarkerId(location.id),
-        position: LatLng(location.coords.lat, location.coords.lng),
+        position: LatLng(location.lat!, location.lon!),
         infoWindow: InfoWindow(
           title: location.name,
           onTap: () {
@@ -291,7 +300,11 @@ class _MyAppState extends State<MyApp> {
       }
       if (is_location_file) {
         if (file.path.endsWith('.json')) {
-          await read_location_file(file);
+          try {
+            await read_location_file(file);
+          } catch (e) {
+            showErrorDialog(context, e.toString());
+          }
         } else if (file.path.endsWith('.csv')) {
           showErrorDialog(context, 'csv-loction files not implemented yet. Use json-files instead');
         }
@@ -306,7 +319,7 @@ class _MyAppState extends State<MyApp> {
 
     // delete all locations
     locations.clear();
-    inputFields = locs.getDefaultInputFields();
+    inputFields = getDefaultInputFields();
     //TODO: delete all data in the documents-directory (for the photos)
 
     save_locations(locations, inputFields);
@@ -321,46 +334,78 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> switchFtpFolder(context) async{
+    showLoaderDialog(context);
     // connect to ftp folder
     var prefs = await SharedPreferences.getInstance();
-    var ftpConnect = await connectToFtp(context, prefs);
+    var ftpConnect = await connectToFtp(context, prefs, path:'');
+    if (ftpConnect == null) {
+      Navigator.pop(context);
+      return;
+    }
     // First upload existing measurements
-
     if (await measurementProvider.areThereMessagesToBeSent(prefs)){
       // Check if user wants to send unsent measurements
       var action = await showContinueDialog(context, 'There are unsent measurements. Do you want to upload these first? Otherwise they will be lost.',
           yesButton: 'Yes', noButton: 'No', title: 'Unsent measurements');
       var ftpConnect;
       if (action == DialogAction.yes){
-        // connect to the current ftp folder and send the measurements
-        ftpConnect = await connectToFtp(context, prefs);
-        await sendMeasurementsToFtp(ftpConnect, prefs);
-        // Go to root of ftp server
-        ftpConnect.changeDirectory('..');
-      } else {
-        // Connect to the root of the ftp folder
-        ftpConnect = await connectToFtp(context, prefs, path: '');
-      }
-    } else {
-      // Connect to the root of the ftp folder
-      ftpConnect = await connectToFtp(context, prefs, path:'');
-    }
 
+        // connect to the current ftp folder and send the measurements
+        var path = prefs.getString('ftp_path') ?? '';
+        if (path.isNotEmpty) {
+          var success = await changeDirectory(ftpConnect, context, path);
+          if (!success){
+            Navigator.pop(context);
+            return;
+          }
+        }
+        var success = await sendMeasurementsToFtp(ftpConnect, prefs);
+        if (!success) {
+          Navigator.pop(context);
+          return;
+        }
+        if (path.isNotEmpty) {
+          // Go to root of ftp server again
+          var success = ftpConnect.changeDirectory('..');
+          if (!success){
+            await ftpConnect.disconnect();
+            Navigator.pop(context);
+            return;
+          }
+        }
+      }
+    }
+    Navigator.pop(context);
     // Choose FTP folder
     var path = await chooseFtpPath(ftpConnect, context, prefs);
     if (path != null) {
+      showLoaderDialog(context);
+
       // Delete all data
       deleteAllData();
 
       // Go to the specified folder
-      await changeDirectory(ftpConnect, context, path);
+      var success = await changeDirectory(ftpConnect, context, path);
+      if (!success) {
+        Navigator.pop(context);
+        return;
+      }
 
       // sync with the new ftp folder
-      await downloadDataFromFtp(ftpConnect, context, prefs);
+      success = await downloadDataFromFtp(ftpConnect, context, prefs);
+      if (!success) {
+        Navigator.pop(context);
+        return;
+      }
+
+      // finish up
+      await ftpConnect.disconnect();
+      Navigator.pop(context);
+      displayInformation(context, 'Synchronisation complete');
     }
   }
 
-  Future<void> sendMeasurementsToFtp(ftpConnect, prefs) async {
+  Future<bool> sendMeasurementsToFtp(ftpConnect, prefs) async {
     var only_export_new_data = prefs.getBool('only_export_new_data') ?? true;
     var formattedDate =
     DateFormat('yyyy-MM-dd-HH:mm:ss').format(DateTime.now());
@@ -369,7 +414,9 @@ class _MyAppState extends State<MyApp> {
     File? file = File(p.join(tempDir.path, new_file_name));
     file = await measurementProvider.exportToCsv(file,
         only_export_new_data: only_export_new_data);
-    if (file != null) {
+    if (file == null) {
+      return false;
+    } else {
       displayInformation(context, 'Sending measurements');
       // file is null when there are no (new) measurements
       bool success = await ftpConnect.uploadFile(file);
@@ -377,7 +424,7 @@ class _MyAppState extends State<MyApp> {
         await ftpConnect.disconnect();
         Navigator.pop(context);
         showErrorDialog(context, 'Unable to upload measurements');
-        return;
+        return false;
       }
       var importedMeasurementFiles = prefs.getStringList('imported_measurement_files') ?? <String>[];
       importedMeasurementFiles.add(new_file_name);
@@ -385,34 +432,38 @@ class _MyAppState extends State<MyApp> {
           'imported_measurement_files', importedMeasurementFiles);
       // set all measurements to exported
       await measurementProvider.setAllExported();
+      return true;
     }
   }
 
   void synchroniseWithFtp(context) async {
-    var ftpConnect;
-    try {
-      showLoaderDialog(context, text: 'Synchronising with FTP server');
-      var prefs = await SharedPreferences.getInstance();
-      ftpConnect = await connectToFtp(context, prefs);
-      if (ftpConnect==null){
+    var success;
+    showLoaderDialog(context, text: 'Synchronising with FTP server');
+    var prefs = await SharedPreferences.getInstance();
+    var ftpConnect = await connectToFtp(context, prefs);
+    if (ftpConnect==null){
+      Navigator.pop(context);
+      return;
+    }
+
+    // send measurements
+    if (await measurementProvider.areThereMessagesToBeSent(prefs)) {
+      success = await sendMeasurementsToFtp(ftpConnect, prefs);
+      if (!success) {
         Navigator.pop(context);
         return;
       }
+    }
 
-      // send measurements
-      await sendMeasurementsToFtp(ftpConnect, prefs);
-
-      // download (new) locations and measurements
-      await downloadDataFromFtp(ftpConnect, context, prefs);
-
-    } catch (e) {
-      await ftpConnect.disconnect();
+    // download (new) locations and measurements
+    success = await downloadDataFromFtp(ftpConnect, context, prefs);
+    if (!success) {
       Navigator.pop(context);
-      showErrorDialog(context, e.toString());
       return;
     }
+
+    // finish up
     await ftpConnect.disconnect();
-    // close loading screen
     Navigator.pop(context);
     displayInformation(context, 'Synchronisation complete');
   }
@@ -438,7 +489,14 @@ class _MyAppState extends State<MyApp> {
         return false;
       }
       // read locations
-      await read_location_file(file);
+      try {
+        await read_location_file(file);
+      } catch (e) {
+        await ftpConnect.disconnect();
+        showErrorDialog(context, e.toString());
+        return false;
+      }
+
       // save locations
       save_locations(locations, inputFields);
       importedLocationFiles.add(name);
@@ -460,7 +518,13 @@ class _MyAppState extends State<MyApp> {
           return false;
         }
         // read measurements
-        measurementProvider.importFromCsv(file);
+        try {
+          measurementProvider.importFromCsv(file);
+        } catch (e) {
+          await ftpConnect.disconnect();
+          showErrorDialog(context, e.toString());
+          return false;
+        }
         importedMeasurementFiles.add(name);
         await prefs.setStringList('imported_measurement_files', importedMeasurementFiles);
       }
@@ -471,7 +535,7 @@ class _MyAppState extends State<MyApp> {
   void save_locations(locations, inputFields) async {
     var docsDir = await getApplicationDocumentsDirectory();
     var file = File(p.join(docsDir.path, 'locations.json'));
-    var location_file = locs.LocationFile(locations: locations,
+    var location_file = LocationFile(locations: locations,
         inputfields: inputFields);
     await file.writeAsString(json.encode(location_file.toJson()));
   }

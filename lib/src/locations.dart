@@ -4,24 +4,11 @@ import 'dart:convert';
 part 'locations.g.dart';
 
 @JsonSerializable()
-class LatLng {
-  LatLng({
-    required this.lat,
-    required this.lng,
-  });
-
-  factory LatLng.fromJson(Map<String, dynamic> json) => _$LatLngFromJson(json);
-  Map<String, dynamic> toJson() => _$LatLngToJson(this);
-
-  final double lat;
-  final double lng;
-}
-
-@JsonSerializable()
 class Location {
   Location({
-    required this.coords,
     required this.id,
+    this.lat,
+    this.lon,
     this.name,
     this.properties,
     this.photo,
@@ -30,8 +17,9 @@ class Location {
   factory Location.fromJson(Map<String, dynamic> json) => _$LocationFromJson(json);
   Map<String, dynamic> toJson() => _$LocationToJson(this);
 
-  final LatLng coords;
   final String id;
+  final double? lat;
+  final double? lon;
   final String? name;
   final List<Property>? properties;
   final String? photo;
@@ -65,6 +53,7 @@ class InputField {
     this.hint,
     this.name,
     this.options,
+    this.required,
   });
 
   factory InputField.fromJson(Map<String, dynamic> json) => _$InputFieldFromJson(json);
@@ -75,6 +64,7 @@ class InputField {
   final String? hint;
   final String? name;
   final List<String>? options;
+  final bool? required;
 }
 
 List<InputField> getDefaultInputFields(){
