@@ -39,7 +39,7 @@ dependencies:
   path:
   ftpconnect: ^1.0.0
   csv: ^5.0.0
-  flutter_pdfview: ^1.0.4
+  native_pdf_view: any
 
 dev_dependencies:
   flutter_test:

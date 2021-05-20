@@ -128,6 +128,9 @@ class _AddMeasurementsState extends State<AddMeasurements> {
             onPressed: () {
               for (var inputfield in widget.inputFields!){
                 if (values.containsKey(inputfield.id)){
+                  if (values[inputfield.id]!.isEmpty){
+                    continue;
+                  }
                   var measurement = Measurement(
                       location: widget.location.id,
                       datetime: now,
@@ -220,15 +223,37 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       ));
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.location.name ?? widget.location.id),
-        backgroundColor: Colors.green[700],
-        actions: actions,
-      ),
+    return WillPopScope(
+      onWillPop: () async {
+        var hasValues = false;
+        for (var value in values.values){
+          if (value.isNotEmpty){
+            hasValues = true;
+            break;
+          }
+        }
+        if (hasValues){
+          // ask if the user really wants to go back
+          var action = await showContinueDialog(context, 'All values will be deleted when going back. Do you still want to go back?',
+              yesButton:'yes', noButton: 'No', title: 'Ignore values?');
+          if (action == DialogAction.yes) {
+            return true;
+          } else {
+            return false;
+          }
+        }
+        return true;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.location.name ?? widget.location.id),
+          backgroundColor: Colors.green[700],
+          actions: actions,
+        ),
 
-      body:  ListView(
-        children: rows,
+        body:  ListView(
+          children: rows,
+        )
       )
     );
   }
@@ -241,7 +266,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
   }
 
   Future<void> displayPhoto(String name) async {
-    if (!name.endsWith('.jpg') & !name.endsWith('.png') & !name.endsWith('.jpg')){
+    if (!name.endsWith('.jpg') & !name.endsWith('.png') & !name.endsWith('.pdf')){
       showErrorDialog(context, 'Current file $name is not supported. Only jpg, png and pdf are supported');
       return;
     }
@@ -258,7 +283,8 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       }
       if (await ftpConnect.existFile(name)) {
         // Download photo
-        showLoaderDialog(context, text: 'Downloading $name');
+        showLoaderDialog(context, text: 'Downloading');
+        displayInformation(context, 'Downloading ' + name);
         var success = await ftpConnect.downloadFile(name, file);
         await ftpConnect.disconnect();
         Navigator.pop(context);

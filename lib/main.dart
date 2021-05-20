@@ -320,9 +320,14 @@ class _MyAppState extends State<MyApp> {
     // delete all locations
     locations.clear();
     inputFields = getDefaultInputFields();
-    //TODO: delete all data in the documents-directory (for the photos)
 
-    save_locations(locations, inputFields);
+    //delete all data in the documents-directory (for the photos)
+    var docsDir = await getApplicationDocumentsDirectory();
+    if(docsDir.existsSync()){
+      docsDir.deleteSync(recursive: true);
+    }
+    //save_locations(locations, inputFields);
+
     setState(() {
       setMarkers();
     });

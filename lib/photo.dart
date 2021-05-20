@@ -1,7 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_pdfview/flutter_pdfview.dart';
+import 'package:native_pdf_view/native_pdf_view.dart';
+import 'package:path/path.dart';
 
 class PhotoScreen extends StatelessWidget {
   PhotoScreen({key, required this.file}) : super(key: key);
@@ -12,22 +13,15 @@ class PhotoScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     var body;
     if (file.path.endsWith('.pdf')) {
+      final pdfController = PdfController(
+        document: PdfDocument.openFile(file.path),
+      );
       // display a pdf
-      body = PDFView(
-        filePath: file.path,
-        enableSwipe: true,
-        swipeHorizontal: true,
-        autoSpacing: false,
-        pageFling: false,
-        onError: (error) {
-          print(error.toString());
-        },
-        onPageError: (page, error) {
-          print('$page: ${error.toString()}');
-        },
+      body = PdfView(
+        controller: pdfController,
       );
     } else {
-      // display a picture
+      // display an image
       body = InteractiveViewer(
         minScale: 1,
         maxScale: 5,
@@ -39,7 +33,7 @@ class PhotoScreen extends StatelessWidget {
 
     return Scaffold(
         appBar: AppBar(
-          title: const Text('Photo'),
+          title: Text(basename(file.path)),
           backgroundColor: Colors.green[700],
         ),
         body: body,
