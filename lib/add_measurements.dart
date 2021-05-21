@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart' as p;
+import 'constants.dart';
 import 'ftp.dart';
 
 class AddMeasurements extends StatefulWidget {
@@ -31,6 +32,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
   static DateFormat date_format = DateFormat('dd-MM-yyyy');
   static DateFormat time_format = DateFormat('HH:mm:ss');
   List<Measurement> measurements = <Measurement>[];
+  var isLoading = false;
 
   @override
   void initState() {
@@ -47,6 +49,67 @@ class _AddMeasurementsState extends State<AddMeasurements> {
 
   @override
   Widget build(BuildContext context) {
+    return WillPopScope(
+      onWillPop: () async {
+        return checkToGoBack();
+      },
+      child: Scaffold(
+        appBar: buildAppBar(),
+        body:  Stack(
+          children: [
+            ListView(
+              padding: EdgeInsets.all(Constant.padding),
+              children: buildRows(),
+            ),
+            if (isLoading) buildLoadingIndicator(),
+          ],
+        )
+      )
+    );
+  }
+
+  AppBar buildAppBar() {
+    var actions = <Widget>[];
+    if (widget.location.photo != null){
+      actions.add(Padding(
+          padding: EdgeInsets.only(right: 20.0),
+          child: GestureDetector(
+            onTap: () {
+              displayPhoto(widget.location.photo!);
+            },
+            child: Icon(
+              Icons.photo,
+            ),
+          )
+      ));
+    }
+    if (widget.location.properties != null){
+      actions.add(Padding(
+          padding: EdgeInsets.only(right: 20.0),
+          child: GestureDetector(
+            onTap: () {
+              // Open the properties screen
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) {
+                  return PropertiesScreen(location: widget.location);
+                }),
+              );
+            },
+            child: Icon(
+              Icons.info,
+            ),
+          )
+      ));
+    }
+    return AppBar(
+      title: Text(widget.location.name ?? widget.location.id),
+      backgroundColor: Constant.primaryColor,
+      actions: actions,
+    );
+  }
+
+  List<Widget> buildRows(){
     var date = date_format.format(now);
     var time = time_format.format(now);
     final rows = <Widget>[];
@@ -124,28 +187,31 @@ class _AddMeasurementsState extends State<AddMeasurements> {
     rows.add(Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [Expanded(
-          child: ElevatedButton(
-            onPressed: () {
-              for (var inputfield in widget.inputFields!){
-                if (values.containsKey(inputfield.id)){
-                  if (values[inputfield.id]!.isEmpty){
-                    continue;
+            child: ElevatedButton(
+              onPressed: () {
+                for (var inputfield in widget.inputFields!){
+                  if (values.containsKey(inputfield.id)){
+                    if (values[inputfield.id]!.isEmpty){
+                      continue;
+                    }
+                    var measurement = Measurement(
+                        location: widget.location.id,
+                        datetime: now,
+                        type: inputfield.id,
+                        value:values[inputfield.id]!);
+                    widget.measurementProvider.insert(measurement);
                   }
-                  var measurement = Measurement(
-                      location: widget.location.id,
-                      datetime: now,
-                      type: inputfield.id,
-                      value:values[inputfield.id]!);
-                  widget.measurementProvider.insert(measurement);
                 }
-              }
 
-              // Navigate back to the map when tapped.
-              Navigator.pop(context);
-            },
-            child: Text('Done'),
-          )
-      )]
+                // Navigate back to the map when tapped.
+                Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(
+                primary: Constant.primaryColor,
+              ),
+              child: Text('Done'),
+            )
+        )]
     ));
 
     // Add previous measurements
@@ -173,89 +239,46 @@ class _AddMeasurementsState extends State<AddMeasurements> {
               child: Text(measurement.type),
             ),
             Expanded(
-              flex: 1,
-              child: ElevatedButton(
-                onPressed: () async {
-                  var text = 'Are you sure you want to delete this measurement?';
-                  var action = await showContinueDialog(context, text);
-                  if (action == DialogAction.yes) {
-                    deleteMeasurement(measurement);
-                  }
-                },
-                child: Text('x'),
-              )
+                flex: 1,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    var text = 'Are you sure you want to delete this measurement?';
+                    var action = await showContinueDialog(context, text);
+                    if (action == DialogAction.yes) {
+                      deleteMeasurement(measurement);
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    primary: Constant.primaryColor,
+                  ),
+                  child: Text('x'),
+                )
             ),
           ]
       ));
     }
+    return rows;
+  }
 
-    var actions = <Widget>[];
-    if (widget.location.photo != null){
-      actions.add(Padding(
-          padding: EdgeInsets.only(right: 20.0),
-          child: GestureDetector(
-            onTap: () {
-              displayPhoto(widget.location.photo!);
-            },
-            child: Icon(
-              Icons.photo,
-            ),
-          )
-      ));
+  Future<bool> checkToGoBack() async {
+    var hasValues = false;
+    for (var value in values.values){
+      if (value.isNotEmpty){
+        hasValues = true;
+        break;
+      }
     }
-    if (widget.location.properties != null){
-      actions.add(Padding(
-        padding: EdgeInsets.only(right: 20.0),
-        child: GestureDetector(
-          onTap: () {
-            // Open the properties screen
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) {
-                return PropertiesScreen(location: widget.location);
-              }),
-            );
-          },
-          child: Icon(
-            Icons.info,
-          ),
-        )
-      ));
-    }
-
-    return WillPopScope(
-      onWillPop: () async {
-        var hasValues = false;
-        for (var value in values.values){
-          if (value.isNotEmpty){
-            hasValues = true;
-            break;
-          }
-        }
-        if (hasValues){
-          // ask if the user really wants to go back
-          var action = await showContinueDialog(context, 'All values will be deleted when going back. Do you still want to go back?',
-              yesButton:'yes', noButton: 'No', title: 'Ignore values?');
-          if (action == DialogAction.yes) {
-            return true;
-          } else {
-            return false;
-          }
-        }
+    if (hasValues){
+      // ask if the user really wants to go back
+      var action = await showContinueDialog(context, 'All values will be deleted when going back. Do you still want to go back?',
+          yesButton:'yes', noButton: 'No', title: 'Ignore values?');
+      if (action == DialogAction.yes) {
         return true;
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(widget.location.name ?? widget.location.id),
-          backgroundColor: Colors.green[700],
-          actions: actions,
-        ),
-
-        body:  ListView(
-          children: rows,
-        )
-      )
-    );
+      } else {
+        return false;
+      }
+    }
+    return true;
   }
 
   void deleteMeasurement(Measurement measurement){
@@ -275,24 +298,26 @@ class _AddMeasurementsState extends State<AddMeasurements> {
     File? file = File(p.join(docsDir.path, name));
     // check if photo exists on ftp-server
     if (!file.existsSync()){
+      setState(() {isLoading = true;});
       var prefs = await SharedPreferences.getInstance();
       var ftpConnect = await connectToFtp(context, prefs);
       if (ftpConnect == null) {
+        setState(() {isLoading = false;});
         showErrorDialog(context, 'Unable to connect to ftp-server');
         return;
       }
       if (await ftpConnect.existFile(name)) {
         // Download photo
-        showLoaderDialog(context, text: 'Downloading');
         displayInformation(context, 'Downloading ' + name);
         var success = await ftpConnect.downloadFile(name, file);
         await ftpConnect.disconnect();
-        Navigator.pop(context);
+        setState(() {isLoading = false;});
         if (!success){
           showErrorDialog(context, 'Unable to download ' + name);
           return;
         }
       } else {
+        setState(() {isLoading = false;});
         showErrorDialog(context, 'Unable to find on ftp-server: ' + name);
         return;
       }

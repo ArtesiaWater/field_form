@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:native_pdf_view/native_pdf_view.dart';
 import 'package:path/path.dart';
 
+import 'constants.dart';
+
 class PhotoScreen extends StatelessWidget {
   PhotoScreen({key, required this.file}) : super(key: key);
 
@@ -34,7 +36,7 @@ class PhotoScreen extends StatelessWidget {
     return Scaffold(
         appBar: AppBar(
           title: Text(basename(file.path)),
-          backgroundColor: Colors.green[700],
+          backgroundColor: Constant.primaryColor,
         ),
         body: body,
     );

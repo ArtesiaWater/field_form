@@ -6,14 +6,18 @@ void showLoaderDialog(BuildContext context, {String text='Loading...'}) {
   showDialog(barrierDismissible: false,
     context: context,
     builder: (BuildContext context) {
-      return AlertDialog(
-        content: Row(
-          children: [
-            CircularProgressIndicator(),
-            Container(margin: EdgeInsets.only(left: 7), child: Text(text)),
-          ],),
-      );
+      return buildLoadingIndicator(text: text);
     },
+  );
+}
+
+AlertDialog buildLoadingIndicator({String text='Loading...'}){
+  return AlertDialog(
+    content: Row(
+      children: [
+        CircularProgressIndicator(),
+        Container(margin: EdgeInsets.only(left: 7), child: Text(text)),
+      ],),
   );
 }
 

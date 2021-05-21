@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:settings_ui/settings_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'constants.dart';
+import 'dialogs.dart';
 import 'ftp.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -10,8 +12,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool  value = true;
-
+  var isLoading = false;
   SharedPreferences? prefs;
 
   @override
@@ -27,76 +28,90 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: AppBar(
+          title: Text('Settings'),
+          backgroundColor: Constant.primaryColor,
+      ),
+
+      body:  Stack(
+        children: [
+          buildSettings(),
+          if (isLoading) buildLoadingIndicator(),
+        ],
+      )
+    );
+  }
+
+  SettingsList buildSettings(){
     var password = '';
     if (prefs != null) {
       if (prefs!.containsKey('ftp_password')) {
         password = prefs!.getString('ftp_password')!;
       };
     }
-    return Scaffold(
-        appBar: AppBar(
-          title: Text('Settings'),
-      ),
-
-      body:  SettingsList(
-        sections: [
-          SettingsSection(
-            title: 'FTP',
-            tiles: [
-              SettingsTile(
-                title: 'Hostname',
-                subtitle: prefs?.getString('ftp_hostname'),
-                leading: Icon(Icons.cloud),
-                onPressed: (BuildContext context) {
-                  editStringSetting(context, 'ftp_hostname', 'Change ftp hostname');
-                },
-              ),
-              SettingsTile(
-                title: 'Username',
-                subtitle: prefs?.getString('ftp_username'),
-                leading: Icon(Icons.person),
-                onPressed: (BuildContext context) {
-                  editStringSetting(context, 'ftp_username', 'Change ftp username');
-                },
-              ),
-              SettingsTile(
-                title: 'Password',
-                subtitle: '*' * password.length,
-                subtitleTextStyle: TextStyle(),
-                leading: Icon(Icons.lock),
-                onPressed: (BuildContext context) {
-                  editStringSetting(context, 'ftp_password', 'Change ftp password', password: true);
-                },
-              ),
-              SettingsTile(
-                title: 'Path',
-                subtitle: prefs?.getString('ftp_path'),
-                leading: Icon(Icons.folder),
-                onPressed: (BuildContext context) async {
-                  var ftpConnect = await connectToFtp(context, prefs, path:'');
-                  var ftp_path = await chooseFtpPath(ftpConnect, context, prefs);
-                  if (ftp_path != null) {
-                    setState(() {
-                      prefs!.setString('ftp_path', ftp_path);
-                    });
-                  }
-                  //editStringSetting(context, 'ftp_path', 'Change ftp path');
-                },
-              ),
-              SettingsTile.switchTile(
-                title: 'Only export new measurements',
-                leading: Icon(Icons.fiber_new),
-                switchValue: prefs?.getBool('only_export_new_data') ?? true,
-                onToggle: (bool value) {
+    return SettingsList(
+      sections: [
+        SettingsSection(
+          title: 'FTP',
+          tiles: [
+            SettingsTile(
+              title: 'Hostname',
+              subtitle: prefs?.getString('ftp_hostname'),
+              leading: Icon(Icons.cloud),
+              onPressed: (BuildContext context) {
+                editStringSetting(context, 'ftp_hostname', 'Change ftp hostname');
+              },
+            ),
+            SettingsTile(
+              title: 'Username',
+              subtitle: prefs?.getString('ftp_username'),
+              leading: Icon(Icons.person),
+              onPressed: (BuildContext context) {
+                editStringSetting(context, 'ftp_username', 'Change ftp username');
+              },
+            ),
+            SettingsTile(
+              title: 'Password',
+              subtitle: '*' * password.length,
+              subtitleTextStyle: TextStyle(),
+              leading: Icon(Icons.lock),
+              onPressed: (BuildContext context) {
+                editStringSetting(context, 'ftp_password', 'Change ftp password', password: true);
+              },
+            ),
+            SettingsTile(
+              title: 'Path',
+              subtitle: prefs?.getString('ftp_path'),
+              leading: Icon(Icons.folder),
+              onPressed: (BuildContext context) async {
+                setState(() {isLoading = true;});
+                var ftpConnect = await connectToFtp(context, prefs, path:'');
+                var ftp_path = await chooseFtpPath(ftpConnect, context, prefs);
+                if (ftp_path != null) {
                   setState(() {
-                    prefs!.setBool('only_export_new_data', value);
+                    prefs!.setString('ftp_path', ftp_path);
+                    isLoading = false;
                   });
-                },
-              ),
-            ],
-          ),
-        ],
-      )
+                } else {
+                  setState(() {isLoading = false;});
+                }
+                //editStringSetting(context, 'ftp_path', 'Change ftp path');
+              },
+            ),
+            SettingsTile.switchTile(
+              title: 'Only export new measurements',
+              leading: Icon(Icons.fiber_new),
+              switchValue: prefs?.getBool('only_export_new_data') ?? true,
+              onToggle: (bool value) {
+                setState(() {
+                  prefs!.setBool('only_export_new_data', value);
+                });
+              },
+            ),
+          ],
+        ),
+      ],
     );
   }
 

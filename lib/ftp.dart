@@ -14,17 +14,15 @@ Future<FTPConnect?> connectToFtp(context, prefs, {path}) async {
     showErrorDialog(context, 'Cannot connect of ftp-server');
     return null;
   }
+  displayInformation(context, 'Connected');
   path ??= prefs.getString('ftp_path') ?? '';
   if (path.isEmpty) {
     // we do not need to change path
-    displayInformation(context, 'Connected');
     return ftpConnect;
   }
   // we do need to change path
-  displayInformation(context, 'Connected, changing path');
   success = await changeDirectory(ftpConnect, context, path);
   if (!success){
-    await ftpConnect.disconnect();
     return null;
   }
   return ftpConnect;
@@ -41,13 +39,11 @@ Future<bool> changeDirectory(ftpConnect, context, path) async {
 
 Future<String?> chooseFtpPath(ftpConnect, context, prefs) async {
   var names;
-  showLoaderDialog(context);
   try {
     //Get directory content
     names = await ftpConnect.listDirectoryContentOnlyNames();
   } catch (e) {
     await ftpConnect.disconnect();
-    Navigator.pop(context);
     showErrorDialog(context, e.toString());
     return null;
   }
@@ -60,8 +56,6 @@ Future<String?> chooseFtpPath(ftpConnect, context, prefs) async {
       child: Text(name),
     ));
   }
-  // remove loader dialog
-  Navigator.pop(context);
 
   var action = await showDialog(
       context: context,

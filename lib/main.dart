@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:field_form/constants.dart';
 import 'package:field_form/settings.dart';
 import 'package:field_form/src/measurements.dart';
 import 'package:file_picker/file_picker.dart';
@@ -26,31 +27,138 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  final Map<String, Marker> markers = {};
+  final markers = <Marker>[];
   var locations = <Location>[];
   var inputFields = <InputField>[];
-  CameraPosition? initialCameraPosition;
+  var isLoading = false;
+  SharedPreferences? prefs;
   late MeasurementProvider measurementProvider;
+  var mapController;
+  static const maptypes = {
+    'normal': MapType.normal,
+    'satellite': MapType.satellite,
+    'hybrid': MapType.hybrid,
+    'terrain': MapType.terrain
+  };
 
   @override
   void initState() {
     super.initState();
-    getInitialCameraPosition();
+    getprefs();
     measurementProvider = MeasurementProvider();
     measurementProvider.open();
   }
 
+  void getprefs() async{
+    prefs = await SharedPreferences.getInstance();
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (initialCameraPosition == null) {
+    if (prefs == null) {
       return buildLoadingScreen();
     } else {
       return Scaffold(
+        resizeToAvoidBottomInset: false,
         appBar: buildAppBar(),
         drawer: buildDrawer(),
-        body: buildMap(),
+        body: Stack(
+          children: [
+            buildMap(),
+            buildShowAllMarkerButton(),
+            buildChangeMapTypeButton(),
+            if (isLoading) buildLoadingIndicator(),
+          ]
+        ),
       );
     }
+  }
+
+  Align buildChangeMapTypeButton(){
+    return Align(
+      alignment: Alignment.topCenter,
+      child: FloatingActionButton.extended(
+        heroTag: 'map_type_button',
+        onPressed: () async {
+          // choose maptype
+          var options = <Widget>[];
+          for (var key in maptypes.keys){
+            var icon;
+            if ((key == 'satellite') | (key == 'hybrid')) {
+              icon = Icon(Icons.satellite);
+            } else if (key == 'terrain') {
+              icon = Icon(Icons.terrain);
+            } else {
+              icon = Icon(Icons.map);
+            }
+            options.add(SimpleDialogOption(
+              onPressed: () {
+                Navigator.of(context).pop(key);
+              },
+              child: Row(
+                children:[
+                  icon,
+                  SizedBox(width: 10),
+                  Text(key),
+                ]
+              )
+            ));
+          }
+
+          var action = await showDialog(
+              context: context,
+              builder: (context) {
+                return SimpleDialog(
+                  title: const Text('Choose a maptype'),
+                  children: options,
+                );
+              }
+          );
+          if (action != null) {
+            setState(() {
+              prefs!.setString('map_type', action);
+            });
+          }
+        },
+        shape: RoundedRectangleBorder(),
+        backgroundColor: Colors.transparent,
+        label: Text(prefs!.getString('map_type') ?? 'normal'),
+      )
+    );
+  }
+
+  Align buildShowAllMarkerButton(){
+    return Align(
+      alignment: Alignment.topRight,
+      child: FloatingActionButton(
+        heroTag: 'show_all_marker_button',
+        onPressed: () {
+          // Zoom out to all locations
+          if (markers.length > 1){
+            double x0, x1, y0, y1;
+            x0 = x1 = markers[0].position.latitude;
+            y0 = y1 = markers[0].position.longitude;
+            for (var marker in markers) {
+              var latLng = marker.position;
+              if (latLng.latitude > x1) x1 = latLng.latitude;
+              if (latLng.latitude < x0) x0 = latLng.latitude;
+              if (latLng.longitude > y1) y1 = latLng.longitude;
+              if (latLng.longitude < y0) y0 = latLng.longitude;
+            }
+            var bounds = LatLngBounds(northeast: LatLng(x1, y1), southwest: LatLng(x0, y0));
+            mapController.animateCamera(CameraUpdate.newLatLngBounds(bounds, 20));
+          } else if (markers.length == 1) {
+            var latLng = LatLng(markers[0].position.latitude, markers[0].position.longitude);
+            mapController.animateCamera(CameraUpdate.newLatLng(latLng));
+          }
+        },
+        shape: RoundedRectangleBorder(),
+        mini: true,
+        backgroundColor: Colors.transparent,
+        child: const Icon(Icons.zoom_out_map),
+      )
+    );
   }
 
   Scaffold buildLoadingScreen(){
@@ -70,7 +178,7 @@ class _MyAppState extends State<MyApp> {
   AppBar buildAppBar() {
     return AppBar(
       title: const Text('FieldForm'),
-      backgroundColor: Colors.green[700],
+      backgroundColor: Constant.primaryColor,
       actions: <Widget>[
         Padding(
             padding: EdgeInsets.only(right: 20.0),
@@ -174,11 +282,22 @@ class _MyAppState extends State<MyApp> {
   }
 
   GoogleMap buildMap() {
+    var lat = prefs!.getDouble('latitude') ?? 30;
+    var lng = prefs!.getDouble('longitude') ?? 0;
+    var zoom = prefs!.getDouble('zoom') ?? 2;
+    var initialCameraPosition = CameraPosition(
+      target: LatLng(lat, lng),
+      zoom: zoom,
+    );
+    var mapType = maptypes[prefs!.getString('map_type') ?? 'normal'];
+
     return GoogleMap(
       onMapCreated: _onMapCreated,
       myLocationEnabled: true,
-      initialCameraPosition: initialCameraPosition!,
-      markers: markers.values.toSet(),
+      initialCameraPosition: initialCameraPosition,
+      compassEnabled: true,
+      markers: markers.toSet(),
+      mapType: mapType!,
       onLongPress: (latlng) {
         setState(() {
           final id = 'new_marker';
@@ -194,7 +313,7 @@ class _MyAppState extends State<MyApp> {
             icon: BitmapDescriptor.defaultMarkerWithHue(
                 BitmapDescriptor.hueBlue),
           );
-          markers[id] = marker;
+          markers.add(marker);
         });
       },
       onCameraMove: (CameraPosition position) async {
@@ -207,6 +326,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _onMapCreated(GoogleMapController controller) async {
+    mapController = controller;
     //final location_file = await getLocationFile(context);
     var docsDir = await getApplicationDocumentsDirectory();
     var file = File(p.join(docsDir.path, 'locations.json'));
@@ -242,7 +362,6 @@ class _MyAppState extends State<MyApp> {
       if ((location.lat == null) | (location.lon==null)){
         continue;
       }
-      print(location.lat);
       final marker = Marker(
         markerId: MarkerId(location.id),
         position: LatLng(location.lat!, location.lon!),
@@ -261,19 +380,8 @@ class _MyAppState extends State<MyApp> {
           },
         ),
       );
-      markers[location.id] = marker;
+      markers.add(marker);
     }
-  }
-
-  void getInitialCameraPosition() async {
-    var prefs = await SharedPreferences.getInstance();
-    setState(() {
-      initialCameraPosition = CameraPosition(
-        target: LatLng(prefs.getDouble('latitude') ?? 30,
-            prefs.getDouble('longitude') ?? 0),
-        zoom: prefs.getDouble('zoom') ?? 2,
-      );
-    });
   }
 
   void choose_file() async {
@@ -339,12 +447,12 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> switchFtpFolder(context) async{
-    showLoaderDialog(context);
+    setState(() {isLoading = true;});
     // connect to ftp folder
     var prefs = await SharedPreferences.getInstance();
     var ftpConnect = await connectToFtp(context, prefs, path:'');
     if (ftpConnect == null) {
-      Navigator.pop(context);
+      setState(() {isLoading = false;});
       return;
     }
     // First upload existing measurements
@@ -360,60 +468,57 @@ class _MyAppState extends State<MyApp> {
         if (path.isNotEmpty) {
           var success = await changeDirectory(ftpConnect, context, path);
           if (!success){
-            Navigator.pop(context);
+            setState(() {isLoading = false;});
             return;
           }
         }
         var success = await sendMeasurementsToFtp(ftpConnect, prefs);
         if (!success) {
-          Navigator.pop(context);
+          setState(() {isLoading = false;});
           return;
         }
         if (path.isNotEmpty) {
           // Go to root of ftp server again
-          var success = ftpConnect.changeDirectory('..');
+          var success = await changeDirectory(ftpConnect, context, '..');
           if (!success){
-            await ftpConnect.disconnect();
-            Navigator.pop(context);
+            setState(() {isLoading = false;});
             return;
           }
         }
       }
     }
-    Navigator.pop(context);
+
     // Choose FTP folder
     var path = await chooseFtpPath(ftpConnect, context, prefs);
     if (path != null) {
-      showLoaderDialog(context);
-
       // Delete all data
       deleteAllData();
 
       // Go to the specified folder
       var success = await changeDirectory(ftpConnect, context, path);
       if (!success) {
-        Navigator.pop(context);
+        setState(() {isLoading = false;});
         return;
       }
 
       // sync with the new ftp folder
       success = await downloadDataFromFtp(ftpConnect, context, prefs);
       if (!success) {
-        Navigator.pop(context);
+        setState(() {isLoading = false;});
         return;
       }
 
-      // finish up
-      await ftpConnect.disconnect();
-      Navigator.pop(context);
       displayInformation(context, 'Synchronisation complete');
     }
+    // finish up
+    await ftpConnect.disconnect();
+    setState(() {isLoading = false;});
   }
 
   Future<bool> sendMeasurementsToFtp(ftpConnect, prefs) async {
     var only_export_new_data = prefs.getBool('only_export_new_data') ?? true;
     var formattedDate =
-    DateFormat('yyyy-MM-dd-HH:mm:ss').format(DateTime.now());
+    DateFormat('yyyyMMdd-HHmmss').format(DateTime.now());
     var new_file_name = 'measurements-' + formattedDate + '.csv';
     var tempDir = await getTemporaryDirectory();
     File? file = File(p.join(tempDir.path, new_file_name));
@@ -427,7 +532,6 @@ class _MyAppState extends State<MyApp> {
       bool success = await ftpConnect.uploadFile(file);
       if (!success) {
         await ftpConnect.disconnect();
-        Navigator.pop(context);
         showErrorDialog(context, 'Unable to upload measurements');
         return false;
       }
@@ -443,11 +547,12 @@ class _MyAppState extends State<MyApp> {
 
   void synchroniseWithFtp(context) async {
     var success;
-    showLoaderDialog(context, text: 'Synchronising with FTP server');
+    setState(() {isLoading = true;});
+    //showLoaderDialog(context, text: 'Synchronising with FTP server');
     var prefs = await SharedPreferences.getInstance();
     var ftpConnect = await connectToFtp(context, prefs);
     if (ftpConnect==null){
-      Navigator.pop(context);
+      setState(() {isLoading = false;});
       return;
     }
 
@@ -455,7 +560,7 @@ class _MyAppState extends State<MyApp> {
     if (await measurementProvider.areThereMessagesToBeSent(prefs)) {
       success = await sendMeasurementsToFtp(ftpConnect, prefs);
       if (!success) {
-        Navigator.pop(context);
+        setState(() {isLoading = false;});
         return;
       }
     }
@@ -463,13 +568,13 @@ class _MyAppState extends State<MyApp> {
     // download (new) locations and measurements
     success = await downloadDataFromFtp(ftpConnect, context, prefs);
     if (!success) {
-      Navigator.pop(context);
+      setState(() {isLoading = false;});
       return;
     }
 
     // finish up
     await ftpConnect.disconnect();
-    Navigator.pop(context);
+    setState(() {isLoading = false;});
     displayInformation(context, 'Synchronisation complete');
   }
 
@@ -480,11 +585,20 @@ class _MyAppState extends State<MyApp> {
 
     displayInformation(context, 'Retrieving file list');
     var names = await ftpConnect.listDirectoryContentOnlyNames();
+
+    names.sort((a, b) => a.toString().compareTo(b.toString()));
+
     displayInformation(context, 'Retrieved files');
 
-    var name = 'locations.json';
-    if (names.contains(name) & !importedLocationFiles.contains(name)) {
-      displayInformation(context, 'Downloading locations.json');
+    // Read last locations-file
+    var name = null;
+    for (var iname in names) {
+      if (iname.startsWith('locations') & iname.endsWith('.json')){
+        name = iname;
+      }
+    }
+    if ((name != null) & !importedLocationFiles.contains(name)) {
+      displayInformation(context, 'Downloading $name');
       // download locations
       var file = File(p.join(tempDir.path, name));
       bool success = await ftpConnect.downloadFile(name, file);

@@ -5,6 +5,7 @@ part 'locations.g.dart';
 
 @JsonSerializable()
 class Location {
+  // TODO add sublocations or clusters
   Location({
     required this.id,
     this.lat,
