@@ -18,6 +18,8 @@ import 'ftp.dart';
 import 'src/locations.dart';
 import 'package:path/path.dart' as p;
 
+// TODO: Make a manual
+
 //void main() => runApp(MyApp());
 void main() => runApp(MaterialApp(home: MyApp()));
 
@@ -358,7 +360,7 @@ class _MyAppState extends State<MyApp> {
 
   void setMarkers(){
     markers.clear();
-    for (final location in locations) {
+    for (var location in locations) {
       if ((location.lat == null) | (location.lon==null)){
         continue;
       }
@@ -367,8 +369,39 @@ class _MyAppState extends State<MyApp> {
         position: LatLng(location.lat!, location.lon!),
         infoWindow: InfoWindow(
           title: location.name,
-          onTap: () {
-            Navigator.push(
+          onTap: () async {
+            if (location.sublocations != null) {
+              if (location.sublocations!.length == 1){
+                location = location.sublocations![0];
+              } else {
+                // choose a sublocation
+                var options = <Widget>[];
+                for (var sublocation in location.sublocations!){
+                  var name = sublocation.name ?? sublocation.id;
+                  options.add(SimpleDialogOption(
+                    onPressed: () {
+                      Navigator.of(context).pop(sublocation);
+                    },
+                    child: Text(name),
+                  ));
+                }
+
+                var result = await showDialog(
+                    context: context,
+                    builder: (context) {
+                      return SimpleDialog(
+                        title: const Text('Choose a sublocation'),
+                        children: options,
+                      );
+                    }
+                );
+                if (result == null) {
+                  return;
+                }
+                location = result;
+              }
+            }
+            await Navigator.push(
               context,
               MaterialPageRoute(builder: (context) {
                 return AddMeasurements(
@@ -462,7 +495,6 @@ class _MyAppState extends State<MyApp> {
           yesButton: 'Yes', noButton: 'No', title: 'Unsent measurements');
       var ftpConnect;
       if (action == DialogAction.yes){
-
         // connect to the current ftp folder and send the measurements
         var path = prefs.getString('ftp_path') ?? '';
         if (path.isNotEmpty) {
@@ -591,7 +623,7 @@ class _MyAppState extends State<MyApp> {
     displayInformation(context, 'Retrieved files');
 
     // Read last locations-file
-    var name = null;
+    var name;
     for (var iname in names) {
       if (iname.startsWith('locations') & iname.endsWith('.json')){
         name = iname;
@@ -622,6 +654,7 @@ class _MyAppState extends State<MyApp> {
       await prefs.setStringList('imported_location_files', importedLocationFiles);
     }
 
+    // TODO: first collect all measurements, then add to database
     for (var name in names) {
       if (name.startsWith('measurements')) {
         if (importedMeasurementFiles.contains(name)){
@@ -682,6 +715,7 @@ class _MyAppState extends State<MyApp> {
 
 
 Future newLocationDialog(BuildContext context, latlng, locations) async {
+  //TODO: Finish the new-location dialog
   var teamName = '';
   return showDialog(
     context: context,

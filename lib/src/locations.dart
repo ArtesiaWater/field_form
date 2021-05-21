@@ -5,7 +5,7 @@ part 'locations.g.dart';
 
 @JsonSerializable()
 class Location {
-  // TODO add sublocations or clusters
+  // TODO: add groups
   Location({
     required this.id,
     this.lat,
@@ -13,6 +13,7 @@ class Location {
     this.name,
     this.properties,
     this.photo,
+    this.sublocations,
   });
 
   factory Location.fromJson(Map<String, dynamic> json) => _$LocationFromJson(json);
@@ -24,6 +25,7 @@ class Location {
   final String? name;
   final List<Property>? properties;
   final String? photo;
+  final List<Location>? sublocations;
 }
 
 @JsonSerializable()

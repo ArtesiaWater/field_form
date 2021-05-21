@@ -16,6 +16,9 @@ Location _$LocationFromJson(Map<String, dynamic> json) {
         ?.map((e) => Property.fromJson(e as Map<String, dynamic>))
         .toList(),
     photo: json['photo'] as String?,
+    sublocations: (json['sublocations'] as List<dynamic>?)
+        ?.map((e) => Location.fromJson(e as Map<String, dynamic>))
+        .toList(),
   );
 }
 
@@ -26,6 +29,7 @@ Map<String, dynamic> _$LocationToJson(Location instance) => <String, dynamic>{
       'name': instance.name,
       'properties': instance.properties,
       'photo': instance.photo,
+      'sublocations': instance.sublocations,
     };
 
 LocationFile _$LocationFileFromJson(Map<String, dynamic> json) {
