@@ -19,6 +19,12 @@ import 'src/locations.dart';
 import 'package:path/path.dart' as p;
 
 // TODO: Make a manual
+// TODO: Show last measured locations
+// TODO: Test on iOS
+// TODO: Generate app-icons
+// TODO: Implement groups and colors of locations (HHNK)
+// TODO: Minimal and maximal values (HHNK)
+// TODO: Add localisation
 
 //void main() => runApp(MyApp());
 void main() => runApp(MaterialApp(home: MyApp()));
@@ -32,6 +38,7 @@ class _MyAppState extends State<MyApp> {
   final markers = <Marker>[];
   var locations = <Location>[];
   var inputFields = <InputField>[];
+  var groups = <String, Group>{};
   var isLoading = false;
   SharedPreferences? prefs;
   late MeasurementProvider measurementProvider;
@@ -239,6 +246,37 @@ class _MyAppState extends State<MyApp> {
             leading: Icon(Icons.reset_tv),
           ),
           ListTile(
+            title: Text('Choose groups'),
+            onTap: () async {
+              // Close the drawer
+              Navigator.pop(context);
+              final items = <MultiSelectDialogItem<String>>[];
+              groups.forEach((id, group){
+                var label = group.name ?? id;
+                items.add(MultiSelectDialogItem(id, label));
+              });
+              final initialSelectedValues = prefs!.getStringList('selected_groups') ?? groups.keys.toList();
+              final selectedGroups = await showDialog<Set<String>>(
+                context: context,
+                builder: (BuildContext context) {
+                  return MultiSelectDialog(
+                    items: items,
+                    initialSelectedValues: initialSelectedValues.toSet(),
+                  );
+                },
+              );
+
+              print(selectedGroups);
+              if (selectedGroups != null) {
+                prefs!.setStringList('selected_groups', selectedGroups.toList());
+                setState(() {
+                  setMarkers();
+                });
+              }
+            },
+            leading: Icon(Icons.group_work)
+          ),
+          ListTile(
             title: Text('Delete all data'),
             onTap: () async {
               // Close the drawer
@@ -353,20 +391,101 @@ class _MyAppState extends State<MyApp> {
     } else {
       inputFields = location_file.inputfields!;
     }
+    if (location_file.groups == null) {
+      groups = <String, Group>{};
+    } else {
+      groups = location_file.groups!;
+    }
     setState(() {
       setMarkers();
     });
   }
 
+  BitmapDescriptor? getIconFromString(String? color) {
+    if (color == null) {
+      return null;
+    }
+    var hue;
+    if (color[0] == '#') {
+      // HEX color
+      try {
+        var col = Color(int.parse(color.substring(1, 7), radix: 16) + 0xFF000000);
+        hue = HSLColor.fromColor(col).hue;
+      } catch (e) {
+        return null;
+      }
+    } else {
+      switch (color){
+        case 'red':
+          hue = BitmapDescriptor.hueRed;
+          break;
+        case 'orange':
+          hue = BitmapDescriptor.hueOrange;
+          break;
+        case 'yellow':
+          hue = BitmapDescriptor.hueYellow;
+          break;
+        case 'green':
+          hue = BitmapDescriptor.hueGreen;
+          break;
+        case 'cyan':
+          hue = BitmapDescriptor.hueCyan;
+          break;
+        case 'azure':
+          hue = BitmapDescriptor.hueAzure;
+          break;
+        case 'blue':
+          hue = BitmapDescriptor.hueBlue;
+          break;
+        case 'violet':
+          hue = BitmapDescriptor.hueViolet;
+          break;
+        case 'magenta':
+          hue = BitmapDescriptor.hueOrange;
+          break;
+        case 'rose':
+          hue = BitmapDescriptor.hueRose;
+          break;
+        default:
+          return null;
+      }
+    }
+    return BitmapDescriptor.defaultMarkerWithHue(hue);
+  }
+
+  BitmapDescriptor getIconForLocation(Location location, groups){
+    var icon = getIconFromString(location.color);
+    if (icon == null) {
+      if (location.group == null) {
+        return BitmapDescriptor.defaultMarker;
+      } else if (groups.containsKey(location.group)) {
+        var group = groups[location.group];
+        icon = getIconFromString(group.color);
+      }
+    }
+    if (icon == null) {
+      return BitmapDescriptor.defaultMarker;
+    }
+    return icon;
+  }
+
   void setMarkers(){
     markers.clear();
+    final selectedGroups = prefs!.getStringList('selected_groups') ?? groups.keys.toList();
     for (var location in locations) {
       if ((location.lat == null) | (location.lon==null)){
         continue;
       }
+      if (location.group != null){
+        if (!selectedGroups.contains(location.group)) {
+          continue;
+        }
+      }
+      var icon = getIconForLocation(location, groups);
       final marker = Marker(
         markerId: MarkerId(location.id),
         position: LatLng(location.lat!, location.lon!),
+        icon: icon,
         infoWindow: InfoWindow(
           title: location.name,
           onTap: () async {
@@ -461,6 +580,7 @@ class _MyAppState extends State<MyApp> {
     // delete all locations
     locations.clear();
     inputFields = getDefaultInputFields();
+    groups = <String, Group>{};
 
     //delete all data in the documents-directory (for the photos)
     var docsDir = await getApplicationDocumentsDirectory();
@@ -649,7 +769,7 @@ class _MyAppState extends State<MyApp> {
       }
 
       // save locations
-      save_locations(locations, inputFields);
+      save_locations(locations, inputFields, groups);
       importedLocationFiles.add(name);
       await prefs.setStringList('imported_location_files', importedLocationFiles);
     }
@@ -684,11 +804,12 @@ class _MyAppState extends State<MyApp> {
     return true;
   }
 
-  void save_locations(locations, inputFields) async {
+  void save_locations(locations, inputFields, groups) async {
     var docsDir = await getApplicationDocumentsDirectory();
     var file = File(p.join(docsDir.path, 'locations.json'));
     var location_file = LocationFile(locations: locations,
-        inputfields: inputFields);
+        inputfields: inputFields,
+        groups: groups);
     await file.writeAsString(json.encode(location_file.toJson()));
   }
 

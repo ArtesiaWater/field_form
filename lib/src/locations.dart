@@ -14,6 +14,8 @@ class Location {
     this.properties,
     this.photo,
     this.sublocations,
+    this.group,
+    this.color,
   });
 
   factory Location.fromJson(Map<String, dynamic> json) => _$LocationFromJson(json);
@@ -23,24 +25,30 @@ class Location {
   final double? lat;
   final double? lon;
   final String? name;
-  final List<Property>? properties;
+  final Map<String, dynamic>? properties;
   final String? photo;
   final List<Location>? sublocations;
+  final String? group;
+  final String? color;
 }
 
 @JsonSerializable()
 class LocationFile {
   LocationFile({
+    this.settings,
+    this.inputfields,
+    this.groups,
     this.locations,
-    this.inputfields
   });
 
   factory LocationFile.fromJson(Map<String, dynamic> json) =>
       _$LocationFileFromJson(json);
   Map<String, dynamic> toJson() => _$LocationFileToJson(this);
 
-  final List<Location>? locations;
+  final Map<String, String>? settings;
   final List<InputField>? inputfields;
+  final Map<String, Group>? groups;
+  final List<Location>? locations;
 }
 
 Future<LocationFile> getLocationFile(context) async {
@@ -91,4 +99,32 @@ class Property {
 
   final String name;
   final String value;
+}
+
+@JsonSerializable()
+class Setting {
+  Setting({
+    required this.name,
+    required this.value
+  });
+
+  factory Setting.fromJson(Map<String, dynamic> json) => _$SettingFromJson(json);
+  Map<String, dynamic> toJson() => _$SettingToJson(this);
+
+  final String name;
+  final String value;
+}
+
+@JsonSerializable()
+class Group {
+  Group({
+    this.name,
+    this.color
+  });
+
+  factory Group.fromJson(Map<String, dynamic> json) => _$GroupFromJson(json);
+  Map<String, dynamic> toJson() => _$GroupToJson(this);
+
+  final String? name;
+  final String? color;
 }

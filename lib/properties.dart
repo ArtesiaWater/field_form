@@ -19,7 +19,8 @@ class PropertiesScreen extends StatelessWidget {
         padding: EdgeInsets.all(Constant.padding),
         itemCount: location.properties!.length,
         itemBuilder: (BuildContext context, int index) {
-          var property = location.properties![index];
+          final key = location.properties!.keys.elementAt(index);
+          final value = location.properties![key]!;
           return Container(
             height: 30,
             child: Row(
@@ -27,11 +28,11 @@ class PropertiesScreen extends StatelessWidget {
               children: [
                 Expanded(
                   flex: 1,
-                  child: Text(property.name),
+                  child: Text(key),
                 ),
                 Expanded(
                   flex: 1,
-                  child: Text(property.value),
+                  child: Text(value.toString()),
                 )
               ]
             ),
