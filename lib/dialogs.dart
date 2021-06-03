@@ -104,22 +104,23 @@ class MultiSelectDialogItem<V> {
 class MultiSelectDialog<V> extends StatefulWidget {
   MultiSelectDialog({
     required this.items,
-    required this.initialSelectedValues});
+    this.initialSelectedValues});
 
   final List<MultiSelectDialogItem<V>> items;
-  final Set<V> initialSelectedValues;
+  final Set<V>? initialSelectedValues;
 
   @override
   State<StatefulWidget> createState() => _MultiSelectDialogState<V>();
 }
 
 class _MultiSelectDialogState<V> extends State<MultiSelectDialog<V>> {
-  final _selectedValues = Set<V>();
+  final _selectedValues = <V>{};
 
+  @override
   void initState() {
     super.initState();
     if (widget.initialSelectedValues != null) {
-      _selectedValues.addAll(widget.initialSelectedValues);
+      _selectedValues.addAll(widget.initialSelectedValues!);
     }
   }
 
@@ -148,16 +149,16 @@ class _MultiSelectDialogState<V> extends State<MultiSelectDialog<V>> {
       ),
       actions: <Widget>[
         TextButton(
-          child: Text('Cancel'),
           onPressed: () {
             Navigator.pop(context);
-          }
+          },
+          child: Text('Cancel')
         ),
         TextButton(
-          child: Text('Ok'),
           onPressed: (){
             Navigator.pop(context, _selectedValues);
           },
+          child: Text('Ok'),
         )
       ],
     );

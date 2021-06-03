@@ -6,7 +6,6 @@ import 'package:field_form/properties.dart';
 import 'package:field_form/src/locations.dart';
 import 'package:field_form/src/measurements.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart' as p;
@@ -14,13 +13,16 @@ import 'constants.dart';
 import 'ftp.dart';
 
 class AddMeasurements extends StatefulWidget {
-  AddMeasurements({key, required this.location, required this.inputFields,
-    required this.measurementProvider})
+  AddMeasurements({key, required this.locationId, required this.location, required this.groups, required this.inputFields,
+    required this.measurementProvider, required this.prefs})
       : super(key: key);
 
+  final String locationId;
   final Location location;
-  final List<InputField>? inputFields;
+  final Map<String, Group>? groups;
+  final Map<String, InputField>? inputFields;
   final MeasurementProvider measurementProvider;
+  final SharedPreferences prefs;
 
   @override
   _AddMeasurementsState createState() => _AddMeasurementsState();
@@ -29,21 +31,43 @@ class AddMeasurements extends StatefulWidget {
 class _AddMeasurementsState extends State<AddMeasurements> {
   late DateTime now;
   final Map<String, String> values = {};
-  static DateFormat date_format = DateFormat('dd-MM-yyyy');
-  static DateFormat time_format = DateFormat('HH:mm:ss');
   List<Measurement> measurements = <Measurement>[];
   var isLoading = false;
+  List<String>? inputFieldIds;
 
   @override
   void initState() {
     super.initState();
     now = DateTime.now();
+    if (widget.prefs.getBool('use_standard_time') ?? false) {
+      var offset = now.timeZoneOffset - (DateTime(now.year, 1, 1).timeZoneOffset);
+      now = now.subtract(offset);
+    }
+    inputFieldIds = widget.location.inputfields;
+    if (inputFieldIds == null) {
+      if (widget.location.group != null){
+        if (widget.groups!.containsKey(widget.location.group)) {
+          var group = widget.groups![widget.location.group]!;
+          if (group.inputfields != null) {
+            inputFieldIds = group.inputfields;
+          }
+        }
+      }
+    }
+    inputFieldIds ??= widget.inputFields!.keys.toList();
+
+    // Drop inputFields that are not defined
+    for (final id in inputFieldIds!) {
+      if (!widget.inputFields!.containsKey(id)) {
+        inputFieldIds!.remove(id);
+      }
+    }
     getPreviousMeasurements();
   }
 
   void getPreviousMeasurements() async{
     measurements = await widget.measurementProvider.getMeasurementsFromLocation(
-        widget.location.id);
+        widget.locationId);
     setState(() {});
   }
 
@@ -103,15 +127,15 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       ));
     }
     return AppBar(
-      title: Text(widget.location.name ?? widget.location.id),
+      title: Text(widget.location.name ?? widget.locationId),
       backgroundColor: Constant.primaryColor,
       actions: actions,
     );
   }
 
   List<Widget> buildRows(){
-    var date = date_format.format(now);
-    var time = time_format.format(now);
+    var date = Constant.date_format.format(now);
+    var time = Constant.time_format.format(now);
     final rows = <Widget>[];
 
     // add a row with the date and time
@@ -119,13 +143,14 @@ class _AddMeasurementsState extends State<AddMeasurements> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(date),
-          Text('     '),
+          SizedBox(width: 30),
           Text(time)
         ]
     ));
 
-    // Add a row for each inputfield
-    for (var inputField in widget.inputFields!) {
+    // Add a row for each inputField
+    for (final id in inputFieldIds!) {
+      var inputField = widget.inputFields![id]!;
       var keyboardType = TextInputType.text;
       if (inputField.type == 'number'){
         keyboardType = TextInputType.number;
@@ -153,10 +178,10 @@ class _AddMeasurementsState extends State<AddMeasurements> {
           items: items,
           onChanged: (String? text) {
             setState(() {
-              values[inputField.id] = text!;
+              values[id] = text!;
             });
           },
-          value: values[inputField.id],
+          value: values[id],
         );
       } else {
         input = TextField(
@@ -165,7 +190,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
           ),
           keyboardType: keyboardType,
           onChanged: (text) {
-            values[inputField.id] = text;
+            values[id] = text;
           },
         );
       }
@@ -174,7 +199,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
           children: [
             Expanded(
               flex: 1,
-              child: Text(inputField.id),
+              child: Text(inputField.name ?? id),
             ),
             Expanded(
               flex: 2,
@@ -182,29 +207,30 @@ class _AddMeasurementsState extends State<AddMeasurements> {
             )
           ]
       ));
-    }
+    };
 
+    // Add Done button
     rows.add(Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [Expanded(
             child: ElevatedButton(
               onPressed: () {
-                for (var inputfield in widget.inputFields!){
-                  if (values.containsKey(inputfield.id)){
-                    if (values[inputfield.id]!.isEmpty){
+                for (var id in inputFieldIds!){
+                  if (values.containsKey(id)){
+                    if (values[id]!.isEmpty){
                       continue;
                     }
                     var measurement = Measurement(
-                        location: widget.location.id,
+                        location: widget.locationId,
                         datetime: now,
-                        type: inputfield.id,
-                        value:values[inputfield.id]!);
+                        type: id,
+                        value:values[id]!);
                     widget.measurementProvider.insert(measurement);
                   }
                 }
 
                 // Navigate back to the map when tapped.
-                Navigator.pop(context);
+                Navigator.pop(context, true);
               },
               style: ElevatedButton.styleFrom(
                 primary: Constant.primaryColor,
@@ -224,11 +250,11 @@ class _AddMeasurementsState extends State<AddMeasurements> {
           children: [
             Expanded(
               flex: 2,
-              child: Text(date_format.format(measurement.datetime)),
+              child: Text(Constant.date_format.format(measurement.datetime)),
             ),
             Expanded(
               flex: 2,
-              child: Text(time_format.format(measurement.datetime)),
+              child: Text(Constant.time_format.format(measurement.datetime)),
             ),
             Expanded(
               flex: 2,

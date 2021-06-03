@@ -109,6 +109,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 });
               },
             ),
+            SettingsTile.switchTile(
+              title: 'Use standard time',
+              subtitle: 'Disable daylight saving time',
+              leading: Icon(Icons.access_time),
+              switchValue: prefs?.getBool('use_standard_time') ?? false,
+              onToggle: (bool value) {
+                setState(() {
+                  prefs!.setBool('use_standard_time', value);
+                });
+              },
+            ),
           ],
         ),
       ],
@@ -149,5 +160,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
       }
     );
+  }
+}
+
+void parseSettings(Map<String, String> settings, SharedPreferences prefs) async{
+  for (var key in settings.keys) {
+    switch (key) {
+      case 'email_address':
+      case 'ftp_hostname':
+      case 'ftp_username':
+      case 'ftp_password':
+      case 'ftp_path':
+      // string setting
+        await prefs.setString(key, settings[key]!);
+        break;
+      case 'use_ftps':
+      case 'only_export_new_data':
+      case 'use_standard_time':
+      // boolean setting
+        var stringValue = settings[key]!.toLowerCase();
+        var value = (stringValue == 'yes') || (stringValue == 'true');
+        await prefs.setBool(key, value);
+        break;
+    }
   }
 }

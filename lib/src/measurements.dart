@@ -2,12 +2,13 @@
 import 'dart:io';
 
 import 'package:csv/csv.dart';
-import 'package:intl/intl.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'dart:async';
 
 import 'package:sqflite/utils/utils.dart';
+
+import '../constants.dart';
 
 class Measurement{
   Measurement({
@@ -119,6 +120,20 @@ create table measurements (
     }
     return firstIntValue(await result)! > 0;
   }
+  
+  Future<Map<dynamic, DateTime>> getLastMeasurementPerLocation() async {
+    // where value!=""
+    var result = await db.rawQuery('select location, MAX(datetime) from $table group by location');
+
+    var lastMeas = <String, DateTime>{};
+    for (var e in result) {
+      if (e['MAX(datetime)'] != null) {
+        lastMeas[e['location'] as String] =
+            DateTime.fromMicrosecondsSinceEpoch(e['MAX(datetime)'] as int);
+      }
+    }
+    return lastMeas;
+  }
 
   Future close() async => db.close();
 
@@ -149,14 +164,12 @@ create table measurements (
     rows.add(row);
 
     // the data
-    var date_format = DateFormat('dd-MM-yyyy');
-    var time_format = DateFormat('HH:mm:ss');
     Measurement measurement;
     for (measurement in measurements) {
       var row = <String>[];
       row.add(measurement.location);
-      row.add(date_format.format(measurement.datetime));
-      row.add(time_format.format(measurement.datetime));
+      row.add(Constant.date_format.format(measurement.datetime));
+      row.add(Constant.time_format.format(measurement.datetime));
       row.add(measurement.type);
       row.add(measurement.value);
       rows.add(row);
@@ -168,7 +181,6 @@ create table measurements (
   }
 
   void importFromCsv(File file) async {
-    var datetime_format = DateFormat('dd-MM-yyyy HH:mm:ss');
     var converter = const CsvToListConverter(fieldDelimiter: ';',
         shouldParseNumbers: false);
     var rows = converter.convert(await file.readAsString());
@@ -178,7 +190,7 @@ create table measurements (
     var TYPE = rows[0].indexOf('TYPE');
     var VALUE = rows[0].indexOf('VALUE');
     for (var row in rows.sublist(1)) {
-      var date = datetime_format.parse(row[DATE] + ' ' + row[TIME]);
+      var date = Constant.datetime_format.parse(row[DATE] + ' ' + row[TIME]);
       var meas = Measurement(location: row[LOCATION],
           datetime: date,
           value: row[VALUE],

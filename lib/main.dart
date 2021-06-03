@@ -1,15 +1,18 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:field_form/constants.dart';
 import 'package:field_form/settings.dart';
 import 'package:field_form/src/measurements.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:share/share.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'add_measurements.dart';
@@ -22,9 +25,9 @@ import 'package:path/path.dart' as p;
 // TODO: Show last measured locations
 // TODO: Test on iOS
 // TODO: Generate app-icons
-// TODO: Implement groups and colors of locations (HHNK)
 // TODO: Minimal and maximal values (HHNK)
 // TODO: Add localisation
+// TODO: make wintertime option
 
 //void main() => runApp(MyApp());
 void main() => runApp(MaterialApp(home: MyApp()));
@@ -36,8 +39,8 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   final markers = <Marker>[];
-  var locations = <Location>[];
-  var inputFields = <InputField>[];
+  var locations = <String, Location>{};
+  var inputFields = <String, InputField>{};
   var groups = <String, Group>{};
   var isLoading = false;
   SharedPreferences? prefs;
@@ -49,6 +52,7 @@ class _MyAppState extends State<MyApp> {
     'hybrid': MapType.hybrid,
     'terrain': MapType.terrain
   };
+  late BitmapDescriptor markedIcon;
 
   @override
   void initState() {
@@ -56,6 +60,50 @@ class _MyAppState extends State<MyApp> {
     getprefs();
     measurementProvider = MeasurementProvider();
     measurementProvider.open();
+    requestPermission();
+    setMarkedIcon();
+  }
+
+  Future<void> setMarkedIcon() async {
+    //var bytes = await getBytesFromAsset('assets/check-mark-icon-transparent-6.png', 64);
+    var bytes = await getBytesFromCanvas('✓');
+    markedIcon = BitmapDescriptor.fromBytes(bytes);
+  }
+
+  Future<Uint8List> getBytesFromCanvas(String text) async {
+    final ui.PictureRecorder pictureRecorder = ui.PictureRecorder();
+    final Canvas canvas = Canvas(pictureRecorder);
+    final int size = 100; //change this according to your app
+    TextPainter painter = TextPainter(textDirection: TextDirection.ltr);
+    painter.text = TextSpan(
+      text: text,
+      style: TextStyle(
+        fontSize: size.toDouble(),
+        color: Colors.green,
+      ),
+    );
+    painter.layout();
+    painter.paint(
+      canvas,
+      Offset(size / 2 - painter.width / 2 + 10, size / 2 - painter.height / 2 - 20),
+    );
+
+    final img = await pictureRecorder.endRecording().toImage(size, size);
+    final data = await img.toByteData(format: ui.ImageByteFormat.png);
+    return data!.buffer.asUint8List();
+  }
+
+  static Future<Uint8List> getBytesFromAsset(String path, int width) async {
+    final data = await rootBundle.load(path);
+    final codec = await ui.instantiateImageCodec(data.buffer.asUint8List(), targetWidth: width);
+    final fi = await codec.getNextFrame();
+    return (await fi.image.toByteData(format: ui.ImageByteFormat.png))!.buffer.asUint8List();
+  }
+
+  Future<void> requestPermission() async {
+    // request location-permission programatically
+    // https://github.com/flutter/flutter/issues/30171
+    await Permission.location.request();
   }
 
   void getprefs() async{
@@ -84,88 +132,114 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
+  ButtonStyle getMapButtonStyle() {
+    return TextButton.styleFrom(
+      padding: EdgeInsets.all(0),
+      primary: Colors.black54,
+      backgroundColor: Color.fromRGBO(255, 255, 255, 0.7),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2),
+      side: BorderSide(width: 0.2, color: Colors.grey),
+      ),
+    );
+  }
+
   Align buildChangeMapTypeButton(){
+    var maptype = prefs!.getString('map_type') ?? 'normal';
     return Align(
       alignment: Alignment.topCenter,
-      child: FloatingActionButton.extended(
-        heroTag: 'map_type_button',
-        onPressed: () async {
-          // choose maptype
-          var options = <Widget>[];
-          for (var key in maptypes.keys){
-            var icon;
-            if ((key == 'satellite') | (key == 'hybrid')) {
-              icon = Icon(Icons.satellite);
-            } else if (key == 'terrain') {
-              icon = Icon(Icons.terrain);
-            } else {
-              icon = Icon(Icons.map);
+      child: Container(
+        margin: EdgeInsets.all(12),
+        width: 100,
+        height: 38,
+        child: TextButton(
+          onPressed: () async {
+            // choose maptype
+            var options = <Widget>[];
+            for (var key in maptypes.keys){
+              options.add(SimpleDialogOption(
+                onPressed: () {
+                  Navigator.of(context).pop(key);
+                },
+                child: Row(
+                  children:[
+                    getMapIcon(key),
+                    SizedBox(width: 10),
+                    Text(key),
+                  ]
+                )
+              ));
             }
-            options.add(SimpleDialogOption(
-              onPressed: () {
-                Navigator.of(context).pop(key);
-              },
-              child: Row(
-                children:[
-                  icon,
-                  SizedBox(width: 10),
-                  Text(key),
-                ]
-              )
-            ));
-          }
 
-          var action = await showDialog(
-              context: context,
-              builder: (context) {
-                return SimpleDialog(
-                  title: const Text('Choose a maptype'),
-                  children: options,
-                );
-              }
-          );
-          if (action != null) {
-            setState(() {
-              prefs!.setString('map_type', action);
-            });
-          }
-        },
-        shape: RoundedRectangleBorder(),
-        backgroundColor: Colors.transparent,
-        label: Text(prefs!.getString('map_type') ?? 'normal'),
+            var action = await showDialog(
+                context: context,
+                builder: (context) {
+                  return SimpleDialog(
+                    title: const Text('Choose a maptype'),
+                    children: options,
+                  );
+                }
+            );
+            if (action != null) {
+              setState(() {
+                prefs!.setString('map_type', action);
+              });
+            }
+          },
+          style: getMapButtonStyle(),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              getMapIcon(maptype),
+              SizedBox(width: 10),
+              Text(maptype),
+            ],
+          )
+        )
       )
     );
   }
 
+  Icon getMapIcon(String key){
+    if ((key == 'satellite') | (key == 'hybrid')) {
+      return Icon(Icons.satellite);
+    } else if (key == 'terrain') {
+      return Icon(Icons.terrain);
+    } else {
+      return Icon(Icons.map);
+    }
+  }
+
   Align buildShowAllMarkerButton(){
     return Align(
-      alignment: Alignment.topRight,
-      child: FloatingActionButton(
-        heroTag: 'show_all_marker_button',
-        onPressed: () {
-          // Zoom out to all locations
-          if (markers.length > 1){
-            double x0, x1, y0, y1;
-            x0 = x1 = markers[0].position.latitude;
-            y0 = y1 = markers[0].position.longitude;
-            for (var marker in markers) {
-              var latLng = marker.position;
-              if (latLng.latitude > x1) x1 = latLng.latitude;
-              if (latLng.latitude < x0) x0 = latLng.latitude;
-              if (latLng.longitude > y1) y1 = latLng.longitude;
-              if (latLng.longitude < y0) y0 = latLng.longitude;
+      alignment: Alignment.topLeft,
+      child: Container(
+        margin: EdgeInsets.all(12),
+        width: 38,
+        height: 38,
+        child: TextButton(
+          onPressed: () {
+            // Zoom out to all locations
+            if (markers.length > 1){
+              double x0, x1, y0, y1;
+              x0 = x1 = markers[0].position.latitude;
+              y0 = y1 = markers[0].position.longitude;
+              for (var marker in markers) {
+                var latLng = marker.position;
+                if (latLng.latitude > x1) x1 = latLng.latitude;
+                if (latLng.latitude < x0) x0 = latLng.latitude;
+                if (latLng.longitude > y1) y1 = latLng.longitude;
+                if (latLng.longitude < y0) y0 = latLng.longitude;
+              }
+              var bounds = LatLngBounds(northeast: LatLng(x1, y1), southwest: LatLng(x0, y0));
+              mapController.animateCamera(CameraUpdate.newLatLngBounds(bounds, 20));
+            } else if (markers.length == 1) {
+              var latLng = LatLng(markers[0].position.latitude, markers[0].position.longitude);
+              mapController.animateCamera(CameraUpdate.newLatLng(latLng));
             }
-            var bounds = LatLngBounds(northeast: LatLng(x1, y1), southwest: LatLng(x0, y0));
-            mapController.animateCamera(CameraUpdate.newLatLngBounds(bounds, 20));
-          } else if (markers.length == 1) {
-            var latLng = LatLng(markers[0].position.latitude, markers[0].position.longitude);
-            mapController.animateCamera(CameraUpdate.newLatLng(latLng));
-          }
-        },
-        shape: RoundedRectangleBorder(),
-        mini: true,
-        backgroundColor: Colors.transparent,
-        child: const Icon(Icons.zoom_out_map),
+          },
+          style: getMapButtonStyle(),
+          child: const Icon(Icons.zoom_out_map),
+        )
       )
     );
   }
@@ -268,13 +342,22 @@ class _MyAppState extends State<MyApp> {
 
               print(selectedGroups);
               if (selectedGroups != null) {
-                prefs!.setStringList('selected_groups', selectedGroups.toList());
+                await prefs!.setStringList('selected_groups', selectedGroups.toList());
                 setState(() {
                   setMarkers();
                 });
               }
             },
             leading: Icon(Icons.group_work)
+          ),
+          ListTile(
+              title: Text('Show measured locations'),
+              onTap: () async {
+                // Close the drawer
+                Navigator.pop(context);
+                chooseMeasuredInterval(context, prefs!);
+              },
+              leading: Icon(Icons.verified_user)
           ),
           ListTile(
             title: Text('Delete all data'),
@@ -321,6 +404,38 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
+  void chooseMeasuredInterval(BuildContext context, SharedPreferences prefs) async{
+    var options = <Widget>[];
+    for (var interval in [0, 1, 7, 30]){
+      options.add(SimpleDialogOption(
+          onPressed: () {
+            Navigator.of(context).pop(interval);
+          },
+          child: Row(
+              children:[
+                Text(interval.toString()),
+              ]
+          )
+      ));
+    }
+
+    var action = await showDialog(
+        context: context,
+        builder: (context) {
+          return SimpleDialog(
+            title: const Text('Choose a maptype'),
+            children: options,
+          );
+        }
+    );
+    if (action != null) {
+      await prefs.setInt('mark_measured_days', action);
+      setState(() {
+        setMarkers();
+      });
+    }
+  }
+
   GoogleMap buildMap() {
     var lat = prefs!.getDouble('latitude') ?? 30;
     var lng = prefs!.getDouble('longitude') ?? 0;
@@ -338,7 +453,11 @@ class _MyAppState extends State<MyApp> {
       compassEnabled: true,
       markers: markers.toSet(),
       mapType: mapType!,
+      mapToolbarEnabled: false,
       onLongPress: (latlng) {
+        if (prefs!.getBool('disable_adding_locations') ?? true) {
+          return;
+        }
         setState(() {
           final id = 'new_marker';
           final marker = Marker(
@@ -383,6 +502,10 @@ class _MyAppState extends State<MyApp> {
   Future <void> read_location_file(File file) async {
     var location_file = LocationFile.fromJson(
         json.decode(await file.readAsString()));
+
+    if (location_file.settings != null) {
+      parseSettings(location_file.settings!, prefs!);
+    }
     if (location_file.locations != null) {
       locations = location_file.locations!;
     }
@@ -456,11 +579,11 @@ class _MyAppState extends State<MyApp> {
   BitmapDescriptor getIconForLocation(Location location, groups){
     var icon = getIconFromString(location.color);
     if (icon == null) {
-      if (location.group == null) {
-        return BitmapDescriptor.defaultMarker;
-      } else if (groups.containsKey(location.group)) {
-        var group = groups[location.group];
-        icon = getIconFromString(group.color);
+      if (location.group != null) {
+        if (groups.containsKey(location.group)) {
+          var group = groups[location.group];
+          icon = getIconFromString(group.color);
+        }
       }
     }
     if (icon == null) {
@@ -469,10 +592,22 @@ class _MyAppState extends State<MyApp> {
     return icon;
   }
 
-  void setMarkers(){
+  void setMarkers() async{
+    var mark_measured_days = prefs!.getInt('mark_measured_days') ?? 0;
+    final now = DateTime.now();
+    final reftime = DateTime(now.year, now.month, now.day - mark_measured_days + 1);
+    final lastMeasPerLoc;
+    if (mark_measured_days > 0) {
+      //markedIcon = BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen);
+      // get the last measured time for each location
+      lastMeasPerLoc = await measurementProvider.getLastMeasurementPerLocation();
+    } else {
+      lastMeasPerLoc = <String, DateTime>{};
+    }
     markers.clear();
     final selectedGroups = prefs!.getStringList('selected_groups') ?? groups.keys.toList();
-    for (var location in locations) {
+    for (var id in locations.keys) {
+      var location = locations[id]!;
       if ((location.lat == null) | (location.lon==null)){
         continue;
       }
@@ -482,28 +617,39 @@ class _MyAppState extends State<MyApp> {
         }
       }
       var icon = getIconForLocation(location, groups);
-      final marker = Marker(
-        markerId: MarkerId(location.id),
+      var snippet;
+      if (location.sublocations == null) {
+        snippet = null;
+      } else {
+        final n = location.sublocations!.length;
+        snippet = '$n sublocations';
+      }
+      markers.add(Marker(
+        markerId: MarkerId(id),
         position: LatLng(location.lat!, location.lon!),
         icon: icon,
         infoWindow: InfoWindow(
-          title: location.name,
+          title: location.name ?? id,
+          snippet: snippet,
           onTap: () async {
-            if (location.sublocations != null) {
+            if (location.sublocations == null) {
+              open_add_measurements(id, location);
+            } else{
               if (location.sublocations!.length == 1){
-                location = location.sublocations![0];
+                open_add_measurements(location.sublocations!.keys.first,
+                    location.sublocations!.values.first);
               } else {
                 // choose a sublocation
                 var options = <Widget>[];
-                for (var sublocation in location.sublocations!){
-                  var name = sublocation.name ?? sublocation.id;
+                location.sublocations!.forEach((var subid, var sublocation){
+                  var name = sublocation.name ?? subid;
                   options.add(SimpleDialogOption(
                     onPressed: () {
-                      Navigator.of(context).pop(sublocation);
+                      Navigator.of(context).pop(subid);
                     },
                     child: Text(name),
                   ));
-                }
+                });
 
                 var result = await showDialog(
                     context: context,
@@ -517,22 +663,63 @@ class _MyAppState extends State<MyApp> {
                 if (result == null) {
                   return;
                 }
-                location = result;
+                open_add_measurements(result, location.sublocations![result]!);
               }
             }
-            await Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) {
-                return AddMeasurements(
-                    location: location,
-                    inputFields: inputFields,
-                    measurementProvider: measurementProvider);
-              }),
-            );
           },
         ),
-      );
-      markers.add(marker);
+      ));
+
+      var lastMeasurement = DateTime(0);
+      if (lastMeasPerLoc.containsKey(id)) {
+        if (lastMeasPerLoc[id].isAfter(lastMeasurement)) {
+          lastMeasurement = lastMeasPerLoc[id];
+        }
+      }
+      if (location.sublocations != null) {
+        for (var key in location.sublocations!.keys){
+          if (lastMeasPerLoc.containsKey(key)) {
+            if (lastMeasPerLoc[key].isAfter(lastMeasurement)){
+              lastMeasurement = lastMeasPerLoc[key];
+            }
+          }
+        }
+      }
+      if (lastMeasurement.isAfter(reftime)) {
+        // add a marker with a vink
+        markers.add(Marker(
+          markerId: MarkerId(id + '_v'),
+          position: LatLng(location.lat!, location.lon!),
+          icon: markedIcon,
+          zIndex: 1.0,
+          consumeTapEvents: false,
+          onTap: () {
+            return mapController.showMarkerInfoWindow(MarkerId(id));
+          }
+        ));
+      }
+    }
+  }
+
+  void open_add_measurements(locationId, location) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) {
+        return AddMeasurements(
+            locationId: locationId,
+            location: location,
+            groups: groups,
+            inputFields: inputFields,
+            measurementProvider: measurementProvider,
+            prefs: prefs!);
+      }),
+    );
+    if (result != null) {
+      if ((prefs!.getInt('mark_measured_days') ?? 0) > 0) {
+        setState(() {
+          setMarkers();
+        });
+      }
     }
   }
 
@@ -669,9 +856,7 @@ class _MyAppState extends State<MyApp> {
 
   Future<bool> sendMeasurementsToFtp(ftpConnect, prefs) async {
     var only_export_new_data = prefs.getBool('only_export_new_data') ?? true;
-    var formattedDate =
-    DateFormat('yyyyMMdd-HHmmss').format(DateTime.now());
-    var new_file_name = 'measurements-' + formattedDate + '.csv';
+    var new_file_name = getMeasurementFileName();
     var tempDir = await getTemporaryDirectory();
     File? file = File(p.join(tempDir.path, new_file_name));
     file = await measurementProvider.exportToCsv(file,
@@ -820,9 +1005,7 @@ class _MyAppState extends State<MyApp> {
     if (await File(measurement_path).exists()){
       files.add(measurement_path);
     }
-    var formattedDate =
-    DateFormat('yyyy-MM-dd-HH:mm:ss').format(DateTime.now());
-    var new_file_name = 'measurements-' + formattedDate + '.csv';
+    var new_file_name = getMeasurementFileName();
     var tempDir = await getTemporaryDirectory();
     File? file = File(p.join(tempDir.path, new_file_name));
     file = await measurementProvider.exportToCsv(file,
@@ -832,6 +1015,10 @@ class _MyAppState extends State<MyApp> {
     }
     await Share.shareFiles(files);
   }
+}
+
+String getMeasurementFileName(){
+  return 'measurements-' + Constant.file_datetime_format.format(DateTime.now()) + '.csv';
 }
 
 
