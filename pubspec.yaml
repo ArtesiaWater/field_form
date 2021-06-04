@@ -48,6 +48,7 @@ dev_dependencies:
   # Add the following two lines
   pedantic: ^1.11.0
   build_runner: ^1.10.0
+  flutter_launcher_icons: ^0.9.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -90,3 +91,8 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
+
+flutter_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icon/icon.png"
