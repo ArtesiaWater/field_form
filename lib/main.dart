@@ -976,7 +976,7 @@ class _MyAppState extends State<MyApp> {
       }
     }
     // update markers
-    if (prefs!.getInt('mark_measured_days') ?? 0 > 0) {
+    if ((prefs!.getInt('mark_measured_days') ?? 0) > 0) {
       await setMarkers();
       setState(() {});
     }
