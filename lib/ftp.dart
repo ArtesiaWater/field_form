@@ -8,6 +8,12 @@ Future<FTPConnect?> connectToFtp(context, prefs, {path}) async {
   var user = prefs.getString('ftp_username') ?? '';
   var pass = prefs.getString('ftp_password') ?? '';
 
+  if (host == '') {
+    showErrorDialog(context, 'No hostname defined. Please assign a hostname in the settings',
+        title:'Cannot connect of ftp-server');
+    return null;
+  }
+
   var ftpConnect = FTPConnect(host, user: user, pass: pass, timeout: 5);
   try {
     await ftpConnect.connect();
