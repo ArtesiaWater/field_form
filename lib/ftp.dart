@@ -9,9 +9,10 @@ Future<FTPConnect?> connectToFtp(context, prefs, {path}) async {
   var pass = prefs.getString('ftp_password') ?? '';
 
   var ftpConnect = FTPConnect(host, user: user, pass: pass, timeout: 5);
-  var success = await ftpConnect.connect();
-  if (!success){
-    showErrorDialog(context, 'Cannot connect of ftp-server');
+  try {
+    await ftpConnect.connect();
+  } catch (e) {
+    showErrorDialog(context, e.toString(), title:'Cannot connect of ftp-server');
     return null;
   }
   displayInformation(context, 'Connected');
@@ -21,7 +22,7 @@ Future<FTPConnect?> connectToFtp(context, prefs, {path}) async {
     return ftpConnect;
   }
   // we do need to change path
-  success = await changeDirectory(ftpConnect, context, path);
+  var success = await changeDirectory(ftpConnect, context, path);
   if (!success){
     return null;
   }

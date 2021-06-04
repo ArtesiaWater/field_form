@@ -424,7 +424,7 @@ class _MyAppState extends State<MyApp> {
         context: context,
         builder: (context) {
           return SimpleDialog(
-            title: const Text('Choose a maptype'),
+            title: const Text('Choose number of days'),
             children: options,
           );
         }

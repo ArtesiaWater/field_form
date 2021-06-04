@@ -87,6 +87,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onPressed: (BuildContext context) async {
                 setState(() {isLoading = true;});
                 var ftpConnect = await connectToFtp(context, prefs, path:'');
+                if (ftpConnect == null) {
+                  setState(() {isLoading = false;});
+                  return;
+                }
                 var ftp_path = await chooseFtpPath(ftpConnect, context, prefs);
                 if (ftp_path != null) {
                   setState(() {
