@@ -27,7 +27,8 @@ import 'package:path/path.dart' as p;
 // TODO: Generate app-icons
 // TODO: Minimal and maximal values (HHNK)
 // TODO: Add localisation
-// TODO: make wintertime option
+// TODO: Handle failed login (check for empty hostname)
+// TODO: Zoom to all locations after import
 
 //void main() => runApp(MyApp());
 void main() => runApp(MaterialApp(home: MyApp()));
