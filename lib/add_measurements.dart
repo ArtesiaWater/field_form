@@ -211,33 +211,33 @@ class _AddMeasurementsState extends State<AddMeasurements> {
 
     // Add Done button
     rows.add(Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [Expanded(
-            child: ElevatedButton(
-              onPressed: () {
-                for (var id in inputFieldIds!){
-                  if (values.containsKey(id)){
-                    if (values[id]!.isEmpty){
-                      continue;
-                    }
-                    var measurement = Measurement(
-                        location: widget.locationId,
-                        datetime: now,
-                        type: id,
-                        value:values[id]!);
-                    widget.measurementProvider.insert(measurement);
-                  }
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [Expanded(
+        child: ElevatedButton(
+          onPressed: () async {
+            for (var id in inputFieldIds!){
+              if (values.containsKey(id)){
+                if (values[id]!.isEmpty){
+                  continue;
                 }
+                var measurement = Measurement(
+                    location: widget.locationId,
+                    datetime: now,
+                    type: id,
+                    value:values[id]!);
+                await widget.measurementProvider.insert(measurement);
+              }
+            }
 
-                // Navigate back to the map when tapped.
-                Navigator.pop(context, true);
-              },
-              style: ElevatedButton.styleFrom(
-                primary: Constant.primaryColor,
-              ),
-              child: Text('Done'),
-            )
-        )]
+            // Navigate back to the map when tapped.
+            Navigator.pop(context, true);
+          },
+          style: ElevatedButton.styleFrom(
+            primary: Constant.primaryColor,
+          ),
+          child: Text('Done'),
+        )
+      )]
     ));
 
     // Add previous measurements
@@ -270,7 +270,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
                   onPressed: () async {
                     var text = 'Are you sure you want to delete this measurement?';
                     var action = await showContinueDialog(context, text);
-                    if (action == DialogAction.yes) {
+                    if (action == true) {
                       deleteMeasurement(measurement);
                     }
                   },
@@ -298,7 +298,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       // ask if the user really wants to go back
       var action = await showContinueDialog(context, 'All values will be deleted when going back. Do you still want to go back?',
           yesButton:'yes', noButton: 'No', title: 'Ignore values?');
-      if (action == DialogAction.yes) {
+      if (action == true) {
         return true;
       } else {
         return false;

@@ -47,22 +47,20 @@ void showErrorDialog(BuildContext context, String text, {String title = 'Error'}
   );
 }
 
-enum DialogAction  {yes, no}
-
-Future<DialogAction?> showContinueDialog(BuildContext context, String text,
+Future<bool?> showContinueDialog(BuildContext context, String text,
     {String title = 'Continue?', String yesButton = 'Continue',
     String noButton = 'Cancel'}) async {
 
   // set up the buttons
   Widget cancelButton = TextButton(
     onPressed:  () {
-      Navigator.of(context).pop(DialogAction.no);
+      Navigator.of(context).pop(false);
     },
     child: Text(noButton),
   );
   Widget continueButton = TextButton(
     onPressed:  () {
-      Navigator.of(context).pop(DialogAction.yes);
+      Navigator.of(context).pop(true);
     },
     child: Text(yesButton),
   );
@@ -104,10 +102,12 @@ class MultiSelectDialogItem<V> {
 class MultiSelectDialog<V> extends StatefulWidget {
   MultiSelectDialog({
     required this.items,
-    this.initialSelectedValues});
+    this.initialSelectedValues,
+    this.title});
 
   final List<MultiSelectDialogItem<V>> items;
   final Set<V>? initialSelectedValues;
+  final String? title;
 
   @override
   State<StatefulWidget> createState() => _MultiSelectDialogState<V>();
@@ -137,7 +137,7 @@ class _MultiSelectDialogState<V> extends State<MultiSelectDialog<V>> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('Select animals'),
+      title: Text(widget.title ?? 'Select'),
       contentPadding: EdgeInsets.only(top: 12.0),
       content: SingleChildScrollView(
         child: ListTileTheme(

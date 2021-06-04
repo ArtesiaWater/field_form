@@ -9,7 +9,6 @@ import 'package:field_form/settings.dart';
 import 'package:field_form/src/measurements.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -22,12 +21,8 @@ import 'src/locations.dart';
 import 'package:path/path.dart' as p;
 
 // TODO: Make a manual
-// TODO: Show last measured locations
-// TODO: Test on iOS
-// TODO: Generate app-icons
 // TODO: Minimal and maximal values (HHNK)
 // TODO: Add localisation
-// TODO: Handle failed login (check for empty hostname)
 // TODO: Zoom to all locations after import
 
 //void main() => runApp(MyApp());
@@ -72,10 +67,10 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<Uint8List> getBytesFromCanvas(String text) async {
-    final ui.PictureRecorder pictureRecorder = ui.PictureRecorder();
-    final Canvas canvas = Canvas(pictureRecorder);
-    final int size = 100; //change this according to your app
-    TextPainter painter = TextPainter(textDirection: TextDirection.ltr);
+    final pictureRecorder = ui.PictureRecorder();
+    final canvas = Canvas(pictureRecorder);
+    final size = 100; //change this according to your app
+    final painter = TextPainter(textDirection: TextDirection.ltr);
     painter.text = TextSpan(
       text: text,
       style: TextStyle(
@@ -88,17 +83,9 @@ class _MyAppState extends State<MyApp> {
       canvas,
       Offset(size / 2 - painter.width / 2 + 10, size / 2 - painter.height / 2 - 20),
     );
-
     final img = await pictureRecorder.endRecording().toImage(size, size);
     final data = await img.toByteData(format: ui.ImageByteFormat.png);
     return data!.buffer.asUint8List();
-  }
-
-  static Future<Uint8List> getBytesFromAsset(String path, int width) async {
-    final data = await rootBundle.load(path);
-    final codec = await ui.instantiateImageCodec(data.buffer.asUint8List(), targetWidth: width);
-    final fi = await codec.getNextFrame();
-    return (await fi.image.toByteData(format: ui.ImageByteFormat.png))!.buffer.asUint8List();
   }
 
   Future<void> requestPermission() async {
@@ -337,6 +324,7 @@ class _MyAppState extends State<MyApp> {
                   return MultiSelectDialog(
                     items: items,
                     initialSelectedValues: initialSelectedValues.toSet(),
+                    title: 'Select groups',
                   );
                 },
               );
@@ -344,9 +332,8 @@ class _MyAppState extends State<MyApp> {
               print(selectedGroups);
               if (selectedGroups != null) {
                 await prefs!.setStringList('selected_groups', selectedGroups.toList());
-                setState(() {
-                  setMarkers();
-                });
+                await setMarkers();
+                setState(() {});
               }
             },
             leading: Icon(Icons.group_work)
@@ -367,7 +354,7 @@ class _MyAppState extends State<MyApp> {
               Navigator.pop(context);
               final action = await showContinueDialog(context, 'Are you sure you wish to delete all data?',
                   title:'Delete all data', yesButton: 'Yes', noButton: 'No');
-              if (action == DialogAction.yes) {
+              if (action == true) {
                 var prefs = await SharedPreferences.getInstance();
                 if (await measurementProvider.areThereMessagesToBeSent(prefs)) {
                   final action = await showContinueDialog(context,
@@ -375,7 +362,7 @@ class _MyAppState extends State<MyApp> {
                       title: 'Delete all data',
                       yesButton: 'Yes',
                       noButton: 'No');
-                  if (action == DialogAction.yes) {
+                  if (action == true) {
                     deleteAllData();
                   }
                 } else {
@@ -431,9 +418,8 @@ class _MyAppState extends State<MyApp> {
     );
     if (action != null) {
       await prefs.setInt('mark_measured_days', action);
-      setState(() {
-        setMarkers();
-      });
+      await setMarkers();
+      setState(() {});
     }
   }
 
@@ -520,9 +506,8 @@ class _MyAppState extends State<MyApp> {
     } else {
       groups = location_file.groups!;
     }
-    setState(() {
-      setMarkers();
-    });
+    await setMarkers();
+    setState(() {});
   }
 
   BitmapDescriptor? getIconFromString(String? color) {
@@ -593,13 +578,12 @@ class _MyAppState extends State<MyApp> {
     return icon;
   }
 
-  void setMarkers() async{
+  Future<void> setMarkers() async {
     var mark_measured_days = prefs!.getInt('mark_measured_days') ?? 0;
     final now = DateTime.now();
     final reftime = DateTime(now.year, now.month, now.day - mark_measured_days + 1);
     final lastMeasPerLoc;
     if (mark_measured_days > 0) {
-      //markedIcon = BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen);
       // get the last measured time for each location
       lastMeasPerLoc = await measurementProvider.getLastMeasurementPerLocation();
     } else {
@@ -717,9 +701,8 @@ class _MyAppState extends State<MyApp> {
     );
     if (result != null) {
       if ((prefs!.getInt('mark_measured_days') ?? 0) > 0) {
-        setState(() {
-          setMarkers();
-        });
+        await setMarkers();
+        setState(() {});
       }
     }
   }
@@ -737,9 +720,9 @@ class _MyAppState extends State<MyApp> {
         // Ask whether the file contains locations or measurements
         var action = await showContinueDialog(context, 'Does this file contain locations or measurements?',
             yesButton: 'Locations', noButton: 'Measurements', title: 'Locations or measurements');
-        if (action == DialogAction.yes){
+        if (action == true){
           is_location_file = true;
-        } else if (action == DialogAction.no){
+        } else if (action == false){
           is_location_file = false;
         } else {
           // the dialog was cancelled
@@ -755,9 +738,15 @@ class _MyAppState extends State<MyApp> {
           }
         } else if (file.path.endsWith('.csv')) {
           showErrorDialog(context, 'csv-loction files not implemented yet. Use json-files instead');
+        } else {
+          showErrorDialog(context, 'Unknown file-extension. Extension needs to be .json');
         }
       } else {
-        measurementProvider.importFromCsv(file);
+        try {
+          await measurementProvider.importFromCsv(file);
+        } catch (e) {
+          showErrorDialog(context, e.toString());
+        }
       }
     }
   }
@@ -777,9 +766,8 @@ class _MyAppState extends State<MyApp> {
     }
     //save_locations(locations, inputFields);
 
-    setState(() {
-      setMarkers();
-    });
+    await setMarkers();
+    setState(() {});
     await prefs.remove('imported_measurement_files');
 
     // delete all measurements
@@ -802,7 +790,7 @@ class _MyAppState extends State<MyApp> {
       var action = await showContinueDialog(context, 'There are unsent measurements. Do you want to upload these first? Otherwise they will be lost.',
           yesButton: 'Yes', noButton: 'No', title: 'Unsent measurements');
       var ftpConnect;
-      if (action == DialogAction.yes){
+      if (action == true){
         // connect to the current ftp folder and send the measurements
         var path = prefs.getString('ftp_path') ?? '';
         if (path.isNotEmpty) {
@@ -851,7 +839,7 @@ class _MyAppState extends State<MyApp> {
       displayInformation(context, 'Synchronisation complete');
     }
     // finish up
-    await ftpConnect.disconnect();
+    ftpConnect.disconnect();
     setState(() {isLoading = false;});
   }
 
@@ -869,7 +857,7 @@ class _MyAppState extends State<MyApp> {
       // file is null when there are no (new) measurements
       bool success = await ftpConnect.uploadFile(file);
       if (!success) {
-        await ftpConnect.disconnect();
+        ftpConnect.disconnect();
         showErrorDialog(context, 'Unable to upload measurements');
         return false;
       }
@@ -911,7 +899,7 @@ class _MyAppState extends State<MyApp> {
     }
 
     // finish up
-    await ftpConnect.disconnect();
+    ftpConnect.disconnect();
     setState(() {isLoading = false;});
     displayInformation(context, 'Synchronisation complete');
   }
@@ -941,7 +929,7 @@ class _MyAppState extends State<MyApp> {
       var file = File(p.join(tempDir.path, name));
       bool success = await ftpConnect.downloadFile(name, file);
       if (!success){
-        await ftpConnect.disconnect();
+        ftpConnect.disconnect();
         showErrorDialog(context, 'Unable to download ' + name);
         return false;
       }
@@ -949,7 +937,7 @@ class _MyAppState extends State<MyApp> {
       try {
         await read_location_file(file);
       } catch (e) {
-        await ftpConnect.disconnect();
+        ftpConnect.disconnect();
         showErrorDialog(context, e.toString());
         return false;
       }
@@ -957,7 +945,7 @@ class _MyAppState extends State<MyApp> {
       // save locations
       save_locations(locations, inputFields, groups);
       importedLocationFiles.add(name);
-      await prefs.setStringList('imported_location_files', importedLocationFiles);
+      prefs.setStringList('imported_location_files', importedLocationFiles);
     }
 
     // TODO: first collect all measurements, then add to database
@@ -971,21 +959,26 @@ class _MyAppState extends State<MyApp> {
         var file = File(p.join(tempDir.path, name));
         bool success = await ftpConnect.downloadFile(name, file);
         if (!success){
-          await ftpConnect.disconnect();
+          ftpConnect.disconnect();
           showErrorDialog(context, 'Unable to download ' + name);
           return false;
         }
         // read measurements
         try {
-          measurementProvider.importFromCsv(file);
+          await measurementProvider.importFromCsv(file);
         } catch (e) {
-          await ftpConnect.disconnect();
+          ftpConnect.disconnect();
           showErrorDialog(context, e.toString());
           return false;
         }
         importedMeasurementFiles.add(name);
-        await prefs.setStringList('imported_measurement_files', importedMeasurementFiles);
+        prefs.setStringList('imported_measurement_files', importedMeasurementFiles);
       }
+    }
+    // update markers
+    if (prefs!.getInt('mark_measured_days') ?? 0 > 0) {
+      await setMarkers();
+      setState(() {});
     }
     return true;
   }

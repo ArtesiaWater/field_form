@@ -122,8 +122,7 @@ create table measurements (
   }
   
   Future<Map<dynamic, DateTime>> getLastMeasurementPerLocation() async {
-    // where value!=""
-    var result = await db.rawQuery('select location, MAX(datetime) from $table group by location');
+    var result = await db.rawQuery('select location, MAX(datetime) from $table group by location having value!="";');
 
     var lastMeas = <String, DateTime>{};
     for (var e in result) {
@@ -180,7 +179,7 @@ create table measurements (
     return file.writeAsString(converter.convert(rows));
   }
 
-  void importFromCsv(File file) async {
+  Future <void> importFromCsv(File file) async {
     var converter = const CsvToListConverter(fieldDelimiter: ';',
         shouldParseNumbers: false);
     var rows = converter.convert(await file.readAsString());
@@ -199,7 +198,7 @@ create table measurements (
     }
   }
 
-  void update_or_insert(meas) async{
+  void update_or_insert(meas) async {
     // check if measurement is already defined
     List<Map> maps = await db.query(table,
         columns: ['id'],
