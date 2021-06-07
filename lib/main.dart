@@ -23,7 +23,6 @@ import 'package:path/path.dart' as p;
 // TODO: Make a manual
 // TODO: Minimal and maximal values (HHNK)
 // TODO: Add localisation
-// TODO: Zoom to all locations after import
 
 //void main() => runApp(MyApp());
 void main() => runApp(MaterialApp(home: MyApp()));
@@ -206,30 +205,34 @@ class _MyAppState extends State<MyApp> {
         height: 38,
         child: TextButton(
           onPressed: () {
-            // Zoom out to all locations
-            if (markers.length > 1){
-              double x0, x1, y0, y1;
-              x0 = x1 = markers[0].position.latitude;
-              y0 = y1 = markers[0].position.longitude;
-              for (var marker in markers) {
-                var latLng = marker.position;
-                if (latLng.latitude > x1) x1 = latLng.latitude;
-                if (latLng.latitude < x0) x0 = latLng.latitude;
-                if (latLng.longitude > y1) y1 = latLng.longitude;
-                if (latLng.longitude < y0) y0 = latLng.longitude;
-              }
-              var bounds = LatLngBounds(northeast: LatLng(x1, y1), southwest: LatLng(x0, y0));
-              mapController.animateCamera(CameraUpdate.newLatLngBounds(bounds, 20));
-            } else if (markers.length == 1) {
-              var latLng = LatLng(markers[0].position.latitude, markers[0].position.longitude);
-              mapController.animateCamera(CameraUpdate.newLatLng(latLng));
-            }
+            ZoomToAllLocations();
           },
           style: getMapButtonStyle(),
           child: const Icon(Icons.zoom_out_map),
         )
       )
     );
+  }
+
+  void ZoomToAllLocations() {
+    // Zoom out to all locations
+    if (markers.length > 1){
+      double x0, x1, y0, y1;
+      x0 = x1 = markers[0].position.latitude;
+      y0 = y1 = markers[0].position.longitude;
+      for (var marker in markers) {
+        var latLng = marker.position;
+        if (latLng.latitude > x1) x1 = latLng.latitude;
+        if (latLng.latitude < x0) x0 = latLng.latitude;
+        if (latLng.longitude > y1) y1 = latLng.longitude;
+        if (latLng.longitude < y0) y0 = latLng.longitude;
+      }
+      var bounds = LatLngBounds(northeast: LatLng(x1, y1), southwest: LatLng(x0, y0));
+      mapController.animateCamera(CameraUpdate.newLatLngBounds(bounds, 20));
+    } else if (markers.length == 1) {
+      var latLng = LatLng(markers[0].position.latitude, markers[0].position.longitude);
+      mapController.animateCamera(CameraUpdate.newLatLng(latLng));
+    }
   }
 
   Scaffold buildLoadingScreen(){
@@ -495,6 +498,7 @@ class _MyAppState extends State<MyApp> {
     }
     if (location_file.locations != null) {
       locations = location_file.locations!;
+      ZoomToAllLocations();
     }
     if (location_file.inputfields == null) {
       inputFields = getDefaultInputFields();
