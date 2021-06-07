@@ -6,6 +6,7 @@ import 'package:field_form/properties.dart';
 import 'package:field_form/src/locations.dart';
 import 'package:field_form/src/measurements.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart' as p;
@@ -34,6 +35,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
   List<Measurement> measurements = <Measurement>[];
   var isLoading = false;
   List<String>? inputFieldIds;
+  final _formKey = GlobalKey<FormState>();
 
   @override
   void initState() {
@@ -81,9 +83,12 @@ class _AddMeasurementsState extends State<AddMeasurements> {
         appBar: buildAppBar(),
         body:  Stack(
           children: [
-            ListView(
-              padding: EdgeInsets.all(Constant.padding),
-              children: buildRows(),
+            Form(
+              key: _formKey,
+              child: ListView(
+                padding: EdgeInsets.all(Constant.padding),
+                children: buildRows(),
+              ),
             ),
             if (isLoading) buildLoadingIndicator(),
           ],
@@ -152,8 +157,14 @@ class _AddMeasurementsState extends State<AddMeasurements> {
     for (final id in inputFieldIds!) {
       var inputField = widget.inputFields![id]!;
       var keyboardType = TextInputType.text;
+      var validator;
+      List<TextInputFormatter>? inputFormatters = [];
       if (inputField.type == 'number'){
         keyboardType = TextInputType.number;
+        validator = numberValidator;
+        inputFormatters.add(CommaTextInputFormatter());
+      } else {
+        inputFormatters.add(FilteringTextInputFormatter.deny(RegExp('[;]')));
       }
       var input;
       if (inputField.type == 'choice'){
@@ -184,7 +195,9 @@ class _AddMeasurementsState extends State<AddMeasurements> {
           value: values[id],
         );
       } else {
-        input = TextField(
+        final node = FocusScope.of(context);
+        input = TextFormField(
+          autofocus: (id == inputFieldIds![0]),
           decoration: InputDecoration(
               hintText: inputField.hint
           ),
@@ -192,6 +205,10 @@ class _AddMeasurementsState extends State<AddMeasurements> {
           onChanged: (text) {
             values[id] = text;
           },
+          validator: validator,
+          inputFormatters: inputFormatters,
+          textInputAction: TextInputAction.next,
+          onEditingComplete: () => node.nextFocus(), // Move focus to next
         );
       }
       rows.add(Row(
@@ -215,22 +232,24 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       children: [Expanded(
         child: ElevatedButton(
           onPressed: () async {
-            for (var id in inputFieldIds!){
-              if (values.containsKey(id)){
-                if (values[id]!.isEmpty){
-                  continue;
+            if (_formKey.currentState!.validate()) {
+              for (var id in inputFieldIds!) {
+                if (values.containsKey(id)) {
+                  if (values[id]!.isEmpty) {
+                    continue;
+                  }
+                  var measurement = Measurement(
+                      location: widget.locationId,
+                      datetime: now,
+                      type: id,
+                      value: values[id]!);
+                  await widget.measurementProvider.insert(measurement);
                 }
-                var measurement = Measurement(
-                    location: widget.locationId,
-                    datetime: now,
-                    type: id,
-                    value:values[id]!);
-                await widget.measurementProvider.insert(measurement);
               }
-            }
 
-            // Navigate back to the map when tapped.
-            Navigator.pop(context, true);
+              // Navigate back to the map when tapped.
+              Navigator.pop(context, true);
+            }
           },
           style: ElevatedButton.styleFrom(
             primary: Constant.primaryColor,
@@ -284,6 +303,17 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       ));
     }
     return rows;
+  }
+
+  String? numberValidator(String? value) {
+    if ((value == null) || (value.isEmpty)) {
+      return null;
+    }
+    final n = num.tryParse(value);
+    if(n == null) {
+      return '"$value" is not a valid number';
+    }
+    return null;
   }
 
   Future<bool> checkToGoBack() async {
@@ -354,6 +384,23 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       MaterialPageRoute(builder: (context) {
         return PhotoScreen(file: file);
       }),
+    );
+  }
+}
+
+class CommaTextInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue,
+      TextEditingValue newValue) {
+    var truncated = newValue.text;
+    final newSelection = newValue.selection;
+
+    if (newValue.text.contains(',')) {
+      truncated = newValue.text.replaceFirst(RegExp(','), '.');
+    }
+    return TextEditingValue(
+      text: truncated,
+      selection: newSelection,
     );
   }
 }
