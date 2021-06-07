@@ -8,7 +8,7 @@ import 'dart:async';
 
 import 'package:sqflite/utils/utils.dart';
 
-import '../constants.dart';
+import 'constants.dart';
 
 class Measurement{
   Measurement({

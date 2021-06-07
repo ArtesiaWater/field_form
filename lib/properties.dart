@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'constants.dart';
-import 'src/locations.dart';
+import 'locations.dart';
 
 class PropertiesScreen extends StatelessWidget {
   PropertiesScreen({key, required this.location}) : super(key: key);

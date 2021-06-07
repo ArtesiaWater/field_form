@@ -6,7 +6,7 @@ import 'dart:ui' as ui;
 
 import 'package:field_form/constants.dart';
 import 'package:field_form/settings.dart';
-import 'package:field_form/src/measurements.dart';
+import 'package:field_form/measurements.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -17,7 +17,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'add_measurements.dart';
 import 'dialogs.dart';
 import 'ftp.dart';
-import 'src/locations.dart';
+import 'locations.dart';
 import 'package:path/path.dart' as p;
 
 // TODO: Make a manual
