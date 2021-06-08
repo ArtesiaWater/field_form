@@ -1,3 +1,4 @@
+import 'package:field_form/inputfield_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:settings_ui/settings_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -5,25 +6,25 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'constants.dart';
 import 'dialogs.dart';
 import 'ftp.dart';
+import 'locations.dart';
 
 class SettingsScreen extends StatefulWidget {
+  SettingsScreen({key, required this.prefs, required this.inputFields}) : super(key: key);
+
+  final SharedPreferences prefs;
+  final Map<String, InputField> inputFields;
+
   @override
   _SettingsScreenState createState() => _SettingsScreenState();
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
   var isLoading = false;
-  SharedPreferences? prefs;
+
 
   @override
   void initState() {
     super.initState();
-    getprefs();
-  }
-
-  void getprefs() async{
-    prefs = await SharedPreferences.getInstance();
-    setState(() {});
   }
 
   @override
@@ -45,11 +46,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   SettingsList buildSettings(){
     var password = '';
-    if (prefs != null) {
-      if (prefs!.containsKey('ftp_password')) {
-        password = prefs!.getString('ftp_password')!;
-      };
-    }
+    if (widget.prefs.containsKey('ftp_password')) {
+      password = widget.prefs.getString('ftp_password')!;
+    };
     return SettingsList(
       sections: [
         SettingsSection(
@@ -57,7 +56,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           tiles: [
             SettingsTile(
               title: 'Hostname',
-              subtitle: prefs?.getString('ftp_hostname'),
+              subtitle: widget.prefs.getString('ftp_hostname'),
               leading: Icon(Icons.cloud),
               onPressed: (BuildContext context) {
                 editStringSetting(context, 'ftp_hostname', 'Change ftp hostname');
@@ -65,7 +64,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             SettingsTile(
               title: 'Username',
-              subtitle: prefs?.getString('ftp_username'),
+              subtitle: widget.prefs.getString('ftp_username'),
               leading: Icon(Icons.person),
               onPressed: (BuildContext context) {
                 editStringSetting(context, 'ftp_username', 'Change ftp username');
@@ -82,19 +81,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             SettingsTile(
               title: 'Path',
-              subtitle: prefs?.getString('ftp_path'),
+              subtitle: widget.prefs.getString('ftp_path'),
               leading: Icon(Icons.folder),
               onPressed: (BuildContext context) async {
                 setState(() {isLoading = true;});
-                var ftpConnect = await connectToFtp(context, prefs, path:'');
+                var ftpConnect = await connectToFtp(context, widget.prefs, path:'');
                 if (ftpConnect == null) {
                   setState(() {isLoading = false;});
                   return;
                 }
-                var ftp_path = await chooseFtpPath(ftpConnect, context, prefs);
+                var ftp_path = await chooseFtpPath(ftpConnect, context, widget.prefs);
                 if (ftp_path != null) {
                   setState(() {
-                    prefs!.setString('ftp_path', ftp_path);
+                    widget.prefs.setString('ftp_path', ftp_path);
                     isLoading = false;
                   });
                 } else {
@@ -106,10 +105,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             SettingsTile.switchTile(
               title: 'Only export new measurements',
               leading: Icon(Icons.fiber_new),
-              switchValue: prefs?.getBool('only_export_new_data') ?? true,
+              switchValue: widget.prefs.getBool('only_export_new_data') ?? true,
               onToggle: (bool value) {
                 setState(() {
-                  prefs!.setBool('only_export_new_data', value);
+                  widget.prefs.setBool('only_export_new_data', value);
                 });
               },
             ),
@@ -117,13 +116,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
               title: 'Use standard time',
               subtitle: 'Disable daylight saving time',
               leading: Icon(Icons.access_time),
-              switchValue: prefs?.getBool('use_standard_time') ?? false,
+              switchValue: widget.prefs.getBool('use_standard_time') ?? false,
               onToggle: (bool value) {
                 setState(() {
-                  prefs!.setBool('use_standard_time', value);
+                  widget.prefs.setBool('use_standard_time', value);
                 });
               },
             ),
+            SettingsTile(
+              title: 'Edit input fields',
+              leading: Icon(Icons.wysiwyg_rounded),
+              onPressed: (BuildContext context) async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) {
+                    return InputFieldsScreen(inputFields: widget.inputFields);
+                  }),
+                );
+              }
+            )
           ],
         ),
       ],
@@ -131,7 +142,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void editStringSetting(BuildContext context, String key, String title, {bool password=false}) async {
-    var settingValue = prefs?.getString(key) ?? '';
+    var settingValue = widget.prefs.getString(key) ?? '';
     return showDialog(
       context: context,
       builder: (context) {
@@ -154,7 +165,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             TextButton(
               onPressed: () {
                 setState(() {
-                  prefs?.setString(key, settingValue);
+                  widget.prefs.setString(key, settingValue);
                   Navigator.pop(context);
                 });
               },

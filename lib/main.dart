@@ -23,6 +23,7 @@ import 'package:path/path.dart' as p;
 // TODO: Make a manual
 // TODO: Minimal and maximal values (HHNK)
 // TODO: Add localisation
+// TODO: Make screen to edit inputfields
 
 //void main() => runApp(MyApp());
 void main() => runApp(MaterialApp(home: MyApp()));
@@ -255,15 +256,16 @@ class _MyAppState extends State<MyApp> {
       backgroundColor: Constant.primaryColor,
       actions: <Widget>[
         Padding(
-            padding: EdgeInsets.only(right: 20.0),
-            child: GestureDetector(
-              onTap: () {
-                synchroniseWithFtp(context);
-              },
-              child: Icon(
-                Icons.sync,
-              ),
-            )),
+          padding: EdgeInsets.only(right: 20.0),
+          child: GestureDetector(
+            onTap: () {
+              synchroniseWithFtp(context);
+            },
+            child: Icon(
+              Icons.sync,
+            ),
+          )
+        ),
       ],
     );
   }
@@ -384,7 +386,7 @@ class _MyAppState extends State<MyApp> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) {
-                  return SettingsScreen();
+                  return SettingsScreen(prefs: prefs!, inputFields: inputFields);
                 }),
               );
             },
@@ -680,7 +682,6 @@ class _MyAppState extends State<MyApp> {
           markerId: MarkerId(id + '_v'),
           position: LatLng(location.lat!, location.lon!),
           icon: markedIcon,
-          zIndex: 1.0,
           consumeTapEvents: false,
           onTap: () {
             return mapController.showMarkerInfoWindow(MarkerId(id));
@@ -843,9 +844,11 @@ class _MyAppState extends State<MyApp> {
       displayInformation(context, 'Synchronisation complete');
     }
     // finish up
-    ftpConnect.disconnect();
+    unawaited(ftpConnect.disconnect());
     setState(() {isLoading = false;});
   }
+
+  void unawaited(Future<void>? future) {}
 
   Future<bool> sendMeasurementsToFtp(ftpConnect, prefs) async {
     var only_export_new_data = prefs.getBool('only_export_new_data') ?? true;
@@ -903,7 +906,7 @@ class _MyAppState extends State<MyApp> {
     }
 
     // finish up
-    ftpConnect.disconnect();
+    unawaited(ftpConnect.disconnect());
     setState(() {isLoading = false;});
     displayInformation(context, 'Synchronisation complete');
   }

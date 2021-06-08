@@ -82,7 +82,8 @@ create table measurements (
     List<Map> maps = await db.query(table,
         columns: ['id', 'location', 'datetime', 'type', 'value', 'exported'],
         where: where,
-        whereArgs: whereArgs);
+        whereArgs: whereArgs,
+        orderBy: 'datetime DESC');
     var measurements = <Measurement>[];
     if (maps.isNotEmpty) {
       for (var map in maps) {

@@ -65,9 +65,9 @@ class InputField {
   factory InputField.fromJson(Map<String, dynamic> json) => _$InputFieldFromJson(json);
   Map<String, dynamic> toJson() => _$InputFieldToJson(this);
 
-  final String type;
-  final String? hint;
-  final String? name;
+  String type;
+  String? hint;
+  String? name;
   final List<String>? options;
   final bool? required;
 }

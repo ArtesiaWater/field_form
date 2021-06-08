@@ -166,6 +166,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       } else {
         inputFormatters.add(FilteringTextInputFormatter.deny(RegExp('[;]')));
       }
+      final node = FocusScope.of(context);
       var input;
       if (inputField.type == 'choice'){
         var items = <DropdownMenuItem<String>>[];
@@ -184,7 +185,13 @@ class _AddMeasurementsState extends State<AddMeasurements> {
             ),
           );
         }
-        input = DropdownButton(
+        final hint;
+        if (inputField.hint == null) {
+          hint = null;
+        } else {
+          hint = Text(inputField.hint!);
+        }
+        input = DropdownButtonFormField(
           isExpanded: true,
           items: items,
           onChanged: (String? text) {
@@ -193,9 +200,13 @@ class _AddMeasurementsState extends State<AddMeasurements> {
             });
           },
           value: values[id],
+          onTap: () {
+            //  'steal' focuses off of the TextField that was previously focused on the dropdown tap
+            node.nextFocus();
+          },
+          hint: hint,
         );
       } else {
-        final node = FocusScope.of(context);
         input = TextFormField(
           autofocus: (id == inputFieldIds![0]),
           decoration: InputDecoration(

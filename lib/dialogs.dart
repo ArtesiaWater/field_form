@@ -51,35 +51,65 @@ Future<bool?> showContinueDialog(BuildContext context, String text,
     {String title = 'Continue?', String yesButton = 'Continue',
     String noButton = 'Cancel'}) async {
 
-  // set up the buttons
-  Widget cancelButton = TextButton(
-    onPressed:  () {
-      Navigator.of(context).pop(false);
+  // show the dialog
+  var action = await showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text(title),
+        content: Text(text),
+        actions: [
+          TextButton(
+            onPressed:  () {
+              Navigator.of(context).pop(false);
+            },
+            child: Text(noButton),
+          ),
+          TextButton(
+            onPressed:  () {
+              Navigator.of(context).pop(true);
+            },
+            child: Text(yesButton),
+          ),
+        ],
+      );
     },
-    child: Text(noButton),
   );
-  Widget continueButton = TextButton(
-    onPressed:  () {
-      Navigator.of(context).pop(true);
-    },
-    child: Text(yesButton),
-  );
+  return action;
+}
 
-  // set up the AlertDialog
-  var alert = AlertDialog(
-    title: Text(title),
-    content: Text(text),
-    actions: [
-      cancelButton,
-      continueButton,
-    ],
-  );
+Future<String?> showInputDialog(BuildContext context, String text,
+    {String title = 'Input', String yesButton = 'ok',
+      String noButton = 'cancel', String? initialValue}) async {
+
+  final myController = TextEditingController();
 
   // show the dialog
   var action = await showDialog(
     context: context,
     builder: (BuildContext context) {
-      return alert;
+      return AlertDialog(
+        title: Text(title),
+        content: TextFormField(
+          initialValue: initialValue,
+          controller: myController,
+        ),
+        actions: [
+          TextButton(
+            onPressed:  () {
+              Navigator.of(context).pop(null);
+            },
+            child: Text(noButton),
+          ),
+          TextButton(
+            onPressed:  () {
+              final id = myController.text;
+              Navigator.of(context).pop(id);
+            },
+            child: Text(yesButton),
+          ),
+        ],
+      );
     },
   );
   return action;
