@@ -6,13 +6,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'constants.dart';
 import 'dialogs.dart';
 import 'ftp.dart';
-import 'locations.dart';
 
 class SettingsScreen extends StatefulWidget {
-  SettingsScreen({key, required this.prefs, required this.inputFields}) : super(key: key);
+  SettingsScreen({key, required this.prefs}) : super(key: key);
 
   final SharedPreferences prefs;
-  final Map<String, InputField> inputFields;
 
   @override
   _SettingsScreenState createState() => _SettingsScreenState();
@@ -20,7 +18,6 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   var isLoading = false;
-
 
   @override
   void initState() {
@@ -114,7 +111,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             SettingsTile.switchTile(
               title: 'Use standard time',
-              subtitle: 'Disable daylight saving time',
+              subtitle: 'When true, disable daylight saving time',
               leading: Icon(Icons.access_time),
               switchValue: widget.prefs.getBool('use_standard_time') ?? false,
               onToggle: (bool value) {
@@ -130,7 +127,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 await Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) {
-                    return InputFieldsScreen(inputFields: widget.inputFields);
+                    return InputFieldsScreen();
                   }),
                 );
               }

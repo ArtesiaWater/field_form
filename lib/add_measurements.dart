@@ -14,14 +14,12 @@ import 'constants.dart';
 import 'ftp.dart';
 
 class AddMeasurements extends StatefulWidget {
-  AddMeasurements({key, required this.locationId, required this.location, required this.groups, required this.inputFields,
+  AddMeasurements({key, required this.locationId, required this.location,
     required this.measurementProvider, required this.prefs})
       : super(key: key);
 
   final String locationId;
   final Location location;
-  final Map<String, Group>? groups;
-  final Map<String, InputField>? inputFields;
   final MeasurementProvider measurementProvider;
   final SharedPreferences prefs;
 
@@ -30,12 +28,14 @@ class AddMeasurements extends StatefulWidget {
 }
 
 class _AddMeasurementsState extends State<AddMeasurements> {
+  final locData = LocationData();
   late DateTime now;
   final Map<String, String> values = {};
   List<Measurement> measurements = <Measurement>[];
   var isLoading = false;
   List<String>? inputFieldIds;
   final _formKey = GlobalKey<FormState>();
+
 
   @override
   void initState() {
@@ -45,25 +45,24 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       var offset = now.timeZoneOffset - (DateTime(now.year, 1, 1).timeZoneOffset);
       now = now.subtract(offset);
     }
-    inputFieldIds = widget.location.inputfields;
+    final location = widget.location;
+    inputFieldIds = location.inputfields;
     if (inputFieldIds == null) {
-      if (widget.location.group != null){
-        if (widget.groups!.containsKey(widget.location.group)) {
-          var group = widget.groups![widget.location.group]!;
+      if (location.group != null){
+        if (locData.groups.containsKey(location.group)) {
+          var group = locData.groups[location.group]!;
           if (group.inputfields != null) {
             inputFieldIds = group.inputfields;
           }
         }
       }
     }
-    inputFieldIds ??= widget.inputFields!.keys.toList();
+    inputFieldIds ??= locData.inputFields.keys.toList();
 
     // Drop inputFields that are not defined
-    for (final id in inputFieldIds!) {
-      if (!widget.inputFields!.containsKey(id)) {
-        inputFieldIds!.remove(id);
-      }
-    }
+    // copy the inputfields, so we do not alter the orinal list
+    inputFieldIds = List.from(inputFieldIds!);
+    inputFieldIds!.removeWhere((id) => !locData.inputFields.containsKey(id));
     getPreviousMeasurements();
   }
 
@@ -98,13 +97,14 @@ class _AddMeasurementsState extends State<AddMeasurements> {
   }
 
   AppBar buildAppBar() {
+    final location = widget.location;
     var actions = <Widget>[];
-    if (widget.location.photo != null){
+    if (location.photo != null){
       actions.add(Padding(
           padding: EdgeInsets.only(right: 20.0),
           child: GestureDetector(
             onTap: () {
-              displayPhoto(widget.location.photo!);
+              displayPhoto(location.photo!);
             },
             child: Icon(
               Icons.photo,
@@ -112,7 +112,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
           )
       ));
     }
-    if (widget.location.properties != null){
+    if (location.properties != null){
       actions.add(Padding(
           padding: EdgeInsets.only(right: 20.0),
           child: GestureDetector(
@@ -121,7 +121,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) {
-                  return PropertiesScreen(location: widget.location);
+                  return PropertiesScreen(location: location);
                 }),
               );
             },
@@ -132,7 +132,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       ));
     }
     return AppBar(
-      title: Text(widget.location.name ?? widget.locationId),
+      title: Text(location.name ?? widget.locationId),
       backgroundColor: Constant.primaryColor,
       actions: actions,
     );
@@ -155,7 +155,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
 
     // Add a row for each inputField
     for (final id in inputFieldIds!) {
-      var inputField = widget.inputFields![id]!;
+      var inputField = locData.inputFields[id]!;
       var keyboardType = TextInputType.text;
       var validator;
       List<TextInputFormatter>? inputFormatters = [];

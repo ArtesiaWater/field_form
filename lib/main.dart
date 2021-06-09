@@ -35,9 +35,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   final markers = <Marker>[];
-  var locations = <String, Location>{};
-  var inputFields = <String, InputField>{};
-  var groups = <String, Group>{};
+  final locData = LocationData();
   var isLoading = false;
   SharedPreferences? prefs;
   late MeasurementProvider measurementProvider;
@@ -318,11 +316,11 @@ class _MyAppState extends State<MyApp> {
               // Close the drawer
               Navigator.pop(context);
               final items = <MultiSelectDialogItem<String>>[];
-              groups.forEach((id, group){
+              locData.groups.forEach((id, group){
                 var label = group.name ?? id;
                 items.add(MultiSelectDialogItem(id, label));
               });
-              final initialSelectedValues = prefs!.getStringList('selected_groups') ?? groups.keys.toList();
+              final initialSelectedValues = prefs!.getStringList('selected_groups') ?? locData.groups.keys.toList();
               final selectedGroups = await showDialog<Set<String>>(
                 context: context,
                 builder: (BuildContext context) {
@@ -386,7 +384,7 @@ class _MyAppState extends State<MyApp> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) {
-                  return SettingsScreen(prefs: prefs!, inputFields: inputFields);
+                  return SettingsScreen(prefs: prefs!);
                 }),
               );
             },
@@ -458,7 +456,7 @@ class _MyAppState extends State<MyApp> {
             infoWindow: InfoWindow(
               title: 'New marker',
               onTap: () {
-                newLocationDialog(context, latlng, locations);
+                newLocationDialog(context, latlng, locData.locations);
               },
             ),
             icon: BitmapDescriptor.defaultMarkerWithHue(
@@ -499,89 +497,21 @@ class _MyAppState extends State<MyApp> {
       parseSettings(location_file.settings!, prefs!);
     }
     if (location_file.locations != null) {
-      locations = location_file.locations!;
+      locData.locations = location_file.locations!;
       ZoomToAllLocations();
     }
     if (location_file.inputfields == null) {
-      inputFields = getDefaultInputFields();
+      locData.inputFields = getDefaultInputFields();
     } else {
-      inputFields = location_file.inputfields!;
+      locData.inputFields = location_file.inputfields!;
     }
     if (location_file.groups == null) {
-      groups = <String, Group>{};
+      locData.groups = <String, Group>{};
     } else {
-      groups = location_file.groups!;
+      locData.groups = location_file.groups!;
     }
     await setMarkers();
     setState(() {});
-  }
-
-  BitmapDescriptor? getIconFromString(String? color) {
-    if (color == null) {
-      return null;
-    }
-    var hue;
-    if (color[0] == '#') {
-      // HEX color
-      try {
-        var col = Color(int.parse(color.substring(1, 7), radix: 16) + 0xFF000000);
-        hue = HSLColor.fromColor(col).hue;
-      } catch (e) {
-        return null;
-      }
-    } else {
-      switch (color){
-        case 'red':
-          hue = BitmapDescriptor.hueRed;
-          break;
-        case 'orange':
-          hue = BitmapDescriptor.hueOrange;
-          break;
-        case 'yellow':
-          hue = BitmapDescriptor.hueYellow;
-          break;
-        case 'green':
-          hue = BitmapDescriptor.hueGreen;
-          break;
-        case 'cyan':
-          hue = BitmapDescriptor.hueCyan;
-          break;
-        case 'azure':
-          hue = BitmapDescriptor.hueAzure;
-          break;
-        case 'blue':
-          hue = BitmapDescriptor.hueBlue;
-          break;
-        case 'violet':
-          hue = BitmapDescriptor.hueViolet;
-          break;
-        case 'magenta':
-          hue = BitmapDescriptor.hueOrange;
-          break;
-        case 'rose':
-          hue = BitmapDescriptor.hueRose;
-          break;
-        default:
-          return null;
-      }
-    }
-    return BitmapDescriptor.defaultMarkerWithHue(hue);
-  }
-
-  BitmapDescriptor getIconForLocation(Location location, groups){
-    var icon = getIconFromString(location.color);
-    if (icon == null) {
-      if (location.group != null) {
-        if (groups.containsKey(location.group)) {
-          var group = groups[location.group];
-          icon = getIconFromString(group.color);
-        }
-      }
-    }
-    if (icon == null) {
-      return BitmapDescriptor.defaultMarker;
-    }
-    return icon;
   }
 
   Future<void> setMarkers() async {
@@ -596,9 +526,9 @@ class _MyAppState extends State<MyApp> {
       lastMeasPerLoc = <String, DateTime>{};
     }
     markers.clear();
-    final selectedGroups = prefs!.getStringList('selected_groups') ?? groups.keys.toList();
-    for (var id in locations.keys) {
-      var location = locations[id]!;
+    final selectedGroups = prefs!.getStringList('selected_groups') ?? locData.groups.keys.toList();
+    for (var id in locData.locations.keys) {
+      var location = locData.locations[id]!;
       if ((location.lat == null) | (location.lon==null)){
         continue;
       }
@@ -607,7 +537,7 @@ class _MyAppState extends State<MyApp> {
           continue;
         }
       }
-      var icon = getIconForLocation(location, groups);
+      var icon = getIconForLocation(location, locData.groups);
       var snippet;
       if (location.sublocations == null) {
         snippet = null;
@@ -698,8 +628,6 @@ class _MyAppState extends State<MyApp> {
         return AddMeasurements(
             locationId: locationId,
             location: location,
-            groups: groups,
-            inputFields: inputFields,
             measurementProvider: measurementProvider,
             prefs: prefs!);
       }),
@@ -760,16 +688,15 @@ class _MyAppState extends State<MyApp> {
     var prefs = await SharedPreferences.getInstance();
 
     // delete all locations
-    locations.clear();
-    inputFields = getDefaultInputFields();
-    groups = <String, Group>{};
+    locData.locations.clear();
+    locData.inputFields = getDefaultInputFields();
+    locData.groups = <String, Group>{};
 
-    //delete all data in the documents-directory (for the photos)
+    //delete all data in the documents-directory (location-data and photos)
     var docsDir = await getApplicationDocumentsDirectory();
     if(docsDir.existsSync()){
       docsDir.deleteSync(recursive: true);
     }
-    //save_locations(locations, inputFields);
 
     await setMarkers();
     setState(() {});
@@ -950,7 +877,7 @@ class _MyAppState extends State<MyApp> {
       }
 
       // save locations
-      save_locations(locations, inputFields, groups);
+      locData.save_locations();
       importedLocationFiles.add(name);
       prefs.setStringList('imported_location_files', importedLocationFiles);
     }
@@ -988,15 +915,6 @@ class _MyAppState extends State<MyApp> {
       setState(() {});
     }
     return true;
-  }
-
-  void save_locations(locations, inputFields, groups) async {
-    var docsDir = await getApplicationDocumentsDirectory();
-    var file = File(p.join(docsDir.path, 'locations.json'));
-    var location_file = LocationFile(locations: locations,
-        inputfields: inputFields,
-        groups: groups);
-    await file.writeAsString(json.encode(location_file.toJson()));
   }
 
   Future share_data() async {

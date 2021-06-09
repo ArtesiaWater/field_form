@@ -82,17 +82,22 @@ Future<String?> showInputDialog(BuildContext context, String text,
     {String title = 'Input', String yesButton = 'ok',
       String noButton = 'cancel', String? initialValue}) async {
 
-  final myController = TextEditingController();
-
+  final myController = TextEditingController(text: initialValue);
   // show the dialog
   var action = await showDialog(
     context: context,
     builder: (BuildContext context) {
       return AlertDialog(
         title: Text(title),
-        content: TextFormField(
-          initialValue: initialValue,
-          controller: myController,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(text),
+            TextFormField(
+              controller: myController,
+              autofocus: true,
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -120,7 +125,6 @@ void displayInformation(context, text){
   ScaffoldMessenger.of(context).hideCurrentSnackBar();
   ScaffoldMessenger.of(context).showSnackBar(snackBar);
 }
-
 
 class MultiSelectDialogItem<V> {
   const MultiSelectDialogItem(this.value, this.label);
