@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:field_form/constants.dart';
+import 'package:field_form/new_location_screen.dart';
 import 'package:field_form/settings.dart';
 import 'package:field_form/measurements.dart';
 import 'package:file_picker/file_picker.dart';
@@ -445,7 +446,7 @@ class _MyAppState extends State<MyApp> {
       mapType: mapType!,
       mapToolbarEnabled: false,
       onLongPress: (latlng) {
-        if (prefs!.getBool('disable_adding_locations') ?? true) {
+        if (prefs!.getBool('disable_adding_locations') ?? false) {
           return;
         }
         setState(() {
@@ -454,9 +455,9 @@ class _MyAppState extends State<MyApp> {
             markerId: MarkerId(id),
             position: latlng,
             infoWindow: InfoWindow(
-              title: 'New marker',
+              title: 'Add a new location',
               onTap: () {
-                newLocationDialog(context, latlng, locData.locations);
+                addNewLocation(context, latlng);
               },
             ),
             icon: BitmapDescriptor.defaultMarkerWithHue(
@@ -934,47 +935,23 @@ class _MyAppState extends State<MyApp> {
     }
     await Share.shareFiles(files);
   }
+
+  Future addNewLocation(BuildContext context, LatLng latlng) async {
+    //TODO: Finish the new-location dialog
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) {
+        return NewLocationScreen(latLng: latlng);
+      }),
+    );
+    if (result != null) {
+      await setMarkers();
+      setState(() {});
+    }
+  }
 }
 
-String getMeasurementFileName(){
-  return 'measurements-' + Constant.file_datetime_format.format(DateTime.now()) + '.csv';
-}
 
 
-Future newLocationDialog(BuildContext context, latlng, locations) async {
-  //TODO: Finish the new-location dialog
-  var teamName = '';
-  return showDialog(
-    context: context,
-    barrierDismissible:
-        false, // dialog is dismissible with a tap on the barrier
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: Text('New location'),
-        content: Row(
-          children: [
-            Expanded(
-                child: TextField(
-              autofocus: true,
-              decoration: InputDecoration(
-                  labelText: 'Location name',
-                  hintText: 'Please enter the new location name'),
-              onChanged: (value) {
-                teamName = value;
-              },
-            ))
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop(teamName);
-              showErrorDialog(context, 'Not implemented yet');
-            },
-            child: Text('Ok'),
-          ),
-        ],
-      );
-    },
-  );
-}
+
+

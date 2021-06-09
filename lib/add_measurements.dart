@@ -169,22 +169,6 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       final node = FocusScope.of(context);
       var input;
       if (inputField.type == 'choice'){
-        var items = <DropdownMenuItem<String>>[];
-        // add an empty value
-        items.add(
-            DropdownMenuItem(
-              value: '',
-              child: Text(''),
-            )
-        );
-        for (var option in inputField.options!) {
-          items.add(
-            DropdownMenuItem(
-              value: option,
-              child: Text(option),
-            ),
-          );
-        }
         final hint;
         if (inputField.hint == null) {
           hint = null;
@@ -193,7 +177,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
         }
         input = DropdownButtonFormField(
           isExpanded: true,
-          items: items,
+          items: getDropdownMenuItems(inputField.options!),
           onChanged: (String? text) {
             setState(() {
               values[id] = text!;

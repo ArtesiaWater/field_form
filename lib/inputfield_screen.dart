@@ -159,7 +159,9 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
               ),
               initialValue: inputField.name,
               onChanged: (String text) {
-                inputField.name = text;
+                if (text.isNotEmpty) {
+                  inputField.name = text;
+                }
               },
             ),
             DropdownButtonFormField(

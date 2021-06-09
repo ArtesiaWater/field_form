@@ -217,3 +217,7 @@ create table measurements (
     }
   }
 }
+
+String getMeasurementFileName(){
+  return 'measurements-' + Constant.file_datetime_format.format(DateTime.now()) + '.csv';
+}

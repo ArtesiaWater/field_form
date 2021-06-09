@@ -208,3 +208,23 @@ class _MultiSelectDialogState<V> extends State<MultiSelectDialog<V>> {
     );
   }
 }
+
+List<DropdownMenuItem<String>> getDropdownMenuItems(options) {
+  var items = <DropdownMenuItem<String>>[];
+  // add an empty value
+  items.add(
+      DropdownMenuItem(
+        value: '',
+        child: Text(''),
+      )
+  );
+  for (var option in options) {
+    items.add(
+      DropdownMenuItem(
+        value: option,
+        child: Text(option),
+      ),
+    );
+  }
+  return items;
+}

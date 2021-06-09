@@ -30,12 +30,12 @@ class Location {
 
   final double? lat;
   final double? lon;
-  final String? name;
+  String? name;
   final List<String>? inputfields;
   final Map<String, dynamic>? properties;
   final String? photo;
   final Map<String, Location>? sublocations;
-  final String? group;
+  String? group;
   final String? color;
   final Map<String, double>? min;
   final Map<String, double>? max;
