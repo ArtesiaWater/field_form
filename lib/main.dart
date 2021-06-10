@@ -24,6 +24,7 @@ import 'package:path/path.dart' as p;
 // TODO: Make a manual
 // TODO: Minimal and maximal values (HHNK)
 // TODO: Add localisation
+// TODO: Fix round app icon in Android
 
 //void main() => runApp(MyApp());
 void main() => runApp(MaterialApp(home: MyApp()));
@@ -90,6 +91,7 @@ class _MyAppState extends State<MyApp> {
     // request location-permission programatically
     // https://github.com/flutter/flutter/issues/30171
     await Permission.location.request();
+    setState(() {});
   }
 
   void getprefs() async{
@@ -511,6 +513,9 @@ class _MyAppState extends State<MyApp> {
     }
     await setMarkers();
     setState(() {});
+    if (location_file.locations != null) {
+      ZoomToAllLocations();
+    }
   }
 
   Future<void> setMarkers() async {
