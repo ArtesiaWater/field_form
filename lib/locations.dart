@@ -31,7 +31,7 @@ class Location {
   final double? lat;
   final double? lon;
   String? name;
-  final List<String>? inputfields;
+  List<String>? inputfields;
   final Map<String, dynamic>? properties;
   final String? photo;
   final Map<String, Location>? sublocations;

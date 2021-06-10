@@ -24,7 +24,6 @@ import 'package:path/path.dart' as p;
 // TODO: Make a manual
 // TODO: Minimal and maximal values (HHNK)
 // TODO: Add localisation
-// TODO: Make screen to edit inputfields
 
 //void main() => runApp(MyApp());
 void main() => runApp(MaterialApp(home: MyApp()));
@@ -333,7 +332,6 @@ class _MyAppState extends State<MyApp> {
                 },
               );
 
-              print(selectedGroups);
               if (selectedGroups != null) {
                 await prefs!.setStringList('selected_groups', selectedGroups.toList());
                 await setMarkers();

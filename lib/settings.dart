@@ -49,6 +49,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return SettingsList(
       sections: [
         SettingsSection(
+            tiles: [
+              SettingsTile.switchTile(
+                title: 'Use standard time',
+                subtitle: 'When true, disable daylight saving time',
+                leading: Icon(Icons.access_time),
+                switchValue: widget.prefs.getBool('use_standard_time') ?? false,
+                onToggle: (bool value) {
+                  setState(() {
+                    widget.prefs.setBool('use_standard_time', value);
+                  });
+                },
+              ),
+              SettingsTile(
+                  title: 'Edit input fields',
+                  leading: Icon(Icons.wysiwyg_rounded),
+                  onPressed: (BuildContext context) async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) {
+                        return InputFieldsScreen();
+                      }),
+                    );
+                  }
+              )
+            ]
+        ),
+        SettingsSection(
           title: 'FTP',
           tiles: [
             SettingsTile(
@@ -109,29 +136,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 });
               },
             ),
-            SettingsTile.switchTile(
-              title: 'Use standard time',
-              subtitle: 'When true, disable daylight saving time',
-              leading: Icon(Icons.access_time),
-              switchValue: widget.prefs.getBool('use_standard_time') ?? false,
-              onToggle: (bool value) {
-                setState(() {
-                  widget.prefs.setBool('use_standard_time', value);
-                });
-              },
-            ),
-            SettingsTile(
-              title: 'Edit input fields',
-              leading: Icon(Icons.wysiwyg_rounded),
-              onPressed: (BuildContext context) async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) {
-                    return InputFieldsScreen();
-                  }),
-                );
-              }
-            )
           ],
         ),
       ],

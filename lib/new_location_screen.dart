@@ -32,7 +32,7 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
 
   @override
   Widget build(BuildContext context) {
-
+    final node = FocusScope.of(context);
     return Scaffold(
         appBar: AppBar(
           title: Text('New Location'),
@@ -58,6 +58,8 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
                 id = text;
               },
               autofocus: true,
+              textInputAction: TextInputAction.next,
+              onEditingComplete: () => node.nextFocus(),
             ),
             TextFormField(
               decoration: const InputDecoration(
@@ -70,6 +72,8 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
                 }
               },
               autofocus: true,
+              textInputAction: TextInputAction.next,
+              onEditingComplete: () => node.nextFocus(),
             ),
             DropdownButtonFormField(
               decoration: const InputDecoration(
@@ -85,28 +89,64 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
                     location.group = text;
                   }
                 });
+                node.requestFocus(FocusNode());
               },
             ),
-            // TODO: add inputfields to new location dialog
-            Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [Expanded(
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        if (locData.locations.containsKey(id)) {
-                          // TODO: show dialog that id allready exists
-                          return;
-                        }
-                        locData.locations[id] = location;
-                        locData.save_locations();
-                        Navigator.pop(context, location);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        primary: Constant.primaryColor,
-                      ),
-                      child: Text('Done'),
-                    )
-                )]
+            TextFormField(
+              readOnly: true,
+              decoration: InputDecoration(
+                labelText: 'Input fields',
+                hintText: 'Tap to add input fields',
+              ),
+              controller: TextEditingController(text: (location.inputfields ?? '').toString()),
+              onTap: () async {
+                final items = <MultiSelectDialogItem<String>>[];
+                locData.inputFields.forEach((id, inputField){
+                  var label = inputField.name ?? id;
+                  items.add(MultiSelectDialogItem(id, label));
+                });
+                final initialSelectedValues = location.inputfields ?? <String>[];
+                final selection = await showDialog<Set<String>>(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return MultiSelectDialog(
+                      items: items,
+                      initialSelectedValues: initialSelectedValues.toSet(),
+                      title: 'Select input fields',
+                    );
+                  },
+                );
+
+                if (selection != null) {
+                  setState(() {
+                    if (selection.isEmpty){
+                      location.inputfields = null;
+                    } else {
+                      location.inputfields = selection.toList();
+                    }
+                  });
+                }
+              },
+            ),
+
+            ElevatedButton(
+              onPressed: () async {
+                if (id.isEmpty) {
+                  showErrorDialog(context, 'Please specify an id.');
+                  return;
+                }
+                if (locData.locations.containsKey(id)) {
+                  showErrorDialog(context, 'The id $id already exists. Please enter another id.');
+                  return;
+                }
+                locData.locations[id] = location;
+                locData.save_locations();
+                Navigator.pop(context, location);
+              },
+              style: ElevatedButton.styleFrom(
+                primary: Constant.primaryColor,
+              ),
+              child: Text('Done'),
             )
           ],
         )

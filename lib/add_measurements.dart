@@ -154,6 +154,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
     ));
 
     // Add a row for each inputField
+    final node = FocusScope.of(context);
     for (final id in inputFieldIds!) {
       var inputField = locData.inputFields[id]!;
       var keyboardType = TextInputType.text;
@@ -166,7 +167,6 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       } else {
         inputFormatters.add(FilteringTextInputFormatter.deny(RegExp('[;]')));
       }
-      final node = FocusScope.of(context);
       var input;
       if (inputField.type == 'choice'){
         final hint;
@@ -177,7 +177,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
         }
         input = DropdownButtonFormField(
           isExpanded: true,
-          items: getDropdownMenuItems(inputField.options!),
+          items: getDropdownMenuItems(inputField.options ?? <String>[]),
           onChanged: (String? text) {
             setState(() {
               values[id] = text!;
@@ -186,7 +186,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
           value: values[id],
           onTap: () {
             //  'steal' focuses off of the TextField that was previously focused on the dropdown tap
-            node.nextFocus();
+            node.requestFocus(FocusNode());
           },
           hint: hint,
         );
@@ -202,7 +202,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
           },
           validator: validator,
           inputFormatters: inputFormatters,
-          textInputAction: TextInputAction.next,
+          textInputAction: id == inputFieldIds!.last ? null: TextInputAction.next,
           onEditingComplete: () => node.nextFocus(), // Move focus to next
         );
       }
@@ -222,36 +222,31 @@ class _AddMeasurementsState extends State<AddMeasurements> {
     };
 
     // Add Done button
-    rows.add(Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [Expanded(
-        child: ElevatedButton(
-          onPressed: () async {
-            if (_formKey.currentState!.validate()) {
-              for (var id in inputFieldIds!) {
-                if (values.containsKey(id)) {
-                  if (values[id]!.isEmpty) {
-                    continue;
-                  }
-                  var measurement = Measurement(
-                      location: widget.locationId,
-                      datetime: now,
-                      type: id,
-                      value: values[id]!);
-                  await widget.measurementProvider.insert(measurement);
-                }
+    rows.add(ElevatedButton(
+      onPressed: () async {
+        if (_formKey.currentState!.validate()) {
+          for (var id in inputFieldIds!) {
+            if (values.containsKey(id)) {
+              if (values[id]!.isEmpty) {
+                continue;
               }
-
-              // Navigate back to the map when tapped.
-              Navigator.pop(context, true);
+              var measurement = Measurement(
+                  location: widget.locationId,
+                  datetime: now,
+                  type: id,
+                  value: values[id]!);
+              await widget.measurementProvider.insert(measurement);
             }
-          },
-          style: ElevatedButton.styleFrom(
-            primary: Constant.primaryColor,
-          ),
-          child: Text('Done'),
-        )
-      )]
+          }
+
+          // Navigate back to the map when tapped.
+          Navigator.pop(context, true);
+        }
+      },
+      style: ElevatedButton.styleFrom(
+        primary: Constant.primaryColor,
+      ),
+      child: Text('Done'),
     ));
 
     // Add previous measurements

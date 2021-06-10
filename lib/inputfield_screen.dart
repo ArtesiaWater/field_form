@@ -131,7 +131,7 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
           )
       );
     }
-
+    final node = FocusScope.of(context);
     return Scaffold(
         appBar: AppBar(
           title: Text(widget.id),
@@ -156,6 +156,7 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
             TextFormField(
               decoration: InputDecoration(
                 labelText: 'name',
+                hintText: 'An optional name',
               ),
               initialValue: inputField.name,
               onChanged: (String text) {
@@ -163,6 +164,8 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
                   inputField.name = text;
                 }
               },
+              textInputAction: TextInputAction.next,
+              onEditingComplete: () => node.nextFocus(),
             ),
             DropdownButtonFormField(
               decoration: InputDecoration(
@@ -179,46 +182,51 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
                 }
               },
             ),
-            if (inputField.type == 'choice') TextButton(
-              onPressed: () async {
+            if (inputField.type == 'choice') TextFormField(
+              readOnly: true,
+              decoration: InputDecoration(
+                labelText: 'Options',
+                hintText: 'Tap to add options',
+              ),
+              controller: TextEditingController(text: (inputField.options ?? '').toString()),
+              onTap: () async {
+                // make sure the textfield is not focussed
                 final new_options = await Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) {
-                    return OptionsScreen(options: inputField.options!);
+                    return OptionsScreen(options: inputField.options ?? <String>[]);
                   }),
                 );
                 if (new_options != null) {
                   setState(() {
-                    inputField.options = new_options;
+                    if (new_options.isEmpty()){
+                      inputField.options = null;
+                    } else {
+                      inputField.options = new_options;
+                    }
                   });
                 }
               },
-              child: Text(inputField.options.toString()),
             ),
             TextFormField(
               decoration: InputDecoration(
                 labelText: 'hint',
+                hintText: 'An optional hint',
               ),
-              initialValue: inputField.hint,
+              controller: TextEditingController(text: inputField.hint),
               onChanged: (String text) {
                 inputField.hint = text;
               },
             ),
-            Row(
-              children: [
-                Expanded(
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        // Navigate back to the map when tapped.
-                        Navigator.pop(context, inputField);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        primary: Constant.primaryColor,
-                      ),
-                      child: Text('Done'),
-                    )
-                )
-              ]
+            ElevatedButton(
+              onPressed: () async {
+                // Navigate back to the map when tapped.
+                Navigator.pop(context, inputField);
+              },
+              style: ElevatedButton.styleFrom(
+                primary: Constant.primaryColor,
+              ),
+              child: Text('Done'),
             )
           ]
         )
