@@ -25,6 +25,9 @@ import 'package:path/path.dart' as p;
 // TODO: Minimal and maximal values (HHNK)
 // TODO: Add localisation
 // TODO: Fix round app icon in Android
+// TODO: Share button broken without locations
+// TODO: Location is only visible after second lanch
+
 
 //void main() => runApp(MyApp());
 void main() => runApp(MaterialApp(home: MyApp()));
