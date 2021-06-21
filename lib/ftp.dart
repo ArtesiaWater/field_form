@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:ftpconnect/ftpconnect.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'dialogs.dart';
 
-Future<FTPConnect?> connectToFtp(context, prefs, {path}) async {
+const supportIPv6 = false;
+
+Future<FTPConnect?> connectToFtp(BuildContext context, SharedPreferences prefs, {String? path}) async {
   var host = prefs.getString('ftp_hostname') ?? '';
   var user = prefs.getString('ftp_username') ?? '';
   var pass = prefs.getString('ftp_password') ?? '';
@@ -35,7 +38,7 @@ Future<FTPConnect?> connectToFtp(context, prefs, {path}) async {
   return ftpConnect;
 }
 
-Future<bool> changeDirectory(ftpConnect, context, path) async {
+Future<bool> changeDirectory(FTPConnect ftpConnect, BuildContext context, String path) async {
   var success = await ftpConnect.changeDirectory(path);
   if (!success) {
     await ftpConnect.disconnect();
@@ -44,11 +47,12 @@ Future<bool> changeDirectory(ftpConnect, context, path) async {
   return success;
 }
 
-Future<String?> chooseFtpPath(ftpConnect, context, prefs) async {
+Future<String?> chooseFtpPath(FTPConnect ftpConnect, BuildContext context, SharedPreferences prefs) async {
   var names;
   try {
     //Get directory content
-    names = await ftpConnect.listDirectoryContentOnlyNames();
+    final list = await ftpConnect.listDirectoryContent(supportIPv6:supportIPv6);
+    names = list.map((f) => f.name).whereType<String>().toList();
   } catch (e) {
     await ftpConnect.disconnect();
     showErrorDialog(context, e.toString());

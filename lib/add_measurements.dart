@@ -355,7 +355,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       if (await ftpConnect.existFile(name)) {
         // Download photo
         displayInformation(context, 'Downloading ' + name);
-        var success = await ftpConnect.downloadFile(name, file);
+        var success = await ftpConnect.downloadFile(name, file, supportIPv6:supportIPv6);
         await ftpConnect.disconnect();
         setState(() {isLoading = false;});
         if (!success){

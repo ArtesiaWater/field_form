@@ -9,7 +9,9 @@ import 'package:field_form/new_location_screen.dart';
 import 'package:field_form/settings.dart';
 import 'package:field_form/measurements.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:ftpconnect/ftpconnect.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -26,8 +28,7 @@ import 'package:path/path.dart' as p;
 // TODO: Add localisation
 // TODO: Fix round app icon in Android
 // TODO: Share button broken without locations
-// TODO: Location is only visible after second lanch
-
+// TODO: Location is only visible after second launch
 
 //void main() => runApp(MyApp());
 void main() => runApp(MaterialApp(home: MyApp()));
@@ -672,9 +673,14 @@ class _MyAppState extends State<MyApp> {
       if (is_location_file) {
         if (file.path.endsWith('.json')) {
           try {
-            await read_location_file(file);
+            var action = await showContinueDialog(context, 'Importing new locations will remove all existing locations. Do you want to continue?',
+                yesButton: 'Yes', noButton: 'No', title: 'Import will remove existing locations');
+            if (action == true) {
+              await read_location_file(file);
+              locData.save_locations();
+            }
           } catch (e) {
-            showErrorDialog(context, e.toString());
+            showErrorDialog(context, e.toString(), title:'Import failed');
           }
         } else if (file.path.endsWith('.csv')) {
           showErrorDialog(context, 'csv-loction files not implemented yet. Use json-files instead');
@@ -685,7 +691,7 @@ class _MyAppState extends State<MyApp> {
         try {
           await measurementProvider.importFromCsv(file);
         } catch (e) {
-          showErrorDialog(context, e.toString());
+          showErrorDialog(context, e.toString(), title:'Import failed');
         }
       }
     }
@@ -784,7 +790,7 @@ class _MyAppState extends State<MyApp> {
 
   void unawaited(Future<void>? future) {}
 
-  Future<bool> sendMeasurementsToFtp(ftpConnect, prefs) async {
+  Future<bool> sendMeasurementsToFtp(FTPConnect ftpConnect, SharedPreferences prefs) async {
     var only_export_new_data = prefs.getBool('only_export_new_data') ?? true;
     var new_file_name = getMeasurementFileName();
     var tempDir = await getTemporaryDirectory();
@@ -796,9 +802,9 @@ class _MyAppState extends State<MyApp> {
     } else {
       displayInformation(context, 'Sending measurements');
       // file is null when there are no (new) measurements
-      bool success = await ftpConnect.uploadFile(file);
+      var success = await ftpConnect.uploadFile(file, supportIPV6: supportIPv6);
       if (!success) {
-        ftpConnect.disconnect();
+        unawaited(ftpConnect.disconnect());
         showErrorDialog(context, 'Unable to upload measurements');
         return false;
       }
@@ -812,7 +818,7 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  void synchroniseWithFtp(context) async {
+  void synchroniseWithFtp(BuildContext context) async {
     var success;
     setState(() {isLoading = true;});
     //showLoaderDialog(context, text: 'Synchronising with FTP server');
@@ -845,14 +851,14 @@ class _MyAppState extends State<MyApp> {
     displayInformation(context, 'Synchronisation complete');
   }
 
-  Future <bool> downloadDataFromFtp(ftpConnect, context, prefs) async{
+  Future <bool> downloadDataFromFtp(FTPConnect ftpConnect, BuildContext context, SharedPreferences prefs) async{
     var importedMeasurementFiles = prefs.getStringList('imported_measurement_files') ?? <String>[];
     var importedLocationFiles = prefs.getStringList('imported_location_files') ?? <String>[];
     var tempDir = await getTemporaryDirectory();
 
     displayInformation(context, 'Retrieving file list');
-    var names = await ftpConnect.listDirectoryContentOnlyNames();
-
+    final list = await ftpConnect.listDirectoryContent(supportIPv6:supportIPv6);
+    var names = list.map((f) => f.name).whereType<String>().toList();
     names.sort((a, b) => a.toString().compareTo(b.toString()));
 
     displayInformation(context, 'Retrieved files');
@@ -868,9 +874,9 @@ class _MyAppState extends State<MyApp> {
       displayInformation(context, 'Downloading $name');
       // download locations
       var file = File(p.join(tempDir.path, name));
-      bool success = await ftpConnect.downloadFile(name, file);
+      var success = await ftpConnect.downloadFile(name, file, supportIPv6: supportIPv6);
       if (!success){
-        ftpConnect.disconnect();
+        unawaited(ftpConnect.disconnect());
         showErrorDialog(context, 'Unable to download ' + name);
         return false;
       }
@@ -878,7 +884,7 @@ class _MyAppState extends State<MyApp> {
       try {
         await read_location_file(file);
       } catch (e) {
-        ftpConnect.disconnect();
+        unawaited(ftpConnect.disconnect());
         showErrorDialog(context, e.toString());
         return false;
       }
@@ -886,7 +892,7 @@ class _MyAppState extends State<MyApp> {
       // save locations
       locData.save_locations();
       importedLocationFiles.add(name);
-      prefs.setStringList('imported_location_files', importedLocationFiles);
+      unawaited(prefs.setStringList('imported_location_files', importedLocationFiles));
     }
 
     // TODO: first collect all measurements, then add to database
@@ -898,26 +904,32 @@ class _MyAppState extends State<MyApp> {
         displayInformation(context, 'Downloading ' + name);
         // download measurements
         var file = File(p.join(tempDir.path, name));
-        bool success = await ftpConnect.downloadFile(name, file);
-        if (!success){
-          ftpConnect.disconnect();
-          showErrorDialog(context, 'Unable to download ' + name);
+        try {
+          var success = await ftpConnect.downloadFile(name, file, supportIPv6:supportIPv6);
+          if (!success) {
+            unawaited(ftpConnect.disconnect());
+            showErrorDialog(context, 'Unable to download ' + name);
+            return false;
+          }
+        } catch (e) {
+          print(e);
+          showErrorDialog(context, e.toString());
           return false;
         }
         // read measurements
         try {
           await measurementProvider.importFromCsv(file);
         } catch (e) {
-          ftpConnect.disconnect();
+          unawaited(ftpConnect.disconnect());
           showErrorDialog(context, e.toString());
           return false;
         }
         importedMeasurementFiles.add(name);
-        prefs.setStringList('imported_measurement_files', importedMeasurementFiles);
+        await prefs.setStringList('imported_measurement_files', importedMeasurementFiles);
       }
     }
     // update markers
-    if ((prefs!.getInt('mark_measured_days') ?? 0) > 0) {
+    if ((prefs.getInt('mark_measured_days') ?? 0) > 0) {
       await setMarkers();
       setState(() {});
     }
