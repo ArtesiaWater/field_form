@@ -673,11 +673,19 @@ class _MyAppState extends State<MyApp> {
       if (is_location_file) {
         if (file.path.endsWith('.json')) {
           try {
-            var action = await showContinueDialog(context, 'Importing new locations will remove all existing locations. Do you want to continue?',
-                yesButton: 'Yes', noButton: 'No', title: 'Import will remove existing locations');
-            if (action == true) {
+            if (locData.locations.isEmpty) {
               await read_location_file(file);
               locData.save_locations();
+            } else {
+              var action = await showContinueDialog(context,
+                  'Importing new locations will remove all existing locations. Do you want to continue?',
+                  yesButton: 'Yes',
+                  noButton: 'No',
+                  title: 'Import will remove existing locations');
+              if (action == true) {
+                await read_location_file(file);
+                locData.save_locations();
+              }
             }
           } catch (e) {
             showErrorDialog(context, e.toString(), title:'Import failed');
