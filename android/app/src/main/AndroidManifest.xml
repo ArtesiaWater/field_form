@@ -6,7 +6,8 @@
    <uses-permission android:name="android.permission.WAKE_LOCK" />
    <application
         android:label="FieldForm"
-        android:icon="@mipmap/launcher_icon">
+        android:icon="@mipmap/launcher_icon"
+        android:roundIcon="@mipmap/launcher_icon_round">
         <activity
             android:name=".MainActivity"
             android:launchMode="singleTop"
