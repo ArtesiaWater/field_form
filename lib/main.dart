@@ -26,8 +26,6 @@ import 'package:path/path.dart' as p;
 // TODO: Make a manual
 // TODO: Minimal and maximal values (HHNK)
 // TODO: Add localisation
-// TODO: Fix round app icon in Android
-// TODO: Share button broken without locations
 // TODO: Location is only visible after second launch
 
 //void main() => runApp(MyApp());
@@ -52,6 +50,7 @@ class _MyAppState extends State<MyApp> {
     'terrain': MapType.terrain
   };
   late BitmapDescriptor markedIcon;
+  bool myLocationEnabled = false;
 
   @override
   void initState() {
@@ -94,8 +93,17 @@ class _MyAppState extends State<MyApp> {
   Future<void> requestPermission() async {
     // request location-permission programatically
     // https://github.com/flutter/flutter/issues/30171
-    await Permission.location.request();
-    setState(() {});
+    final status = await Permission.location.status;
+    if (status == PermissionStatus.granted){
+      myLocationEnabled = true;
+    } else {
+      final permissionStatus = await Permission.location.request();
+      if (permissionStatus == PermissionStatus.granted) {
+        setState(() {
+          myLocationEnabled = true;
+        });
+      }
+    }
   }
 
   void getprefs() async{
@@ -443,7 +451,7 @@ class _MyAppState extends State<MyApp> {
 
     return GoogleMap(
       onMapCreated: _onMapCreated,
-      myLocationEnabled: true,
+      myLocationEnabled: myLocationEnabled,
       initialCameraPosition: initialCameraPosition,
       compassEnabled: true,
       markers: markers.toSet(),
@@ -488,13 +496,13 @@ class _MyAppState extends State<MyApp> {
       return;
     }
     try {
-      await read_location_file(file);
+      await read_location_file(file, zoom: false);
     } catch (e) {
       showErrorDialog(context, e.toString());
     }
   }
 
-  Future <void> read_location_file(File file) async {
+  Future <void> read_location_file(File file, {zoom:true}) async {
     var location_file = LocationFile.fromJson(
         json.decode(await file.readAsString()));
 
@@ -503,7 +511,9 @@ class _MyAppState extends State<MyApp> {
     }
     if (location_file.locations != null) {
       locData.locations = location_file.locations!;
-      ZoomToAllLocations();
+      if (zoom) {
+        ZoomToAllLocations();
+      }
     }
     if (location_file.inputfields == null) {
       locData.inputFields = getDefaultInputFields();
@@ -945,19 +955,23 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future share_data() async {
-    final directory = await getApplicationDocumentsDirectory();
+    final docsDir = await getApplicationDocumentsDirectory();
     var files = <String>[];
-    var measurement_path = '${directory.path}/locations.json';
-    if (await File(measurement_path).exists()){
-      files.add(measurement_path);
+    var file = File(p.join(docsDir.path, 'locations.json'));
+    if (await file.exists()){
+      files.add(file.path);
     }
     var new_file_name = getMeasurementFileName();
     var tempDir = await getTemporaryDirectory();
-    File? file = File(p.join(tempDir.path, new_file_name));
-    file = await measurementProvider.exportToCsv(file,
+    file = File(p.join(tempDir.path, new_file_name));
+    var meas_file = await measurementProvider.exportToCsv(file,
         only_export_new_data: false);
-    if (file != null) {
-      files.add(file.path);
+    if (meas_file != null) {
+      files.add(meas_file.path);
+    }
+    if (files.isEmpty){
+      showErrorDialog(context, 'There is no data to share');
+      return;
     }
     await Share.shareFiles(files);
   }
