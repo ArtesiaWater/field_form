@@ -17,6 +17,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:share/share.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 import 'add_measurements.dart';
 import 'dialogs.dart';
 import 'ftp.dart';
@@ -26,7 +27,6 @@ import 'package:path/path.dart' as p;
 // TODO: Make a manual
 // TODO: Minimal and maximal values (HHNK)
 // TODO: Add localisation
-// TODO: Location is only visible after second launch
 
 //void main() => runApp(MyApp());
 void main() => runApp(MaterialApp(home: MyApp()));
@@ -43,19 +43,23 @@ class _MyAppState extends State<MyApp> {
   SharedPreferences? prefs;
   late MeasurementProvider measurementProvider;
   var mapController;
+  var maptype = 'normal';
   static const maptypes = {
     'normal': MapType.normal,
     'satellite': MapType.satellite,
     'hybrid': MapType.hybrid,
-    'terrain': MapType.terrain
+    'terrain': MapType.terrain,
+    'OSM': MapType.none
   };
   late BitmapDescriptor markedIcon;
   bool myLocationEnabled = false;
+
 
   @override
   void initState() {
     super.initState();
     getprefs();
+
     measurementProvider = MeasurementProvider();
     measurementProvider.open();
     requestPermission();
@@ -108,7 +112,9 @@ class _MyAppState extends State<MyApp> {
 
   void getprefs() async{
     prefs = await SharedPreferences.getInstance();
-    setState(() {});
+    setState(() {
+      maptype = prefs!.getString('map_type') ?? 'normal';
+    });
   }
 
   @override
@@ -140,12 +146,6 @@ class _MyAppState extends State<MyApp> {
   }
 
   Align buildChangeMapTypeButton(){
-    final maptype;
-    if (prefs == null){
-      maptype = 'normal';
-    } else {
-      maptype = prefs!.getString('map_type') ?? 'normal';
-    }
     return Align(
       alignment: Alignment.topCenter,
       child: Container(
@@ -183,6 +183,9 @@ class _MyAppState extends State<MyApp> {
             if (action != null) {
               setState(() {
                 prefs!.setString('map_type', action);
+                setState(() {
+                  maptype = action;
+                });
               });
             }
           },
@@ -449,7 +452,15 @@ class _MyAppState extends State<MyApp> {
       target: LatLng(lat, lng),
       zoom: zoom,
     );
-    var mapType = maptypes[prefs!.getString('map_type') ?? 'normal'];
+    var mapType = maptypes[maptype]!;
+
+    final tileOverlays = <TileOverlay>{};
+    if (maptype == 'OSM') {
+      tileOverlays.add(TileOverlay(
+        tileOverlayId: TileOverlayId('tile_overlay_1'),
+        tileProvider: OsmTileProvider(),
+      ));
+    }
 
     return GoogleMap(
       onMapCreated: _onMapCreated,
@@ -457,8 +468,9 @@ class _MyAppState extends State<MyApp> {
       initialCameraPosition: initialCameraPosition,
       compassEnabled: true,
       markers: markers.toSet(),
-      mapType: mapType!,
+      mapType: mapType,
       mapToolbarEnabled: false,
+      tileOverlays: tileOverlays,
       onLongPress: (latlng) {
         if (prefs!.getBool('disable_adding_locations') ?? false) {
           return;
@@ -504,7 +516,7 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  Future <void> read_location_file(File file, {zoom:true}) async {
+  Future <void> read_location_file(File file, {zoom=true}) async {
     var location_file = LocationFile.fromJson(
         json.decode(await file.readAsString()));
 
@@ -979,7 +991,6 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future addNewLocation(BuildContext context, LatLng latlng) async {
-    //TODO: Finish the new-location dialog
     final result = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) {
@@ -993,7 +1004,15 @@ class _MyAppState extends State<MyApp> {
   }
 }
 
+class OsmTileProvider implements TileProvider {
+  static const int width = 256;
+  static const int height = 256;
 
-
-
-
+  @override
+  Future<Tile> getTile(int x, int y, int? zoom) async {
+    final url = 'https://tile.openstreetmap.org/$zoom/$x/$y.png';
+    final response = await http.get(Uri.parse(url));
+    final data = response.bodyBytes;
+    return Tile(width, height, data);
+  }
+}

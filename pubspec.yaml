@@ -41,6 +41,7 @@ dependencies:
   csv: ^5.0.0
   native_pdf_view: any
   permission_handler: ^8.0.0+2
+  http: ^0.13.3
 
 dev_dependencies:
   flutter_test:
