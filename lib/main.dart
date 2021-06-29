@@ -113,23 +113,19 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    if (prefs == null) {
-      return buildLoadingScreen();
-    } else {
-      return Scaffold(
-        resizeToAvoidBottomInset: false,
-        appBar: buildAppBar(),
-        drawer: buildDrawer(),
-        body: Stack(
-          children: [
-            buildMap(),
-            buildShowAllMarkerButton(),
-            buildChangeMapTypeButton(),
-            if (isLoading) buildLoadingIndicator(),
-          ]
-        ),
-      );
-    }
+    return Scaffold(
+      resizeToAvoidBottomInset: false,
+      appBar: buildAppBar(),
+      drawer: buildDrawer(),
+      body: Stack(
+        children: [
+          buildMap(),
+          buildShowAllMarkerButton(),
+          buildChangeMapTypeButton(),
+          if (isLoading) buildLoadingIndicator(),
+        ]
+      ),
+    );
   }
 
   ButtonStyle getMapButtonStyle() {
@@ -144,7 +140,12 @@ class _MyAppState extends State<MyApp> {
   }
 
   Align buildChangeMapTypeButton(){
-    var maptype = prefs!.getString('map_type') ?? 'normal';
+    final maptype;
+    if (prefs == null){
+      maptype = 'normal';
+    } else {
+      maptype = prefs!.getString('map_type') ?? 'normal';
+    }
     return Align(
       alignment: Alignment.topCenter,
       child: Container(
@@ -248,17 +249,15 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  Scaffold buildLoadingScreen(){
-    return Scaffold(
-      body: Container(
-        child: Center(
-          child: Text(
-            'loading map..',
-            style:
-            TextStyle(fontFamily: 'Avenir-Medium', color: Colors.grey[400]),
-          ),
+  Widget buildLoadingScreen(){
+    return Container(
+      child: Center(
+        child: Text(
+          'loading map..',
+          style:
+          TextStyle(fontFamily: 'Avenir-Medium', color: Colors.grey[400]),
         ),
-      )
+      ),
     );
   }
 
@@ -439,7 +438,10 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  GoogleMap buildMap() {
+  Widget buildMap() {
+    if (prefs == null) {
+      return buildLoadingScreen();
+    }
     var lat = prefs!.getDouble('latitude') ?? 30;
     var lng = prefs!.getDouble('longitude') ?? 0;
     var zoom = prefs!.getDouble('zoom') ?? 2;
