@@ -121,7 +121,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) {
-                  return PropertiesScreen(location: location);
+                  return PropertiesScreen(location: location, locationId:widget.locationId);
                 }),
               );
             },

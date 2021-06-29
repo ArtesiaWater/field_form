@@ -4,15 +4,16 @@ import 'constants.dart';
 import 'locations.dart';
 
 class PropertiesScreen extends StatelessWidget {
-  PropertiesScreen({key, required this.location}) : super(key: key);
+  PropertiesScreen({key, required this.location, required this.locationId}) : super(key: key);
 
   final Location location;
+  final String locationId;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Properties'),
+        title: Text('Properties ' + (location.name ?? locationId)),
         backgroundColor: Constant.primaryColor,
         ),
       body:  ListView.separated(
