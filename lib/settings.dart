@@ -18,6 +18,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   var isLoading = false;
+  var redrawMap = false;
 
   @override
   void initState() {
@@ -26,17 +27,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar(
-          title: Text('Settings'),
-          backgroundColor: Constant.primaryColor,
-      ),
+    return WillPopScope(
+        onWillPop: () async {
+          Navigator.pop(context, redrawMap);
+          return false;
+        },
+      child: Scaffold(
+          appBar: AppBar(
+            title: Text('Settings'),
+            backgroundColor: Constant.primaryColor,
+        ),
 
-      body:  Stack(
-        children: [
-          buildSettings(),
-          if (isLoading) buildLoadingIndicator(),
-        ],
+        body:  Stack(
+          children: [
+            buildSettings(),
+            if (isLoading) buildLoadingIndicator(),
+          ],
+        )
       )
     );
   }
@@ -46,34 +53,70 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (widget.prefs.containsKey('ftp_password')) {
       password = widget.prefs.getString('ftp_password')!;
     };
+    final wmsOn = widget.prefs.getBool('wms_on') ?? false;
     return SettingsList(
       sections: [
         SettingsSection(
+          title: 'Input',
+          tiles: [
+            SettingsTile(
+                title: 'Edit input fields',
+                leading: Icon(Icons.wysiwyg_rounded),
+                onPressed: (BuildContext context) async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) {
+                      return InputFieldsScreen();
+                    }),
+                  );
+                }
+            ),
+            SettingsTile.switchTile(
+              title: 'Use standard time',
+              subtitle: 'When true, disable daylight saving time',
+              leading: Icon(Icons.access_time),
+              switchValue: widget.prefs.getBool('use_standard_time') ?? false,
+              onToggle: (bool value) {
+                setState(() {
+                  widget.prefs.setBool('use_standard_time', value);
+                });
+              },
+            ),
+          ]
+        ),
+        SettingsSection(
+            title: 'WMS',
             tiles: [
-              SettingsTile.switchTile(
-                title: 'Use standard time',
-                subtitle: 'When true, disable daylight saving time',
-                leading: Icon(Icons.access_time),
-                switchValue: widget.prefs.getBool('use_standard_time') ?? false,
-                onToggle: (bool value) {
-                  setState(() {
-                    widget.prefs.setBool('use_standard_time', value);
-                  });
-                },
-              ),
-              SettingsTile(
-                  title: 'Edit input fields',
-                  leading: Icon(Icons.wysiwyg_rounded),
-                  onPressed: (BuildContext context) async {
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) {
-                        return InputFieldsScreen();
-                      }),
-                    );
-                  }
-              )
-            ]
+            SettingsTile.switchTile(
+              title: 'Add a WMS to the map',
+              leading: Icon(Icons.map),
+              switchValue: wmsOn,
+              onToggle: (bool value) {
+                setState(() {
+                  widget.prefs.setBool('wms_on', value);
+                  redrawMap = true;
+                });
+              },
+            ),
+            if (wmsOn) SettingsTile(
+              title: 'WMS url',
+              subtitle: widget.prefs.getString('wms_url'),
+              leading: Icon(Icons.computer),
+              onPressed: (BuildContext context) {
+                editStringSetting(context, 'wms_url', 'Change WMS url');
+                redrawMap = true;
+              },
+            ),
+            if (wmsOn) SettingsTile(
+              title: 'WMS layers',
+              subtitle: widget.prefs.getString('wms_layers'),
+              leading: Icon(Icons.layers),
+              onPressed: (BuildContext context) {
+                editStringSetting(context, 'wms_layers', 'Change WMS layers');
+                redrawMap = true;
+              },
+            ),
+          ]
         ),
         SettingsSection(
           title: 'FTP',

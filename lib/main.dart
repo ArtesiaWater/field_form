@@ -8,6 +8,7 @@ import 'package:field_form/constants.dart';
 import 'package:field_form/new_location_screen.dart';
 import 'package:field_form/settings.dart';
 import 'package:field_form/measurements.dart';
+import 'package:field_form/wms.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -392,16 +393,19 @@ class _MyAppState extends State<MyApp> {
           ),
           ListTile(
             title: Text('Settings'),
-            onTap: () {
+            onTap: () async {
               // Close the drawer
               Navigator.pop(context);
               // Open the settings screen
-              Navigator.push(
+              final redrawMap = await Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) {
                   return SettingsScreen(prefs: prefs!);
                 }),
               );
+              if (redrawMap) {
+                setState(() {});
+              }
             },
             leading: Icon(Icons.settings),
           ),
@@ -457,10 +461,27 @@ class _MyAppState extends State<MyApp> {
     final tileOverlays = <TileOverlay>{};
     if (maptype == 'OSM') {
       tileOverlays.add(TileOverlay(
-        tileOverlayId: TileOverlayId('tile_overlay_1'),
+        tileOverlayId: TileOverlayId('OpenSTreetmap'),
         tileProvider: OsmTileProvider(),
       ));
     }
+    if (prefs!.getBool('wms_on') ?? false){
+      final wms_url = prefs!.getString('wms_url') ?? '';
+      final wms_layers = prefs!.getString('wms_layers') ?? '';
+      if (wms_url.isNotEmpty & wms_layers.isNotEmpty) {
+        tileOverlays.add(TileOverlay(
+          tileOverlayId: TileOverlayId('WMS'),
+          tileProvider: WmsTileProvider(
+              url: wms_url,
+              layers: wms_layers.split(','),
+              transparent: true
+          ),
+        ));
+      }
+    }
+
+
+
 
     return GoogleMap(
       onMapCreated: _onMapCreated,
