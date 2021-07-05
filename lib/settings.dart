@@ -230,12 +230,15 @@ void parseSettings(Map<String, String> settings, SharedPreferences prefs) async{
       case 'ftp_username':
       case 'ftp_password':
       case 'ftp_path':
+      case 'wms_url':
+      case 'wms_layers':
       // string setting
         await prefs.setString(key, settings[key]!);
         break;
       case 'use_ftps':
       case 'only_export_new_data':
       case 'use_standard_time':
+      case 'wms_on':
       // boolean setting
         var stringValue = settings[key]!.toLowerCase();
         var value = (stringValue == 'yes') || (stringValue == 'true');
