@@ -238,6 +238,11 @@ void parseSettings(Map<String, String> settings, SharedPreferences prefs) async{
       case 'use_ftps':
       case 'only_export_new_data':
       case 'use_standard_time':
+      case 'automatic_synchronisation_on':
+      case 'disable_adding_locations':
+      case 'replace_locations':
+      case "only_upload_measurements":
+      case 'settings_button_off':
       case 'wms_on':
       // boolean setting
         var stringValue = settings[key]!.toLowerCase();

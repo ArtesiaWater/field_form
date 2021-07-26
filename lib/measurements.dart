@@ -180,7 +180,7 @@ create table measurements (
     return file.writeAsString(converter.convert(rows));
   }
 
-  Future <void> importFromCsv(File file) async {
+  Future <void> importFromCsv(File file, {exported = true}) async {
     var converter = const CsvToListConverter(fieldDelimiter: ';',
         shouldParseNumbers: false);
     var rows = converter.convert(await file.readAsString());
@@ -194,7 +194,8 @@ create table measurements (
       var meas = Measurement(location: row[LOCATION],
           datetime: date,
           value: row[VALUE],
-          type: row[TYPE]);
+          type: row[TYPE],
+          exported: exported);
       update_or_insert(meas);
     }
   }

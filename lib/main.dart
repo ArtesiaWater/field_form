@@ -358,7 +358,7 @@ class _MyAppState extends State<MyApp> {
             leading: Icon(Icons.group_work)
           ),
           ListTile(
-              title: Text('Show measured locations'),
+              title: Text('Mark measured locations'),
               onTap: () async {
                 // Close the drawer
                 Navigator.pop(context);
@@ -415,14 +415,23 @@ class _MyAppState extends State<MyApp> {
   }
 
   void chooseMeasuredInterval(BuildContext context, SharedPreferences prefs) async{
+    final mark_measured_days = prefs.getInt('mark_measured_days') ?? 0;
     var options = <Widget>[];
     for (var interval in [0, 1, 7, 30]){
+      final icon;
+      if (interval == mark_measured_days){
+        icon = Icon(Icons.check_box_outlined);
+      } else {
+        icon = Icon(Icons.check_box_outline_blank);
+      }
       options.add(SimpleDialogOption(
           onPressed: () {
             Navigator.of(context).pop(interval);
           },
           child: Row(
               children:[
+                icon,
+                SizedBox(width: 10),
                 Text(interval.toString()),
               ]
           )
