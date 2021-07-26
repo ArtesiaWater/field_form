@@ -767,12 +767,12 @@ class _MyAppState extends State<MyApp> {
     //delete all data in the documents-directory (location-data and photos)
     var docsDir = await getApplicationDocumentsDirectory();
     if (docsDir.existsSync()){
-      for (var file in await docsDir.listSync()) {
+      for (var file in docsDir.listSync()) {
         if (p.basename(file.path) == 'measurements.db'){
           // Do not delete the empty databse with measurements
           continue;
         }
-        file.delete();
+        unawaited(file.delete());
       }
     }
 
@@ -961,6 +961,7 @@ class _MyAppState extends State<MyApp> {
     }
 
     // TODO: first collect all measurements, then add to database
+    var importedMeasurements = false;
     for (var name in names) {
       if (name.startsWith('measurements')) {
         if (importedMeasurementFiles.contains(name)){
@@ -984,6 +985,7 @@ class _MyAppState extends State<MyApp> {
         // read measurements
         try {
           await measurementProvider.importFromCsv(file);
+          importedMeasurements = true;
         } catch (e) {
           unawaited(ftpConnect.disconnect());
           showErrorDialog(context, e.toString());
@@ -994,7 +996,8 @@ class _MyAppState extends State<MyApp> {
       }
     }
     // update markers
-    if ((prefs.getInt('mark_measured_days') ?? 0) > 0) {
+    final mark_measured_days = prefs.getInt('mark_measured_days') ?? 0;
+    if (importedMeasurements && mark_measured_days > 0) {
       await setMarkers();
       setState(() {});
     }

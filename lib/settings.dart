@@ -241,7 +241,7 @@ void parseSettings(Map<String, String> settings, SharedPreferences prefs) async{
       case 'automatic_synchronisation_on':
       case 'disable_adding_locations':
       case 'replace_locations':
-      case "only_upload_measurements":
+      case 'only_upload_measurements':
       case 'settings_button_off':
       case 'wms_on':
       // boolean setting

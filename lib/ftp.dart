@@ -17,7 +17,7 @@ Future<FTPConnect?> connectToFtp(BuildContext context, SharedPreferences prefs, 
     return null;
   }
 
-  var ftpConnect = FTPConnect(host, user: user, pass: pass, timeout: 5);
+  var ftpConnect = FTPConnect(host, user: user, pass: pass, timeout: 30);
   try {
     await ftpConnect.connect();
   } catch (e) {

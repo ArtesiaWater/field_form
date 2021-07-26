@@ -196,11 +196,11 @@ create table measurements (
           value: row[VALUE],
           type: row[TYPE],
           exported: exported);
-      update_or_insert(meas);
+      await update_or_insert(meas);
     }
   }
 
-  void update_or_insert(meas) async {
+  Future<void> update_or_insert(meas) async {
     // check if measurement is already defined
     List<Map> maps = await db.query(table,
         columns: ['id'],
