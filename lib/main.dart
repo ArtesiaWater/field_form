@@ -489,9 +489,6 @@ class _MyAppState extends State<MyApp> {
       }
     }
 
-
-
-
     return GoogleMap(
       onMapCreated: _onMapCreated,
       myLocationEnabled: myLocationEnabled,
@@ -769,8 +766,14 @@ class _MyAppState extends State<MyApp> {
 
     //delete all data in the documents-directory (location-data and photos)
     var docsDir = await getApplicationDocumentsDirectory();
-    if(docsDir.existsSync()){
-      docsDir.deleteSync(recursive: true);
+    if (docsDir.existsSync()){
+      for (var file in await docsDir.listSync()) {
+        if (p.basename(file.path) == 'measurements.db'){
+          // Do not delete the empty databse with measurements
+          continue;
+        }
+        file.delete();
+      }
     }
 
     await setMarkers();
