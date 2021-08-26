@@ -24,13 +24,28 @@ import 'dialogs.dart';
 import 'ftp.dart';
 import 'locations.dart';
 import 'package:path/path.dart' as p;
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 // TODO: Make a manual
 // TODO: Minimal and maximal values (HHNK)
 // TODO: Add localisation
 
-//void main() => runApp(MyApp());
-void main() => runApp(MaterialApp(home: MyApp()));
+void main() {
+  runApp(
+    MaterialApp(
+      localizationsDelegates: [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: [
+        Locale('en', ''), // English, no country code
+        Locale('nl', ''), // Dutch, no country code
+      ],
+      home: MyApp()
+    )
+  );
+}
 
 class MyApp extends StatefulWidget {
   @override
