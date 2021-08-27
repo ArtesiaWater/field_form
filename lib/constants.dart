@@ -9,3 +9,5 @@ class Constant {
   static final datetime_format = DateFormat('yyyy-MM-dd HH:mm:ss');
   static final file_datetime_format = DateFormat('yyyyMMdd-HHmmss');
 }
+
+void unawaited(Future<void>? future) {}

@@ -12,6 +12,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart' as p;
 import 'constants.dart';
 import 'ftp.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:camera/camera.dart';
+import 'take_picture_screen.dart';
 
 class AddMeasurements extends StatefulWidget {
   AddMeasurements({key, required this.locationId, required this.location,
@@ -35,7 +38,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
   var isLoading = false;
   List<String>? inputFieldIds;
   final _formKey = GlobalKey<FormState>();
-
+  late AppLocalizations texts;
 
   @override
   void initState() {
@@ -74,6 +77,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
 
   @override
   Widget build(BuildContext context) {
+    texts = AppLocalizations.of(context)!;
     return WillPopScope(
       onWillPop: () async {
         return checkToGoBack();
@@ -101,13 +105,35 @@ class _AddMeasurementsState extends State<AddMeasurements> {
     var actions = <Widget>[];
     if (location.photo != null){
       actions.add(Padding(
+        padding: EdgeInsets.only(right: 20.0),
+        child: GestureDetector(
+          onTap: () {
+            displayPhoto(location.photo!);
+          },
+          child: Icon(
+            Icons.photo,
+          ),
+        )
+      ));
+    } else if (false) {
+      actions.add(Padding(
           padding: EdgeInsets.only(right: 20.0),
           child: GestureDetector(
-            onTap: () {
-              displayPhoto(location.photo!);
+            onTap: () async {
+              // Obtain a list of the available cameras on the device.
+              final cameras = await availableCameras();
+              // Get a specific camera from the list of available cameras.
+              final firstCamera = cameras.first;
+              // Open the camera screen
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) {
+                  return TakePictureScreen(camera: firstCamera);
+                }),
+              );
             },
             child: Icon(
-              Icons.photo,
+              Icons.camera_alt,
             ),
           )
       ));
@@ -139,6 +165,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
   }
 
   List<Widget> buildRows(){
+    var docsDir = getApplicationDocumentsDirectory();
     var date = Constant.date_format.format(now);
     var time = Constant.time_format.format(now);
     final rows = <Widget>[];
@@ -189,6 +216,56 @@ class _AddMeasurementsState extends State<AddMeasurements> {
             node.requestFocus(FocusNode());
           },
           hint: hint,
+        );
+      } else if (inputField.type == 'photo') {
+        input = TextButton(
+          onPressed: () async {
+            if (values[id] == null) {
+              // take a new photo
+              // Obtain a list of the available cameras on the device.
+              final cameras = await availableCameras();
+              // Get a specific camera from the list of available cameras.
+              final firstCamera = cameras.first;
+              // Open the camera screen
+              final image = await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) {
+                  return TakePictureScreen(camera: firstCamera);
+                }),
+              );
+              if (image != null) {
+                // copy the image to the documents-directory
+                var name = id + '_' + widget.locationId + '_' +
+                    Constant.file_datetime_format.format(now) + '.jpg';
+                setState(() {
+                  // Set the filename as the measuremen
+                  values[id] = name;
+                });
+                await File(image.path).copy(p.join((await docsDir).path, name));
+              }
+            } else {
+              // Show the current photo
+              await displayPhoto(values[id]!);
+            }
+          },
+          onLongPress: () async {
+            if (values[id] != null) {
+              var action = await showContinueDialog(context, texts.removePhoto,
+                  yesButton: texts.yes,
+                  noButton: texts.no,
+                  title: texts.removePhotoTitle);
+              if (action == true) {
+                // remove photo from disk and remove filename from values
+                var file = File(p.join((await docsDir).path, values[id]));
+                unawaited(file.delete());
+                setState(() {
+                  values.remove(id);
+                });
+
+              }
+            }
+          },
+          child: Text(values[id] ?? inputField.hint ?? ''),
         );
       } else {
         input = TextFormField(
@@ -246,13 +323,24 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       style: ElevatedButton.styleFrom(
         primary: Constant.primaryColor,
       ),
-      child: Text('Done'),
+      child: Text(texts.done),
     ));
 
     // Add previous measurements
     for (var measurement in measurements){
       if (measurement.value == ''){
         continue;
+      }
+      Widget valueWidget = Text(measurement.value);
+      if (locData.inputFields.containsKey(measurement.type)) {
+        if (locData.inputFields[measurement.type]!.type == 'photo') {
+          valueWidget = TextButton(
+            onPressed: () {
+              displayPhoto(measurement.value);
+            },
+            child: valueWidget
+          );
+        }
       }
       rows.add(Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -267,7 +355,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
             ),
             Expanded(
               flex: 2,
-              child: Text(measurement.value),
+              child: valueWidget,
             ),
             Expanded(
               flex: 2,
@@ -277,8 +365,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
                 flex: 1,
                 child: ElevatedButton(
                   onPressed: () async {
-                    var text = 'Are you sure you want to delete this measurement?';
-                    var action = await showContinueDialog(context, text);
+                    var action = await showContinueDialog(context, texts.sureToDeleteMeasurement);
                     if (action == true) {
                       deleteMeasurement(measurement);
                     }
@@ -301,7 +388,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
     }
     final n = num.tryParse(value);
     if(n == null) {
-      return '"$value" is not a valid number';
+      return value + texts.isNotValidNumber;
     }
     return null;
   }
@@ -316,9 +403,21 @@ class _AddMeasurementsState extends State<AddMeasurements> {
     }
     if (hasValues){
       // ask if the user really wants to go back
-      var action = await showContinueDialog(context, 'All values will be deleted when going back. Do you still want to go back?',
-          yesButton:'yes', noButton: 'No', title: 'Ignore values?');
+      var action = await showContinueDialog(context, texts.ignoreFilledValues,
+          yesButton:texts.yes, noButton: texts.no, title: texts.ignoreFilledValuesTitle);
       if (action == true) {
+        var docsDir = getApplicationDocumentsDirectory();
+        // delete photo's from disk
+        for (final id in values.keys) {
+          var inputField = locData.inputFields[id]!;
+          if (inputField.type == 'photo') {
+            // remove photo from disk
+            var file = File(p.join((await docsDir).path, values[id]));
+            if (await file.exists()) {
+              unawaited(file.delete());
+            }
+          }
+        }
         return true;
       } else {
         return false;
@@ -336,7 +435,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
 
   Future<void> displayPhoto(String name) async {
     if (!name.endsWith('.jpg') & !name.endsWith('.png') & !name.endsWith('.pdf')){
-      showErrorDialog(context, 'Current file $name is not supported. Only jpg, png and pdf are supported');
+      showErrorDialog(context, name + texts.imageNotSupported);
       return;
     }
     // check if photo exists in documents-directory
@@ -349,22 +448,22 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       var ftpConnect = await connectToFtp(context, prefs);
       if (ftpConnect == null) {
         setState(() {isLoading = false;});
-        showErrorDialog(context, 'Unable to connect to ftp-server');
+        showErrorDialog(context, texts.connectToFtpFailed);
         return;
       }
       if (await ftpConnect.existFile(name)) {
         // Download photo
-        displayInformation(context, 'Downloading ' + name);
+        displayInformation(context, texts.downloading + name);
         var success = await ftpConnect.downloadFile(name, file, supportIPv6:supportIPv6);
         await ftpConnect.disconnect();
         setState(() {isLoading = false;});
         if (!success){
-          showErrorDialog(context, 'Unable to download ' + name);
+          showErrorDialog(context, texts.downloadFailed + name);
           return;
         }
       } else {
         setState(() {isLoading = false;});
-        showErrorDialog(context, 'Unable to find on ftp-server: ' + name);
+        showErrorDialog(context, texts.unableToFindOnFtp + name);
         return;
       }
     }

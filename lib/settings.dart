@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'constants.dart';
 import 'dialogs.dart';
 import 'ftp.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class SettingsScreen extends StatefulWidget {
   SettingsScreen({key, required this.prefs}) : super(key: key);
@@ -19,6 +20,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   var isLoading = false;
   var redrawMap = false;
+  late AppLocalizations texts;
 
   @override
   void initState() {
@@ -27,6 +29,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    texts = AppLocalizations.of(context)!;
     return WillPopScope(
         onWillPop: () async {
           Navigator.pop(context, redrawMap);
@@ -34,7 +37,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         },
       child: Scaffold(
           appBar: AppBar(
-            title: Text('Settings'),
+            title: Text(texts.settings),
             backgroundColor: Constant.primaryColor,
         ),
 
@@ -57,10 +60,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return SettingsList(
       sections: [
         SettingsSection(
-          title: 'Input',
+          title: texts.input,
           tiles: [
             SettingsTile(
-                title: 'Edit input fields',
+                title: texts.editInputFields,
                 leading: Icon(Icons.wysiwyg_rounded),
                 onPressed: (BuildContext context) async {
                   await Navigator.push(
@@ -72,8 +75,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 }
             ),
             SettingsTile.switchTile(
-              title: 'Use standard time',
-              subtitle: 'When true, disable daylight saving time',
+              title: texts.useStandardTime,
+              subtitle: texts.useStandardTimeSubtitle,
               leading: Icon(Icons.access_time),
               switchValue: widget.prefs.getBool('use_standard_time') ?? false,
               onToggle: (bool value) {
@@ -85,10 +88,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ]
         ),
         SettingsSection(
-            title: 'WMS',
+            title: texts.wms,
             tiles: [
             SettingsTile.switchTile(
-              title: 'Add a WMS to the map',
+              title: texts.addWms,
               leading: Icon(Icons.map),
               switchValue: wmsOn,
               onToggle: (bool value) {
@@ -99,20 +102,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
             ),
             if (wmsOn) SettingsTile(
-              title: 'WMS url',
+              title: texts.wmsUrl,
               subtitle: widget.prefs.getString('wms_url'),
               leading: Icon(Icons.computer),
               onPressed: (BuildContext context) {
-                editStringSetting(context, 'wms_url', 'Change WMS url');
+                editStringSetting(context, 'wms_url', texts.changeWmsUrl);
                 redrawMap = true;
               },
             ),
             if (wmsOn) SettingsTile(
-              title: 'WMS layers',
+              title: texts.wmsLayers,
               subtitle: widget.prefs.getString('wms_layers'),
               leading: Icon(Icons.layers),
               onPressed: (BuildContext context) {
-                editStringSetting(context, 'wms_layers', 'Change WMS layers');
+                editStringSetting(context, 'wms_layers', texts.changeWmsLayers);
                 redrawMap = true;
               },
             ),
@@ -122,32 +125,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title: 'FTP',
           tiles: [
             SettingsTile(
-              title: 'Hostname',
+              title: texts.hostname,
               subtitle: widget.prefs.getString('ftp_hostname'),
               leading: Icon(Icons.cloud),
               onPressed: (BuildContext context) {
-                editStringSetting(context, 'ftp_hostname', 'Change ftp hostname');
+                editStringSetting(context, 'ftp_hostname', texts.changeFtpHostname);
               },
             ),
             SettingsTile(
-              title: 'Username',
+              title: texts.username,
               subtitle: widget.prefs.getString('ftp_username'),
               leading: Icon(Icons.person),
               onPressed: (BuildContext context) {
-                editStringSetting(context, 'ftp_username', 'Change ftp username');
+                editStringSetting(context, 'ftp_username', texts.changeFtpUsername);
               },
             ),
             SettingsTile(
-              title: 'Password',
+              title: texts.password,
               subtitle: '*' * password.length,
               subtitleTextStyle: TextStyle(),
               leading: Icon(Icons.lock),
               onPressed: (BuildContext context) {
-                editStringSetting(context, 'ftp_password', 'Change ftp password', password: true);
+                editStringSetting(context, 'ftp_password', texts.changeFtpPassword, password: true);
               },
             ),
             SettingsTile(
-              title: 'Path',
+              title: texts.path,
               subtitle: widget.prefs.getString('ftp_path'),
               leading: Icon(Icons.folder),
               onPressed: (BuildContext context) async {
@@ -169,8 +172,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 //editStringSetting(context, 'ftp_path', 'Change ftp path');
               },
             ),
+            if (false) SettingsTile.switchTile(
+              title: texts.useFtps,
+              leading: Icon(Icons.security),
+              switchValue: widget.prefs.getBool('use_ftps') ?? false,
+              onToggle: (bool value) {
+                setState(() {
+                  widget.prefs.setBool('use_ftps', value);
+                });
+              },
+            ),
             SettingsTile.switchTile(
-              title: 'Only export new measurements',
+              title: texts.onlyExportNewMeasurements,
               leading: Icon(Icons.fiber_new),
               switchValue: widget.prefs.getBool('only_export_new_data') ?? true,
               onToggle: (bool value) {
@@ -204,7 +217,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onPressed: () {
                 Navigator.pop(context);
               },
-              child: Text('CANCEL'),
+              child: Text(texts.cancel),
             ),
             TextButton(
               onPressed: () {
@@ -213,7 +226,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Navigator.pop(context);
                 });
               },
-              child: Text('OK'),
+              child: Text(texts.ok),
             ),
           ],
         );

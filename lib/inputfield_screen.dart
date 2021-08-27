@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'constants.dart';
 import 'dialogs.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class InputFieldsScreen extends StatefulWidget {
   InputFieldsScreen({Key? key}) : super(key: key);
@@ -14,9 +15,11 @@ class InputFieldsScreen extends StatefulWidget {
 
 class _InputFieldsScreenState extends State<InputFieldsScreen> {
   final locData = LocationData();
+  late AppLocalizations texts;
 
   @override
   Widget build(BuildContext context) {
+    texts = AppLocalizations.of(context)!;
     final children = <Widget> [];
     for (final id in locData.inputFields.keys){
       final inputField = locData.inputFields[id]!;
@@ -44,7 +47,7 @@ class _InputFieldsScreenState extends State<InputFieldsScreen> {
     }
     return Scaffold(
         appBar: AppBar(
-          title: const Text('Input fields'),
+          title: Text(texts.inputFields),
           backgroundColor: Constant.primaryColor,
           actions: <Widget>[
             Padding(
@@ -68,11 +71,11 @@ class _InputFieldsScreenState extends State<InputFieldsScreen> {
 
   void addInputField(BuildContext context) async {
 
-    var id = await showInputDialog(context, 'Please supply the id of the input field.',
-        title: 'Choose id');
+    var id = await showInputDialog(context, texts.supplyInputFieldId,
+        title: texts.chooseId);
     while (locData.inputFields.containsKey(id)) {
-      id = await showInputDialog(context, 'The id $id already exists. Please supply another id of the input field.',
-          title: 'Choose id', initialValue:id);
+      id = await showInputDialog(context, id! + texts.inputFieldIdExists,
+          title: texts.chooseId, initialValue:id);
     }
 
     if (id == null){
@@ -106,6 +109,7 @@ class InputFieldScreen extends StatefulWidget {
 class _InputFieldScreenState extends State<InputFieldScreen> {
   late InputField inputField;
   late bool existing;
+  late AppLocalizations texts;
 
   @override
   void initState() {
@@ -122,8 +126,10 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
 
   @override
   Widget build(BuildContext context) {
+    texts = AppLocalizations.of(context)!;
     var items = <DropdownMenuItem<String>>[];
-    for (final type in ['number', 'text', 'choice']) {
+    final types = ['number', 'text', 'choice']; // 'photo'
+    for (final type in types) {
       items.add(
           DropdownMenuItem(
             value: type,
@@ -155,8 +161,8 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
           children: [
             TextFormField(
               decoration: InputDecoration(
-                labelText: 'name',
-                hintText: 'An optional name',
+                labelText: texts.name,
+                hintText: texts.anOptionalName,
               ),
               initialValue: inputField.name,
               onChanged: (String text) {
@@ -169,7 +175,7 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
             ),
             DropdownButtonFormField(
               decoration: InputDecoration(
-                labelText: 'type',
+                labelText: texts.type,
               ),
               isExpanded: true,
               items: items,
@@ -185,8 +191,8 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
             if (inputField.type == 'choice') TextFormField(
               readOnly: true,
               decoration: InputDecoration(
-                labelText: 'Options',
-                hintText: 'Tap to add options',
+                labelText: texts.options,
+                hintText: texts.tapToAddOptions,
               ),
               controller: TextEditingController(text: (inputField.options ?? '').toString()),
               onTap: () async {
@@ -210,8 +216,8 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
             ),
             TextFormField(
               decoration: InputDecoration(
-                labelText: 'hint',
-                hintText: 'An optional hint',
+                labelText: texts.hint,
+                hintText: texts.anOptionalHint,
               ),
               controller: TextEditingController(text: inputField.hint),
               onChanged: (String text) {
@@ -226,7 +232,7 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
               style: ElevatedButton.styleFrom(
                 primary: Constant.primaryColor,
               ),
-              child: Text('Done'),
+              child: Text(texts.done),
             )
           ]
         )
@@ -234,7 +240,7 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
   }
 
   void deleteInputField(BuildContext context) async {
-    var text = 'Are you sure you want to delete this input field?';
+    var text = texts.deleteInputField;
     var action = await showContinueDialog(context, text);
     if (action == true) {
       setState(() {
@@ -257,7 +263,7 @@ class OptionsScreen extends StatefulWidget {
 
 class _OptionsScreenState extends State<OptionsScreen> {
   late List<String> options;
-
+  late AppLocalizations texts;
 
   @override
   void initState() {
@@ -268,6 +274,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    texts = AppLocalizations.of(context)!;
     var items = <DropdownMenuItem<String>>[];
     for (final type in ['number', 'text', 'choice']) {
       items.add(
@@ -295,7 +302,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
               flex: 1,
               child: ElevatedButton(
                 onPressed: () async {
-                  var text = 'Are you sure you want to delete this option?';
+                  var text = texts.deleteOption;
                   var action = await showContinueDialog(context, text);
                   if (action == true) {
                     setState(() {
@@ -324,7 +331,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
             style: ElevatedButton.styleFrom(
               primary: Constant.primaryColor,
             ),
-            child: Text('Done'),
+            child: Text(texts.done),
           )
         ),
       ]
@@ -332,7 +339,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Options'),
+        title: Text(texts.options),
         backgroundColor: Constant.primaryColor,
         actions: <Widget>[
           Padding(

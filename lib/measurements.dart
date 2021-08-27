@@ -137,20 +137,7 @@ create table measurements (
 
   Future close() async => db.close();
 
-  Future<File?> exportToCsv(File file,
-      {bool only_export_new_data = true}) async {
-    // get measurements
-    List<Measurement> measurements;
-    if (only_export_new_data) {
-      measurements =
-      await getMeasurements(where: 'exported = ?', whereArgs: [0]);
-    } else {
-      measurements = await getMeasurements();
-    }
-    if (measurements.isEmpty){
-      return null;
-    }
-
+  Future<File> measurementsToCsv(List<Measurement> measurements, File file) {
     // create a list of lists for csv-output
     var rows = <List<String>>[];
 
@@ -178,6 +165,22 @@ create table measurements (
     // make a string
     var converter = ListToCsvConverter(fieldDelimiter: ';');
     return file.writeAsString(converter.convert(rows));
+  }
+
+  Future<File?> exportToCsv(File file,
+      {bool only_export_new_data = true}) async {
+    // get measurements
+    List<Measurement> measurements;
+    if (only_export_new_data) {
+      measurements =
+      await getMeasurements(where: 'exported = ?', whereArgs: [0]);
+    } else {
+      measurements = await getMeasurements();
+    }
+    if (measurements.isEmpty){
+      return null;
+    }
+    return measurementsToCsv(measurements, file);
   }
 
   Future <void> importFromCsv(File file, {exported = true}) async {

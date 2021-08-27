@@ -1,6 +1,7 @@
 
 
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 void showLoaderDialog(BuildContext context, {String text='Loading...'}) {
   showDialog(barrierDismissible: false,
@@ -127,10 +128,11 @@ void displayInformation(context, text){
 }
 
 class MultiSelectDialogItem<V> {
-  const MultiSelectDialogItem(this.value, this.label);
+  MultiSelectDialogItem(this.value, this.label, this.icon);
 
   final V value;
   final String label;
+  final Icon icon;
 }
 
 class MultiSelectDialog<V> extends StatefulWidget {
@@ -203,6 +205,7 @@ class _MultiSelectDialogState<V> extends State<MultiSelectDialog<V>> {
     return CheckboxListTile(
       value: checked,
       title: Text(item.label),
+      secondary: item.icon,
       controlAffinity: ListTileControlAffinity.leading,
       onChanged: (checked) => _onItemCheckedChange(item.value, checked!),
     );

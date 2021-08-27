@@ -24,24 +24,18 @@ import 'dialogs.dart';
 import 'ftp.dart';
 import 'locations.dart';
 import 'package:path/path.dart' as p;
-import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 // TODO: Make a manual
 // TODO: Minimal and maximal values (HHNK)
-// TODO: Add localisation
+// TODO: Improve localisation
+// TODO: Add photos to mail
 
 void main() {
   runApp(
     MaterialApp(
-      localizationsDelegates: [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: [
-        Locale('en', ''), // English, no country code
-        Locale('nl', ''), // Dutch, no country code
-      ],
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: MyApp()
     )
   );
@@ -58,7 +52,7 @@ class _MyAppState extends State<MyApp> {
   var isLoading = false;
   SharedPreferences? prefs;
   late MeasurementProvider measurementProvider;
-  var mapController;
+  late GoogleMapController mapController;
   var maptype = 'normal';
   static const maptypes = {
     'normal': MapType.normal,
@@ -69,7 +63,7 @@ class _MyAppState extends State<MyApp> {
   };
   late BitmapDescriptor markedIcon;
   bool myLocationEnabled = false;
-
+  late AppLocalizations texts;
 
   @override
   void initState() {
@@ -135,6 +129,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    texts = AppLocalizations.of(context)!;
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: buildAppBar(),
@@ -191,7 +186,7 @@ class _MyAppState extends State<MyApp> {
                 context: context,
                 builder: (context) {
                   return SimpleDialog(
-                    title: const Text('Choose a maptype'),
+                    title: Text(texts.chooseMaptype),
                     children: options,
                   );
                 }
@@ -268,11 +263,18 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
+  @override
+  void dispose() {
+    // Dispose of the controller when the widget is disposed.
+    mapController.dispose();
+    super.dispose();
+  }
+
   Widget buildLoadingScreen(){
     return Container(
       child: Center(
         child: Text(
-          'loading map..',
+          texts.loadingMap,
           style:
           TextStyle(fontFamily: 'Avenir-Medium', color: Colors.grey[400]),
         ),
@@ -282,7 +284,7 @@ class _MyAppState extends State<MyApp> {
 
   AppBar buildAppBar() {
     return AppBar(
-      title: const Text('FieldForm'),
+      title: Text(texts.fieldForm),
       backgroundColor: Constant.primaryColor,
       actions: <Widget>[
         Padding(
@@ -313,10 +315,10 @@ class _MyAppState extends State<MyApp> {
             decoration: BoxDecoration(
               color: Colors.green,
             ),
-            child: Text('Menu'),
+            child: Text(texts.menu),
           ),
           ListTile(
-            title: Text('Add data from file'),
+            title: Text(texts.addDataFromFile),
             onTap: () {
               // Close the drawer
               Navigator.pop(context);
@@ -325,7 +327,7 @@ class _MyAppState extends State<MyApp> {
             leading: Icon(Icons.insert_drive_file),
           ),
           ListTile(
-            title: Text('Share data'),
+            title: Text(texts.shareData),
             onTap: () {
               // Close the drawer
               Navigator.pop(context);
@@ -334,7 +336,7 @@ class _MyAppState extends State<MyApp> {
             leading: Icon(Icons.share),
           ),
           ListTile(
-            title: Text('Change FTP Folder'),
+            title: Text(texts.changeFtpFolder),
             onTap: () async {
               // Close the drawer
               Navigator.pop(context);
@@ -343,14 +345,15 @@ class _MyAppState extends State<MyApp> {
             leading: Icon(Icons.reset_tv),
           ),
           ListTile(
-            title: Text('Choose groups'),
+            title: Text(texts.chooseGroups),
             onTap: () async {
               // Close the drawer
               Navigator.pop(context);
               final items = <MultiSelectDialogItem<String>>[];
               locData.groups.forEach((id, group){
                 var label = group.name ?? id;
-                items.add(MultiSelectDialogItem(id, label));
+                var icon = Icon(Icons.location_pin);
+                items.add(MultiSelectDialogItem(id, label, icon));
               });
               final initialSelectedValues = prefs!.getStringList('selected_groups') ?? locData.groups.keys.toList();
               final selectedGroups = await showDialog<Set<String>>(
@@ -359,7 +362,7 @@ class _MyAppState extends State<MyApp> {
                   return MultiSelectDialog(
                     items: items,
                     initialSelectedValues: initialSelectedValues.toSet(),
-                    title: 'Select groups',
+                    title: texts.selectGroups,
                   );
                 },
               );
@@ -373,7 +376,7 @@ class _MyAppState extends State<MyApp> {
             leading: Icon(Icons.group_work)
           ),
           ListTile(
-              title: Text('Mark measured locations'),
+              title: Text(texts.markMeasuredLocations),
               onTap: () async {
                 // Close the drawer
                 Navigator.pop(context);
@@ -382,20 +385,20 @@ class _MyAppState extends State<MyApp> {
               leading: Icon(Icons.verified_user)
           ),
           ListTile(
-            title: Text('Delete all data'),
+            title: Text(texts.deleteAllData),
             onTap: () async {
               // Close the drawer
               Navigator.pop(context);
-              final action = await showContinueDialog(context, 'Are you sure you wish to delete all data?',
-                  title:'Delete all data', yesButton: 'Yes', noButton: 'No');
+              final action = await showContinueDialog(context, texts.sureToDeleteData,
+                  title: texts.deleteAllData, yesButton: texts.yes, noButton: texts.no);
               if (action == true) {
                 var prefs = await SharedPreferences.getInstance();
                 if (await measurementProvider.areThereMessagesToBeSent(prefs)) {
                   final action = await showContinueDialog(context,
-                      'There are still unsent measurements. Are you really sure you want to delete all data?',
-                      title: 'Delete all data',
-                      yesButton: 'Yes',
-                      noButton: 'No');
+                      texts.unsentMeasurements,
+                      title: texts.deleteAllData,
+                      yesButton: texts.yes,
+                      noButton: texts.no);
                   if (action == true) {
                     deleteAllData();
                   }
@@ -407,7 +410,7 @@ class _MyAppState extends State<MyApp> {
             leading: Icon(Icons.delete),
           ),
           ListTile(
-            title: Text('Settings'),
+            title: Text(texts.settings),
             onTap: () async {
               // Close the drawer
               Navigator.pop(context);
@@ -457,7 +460,7 @@ class _MyAppState extends State<MyApp> {
         context: context,
         builder: (context) {
           return SimpleDialog(
-            title: const Text('Choose number of days'),
+            title: Text(texts.choose_number_of_days),
             children: options,
           );
         }
@@ -523,7 +526,7 @@ class _MyAppState extends State<MyApp> {
             markerId: MarkerId(id),
             position: latlng,
             infoWindow: InfoWindow(
-              title: 'Add a new location',
+              title: texts.addNewLocation,
               onTap: () {
                 addNewLocation(context, latlng);
               },
@@ -567,9 +570,6 @@ class _MyAppState extends State<MyApp> {
     }
     if (location_file.locations != null) {
       locData.locations = location_file.locations!;
-      if (zoom) {
-        ZoomToAllLocations();
-      }
     }
     if (location_file.inputfields == null) {
       locData.inputFields = getDefaultInputFields();
@@ -584,7 +584,9 @@ class _MyAppState extends State<MyApp> {
     await setMarkers();
     setState(() {});
     if (location_file.locations != null) {
-      ZoomToAllLocations();
+      if (zoom) {
+        ZoomToAllLocations();
+      }
     }
   }
 
@@ -650,7 +652,7 @@ class _MyAppState extends State<MyApp> {
                     context: context,
                     builder: (context) {
                       return SimpleDialog(
-                        title: const Text('Choose a sublocation'),
+                        title: Text(texts.chooseSublocation),
                         children: options,
                       );
                     }
@@ -688,7 +690,7 @@ class _MyAppState extends State<MyApp> {
           icon: markedIcon,
           consumeTapEvents: false,
           onTap: () {
-            return mapController.showMarkerInfoWindow(MarkerId(id));
+            mapController.showMarkerInfoWindow(MarkerId(id));
           }
         ));
       }
@@ -725,8 +727,8 @@ class _MyAppState extends State<MyApp> {
         is_location_file = false;
       } else {
         // Ask whether the file contains locations or measurements
-        var action = await showContinueDialog(context, 'Does this file contain locations or measurements?',
-            yesButton: 'Locations', noButton: 'Measurements', title: 'Locations or measurements');
+        var action = await showContinueDialog(context, texts.locsOrMeas,
+            yesButton: texts.locations, noButton: texts.measurements, title: texts.locsOrMeasTitle);
         if (action == true){
           is_location_file = true;
         } else if (action == false){
@@ -744,28 +746,28 @@ class _MyAppState extends State<MyApp> {
               locData.save_locations();
             } else {
               var action = await showContinueDialog(context,
-                  'Importing new locations will remove all existing locations. Do you want to continue?',
-                  yesButton: 'Yes',
-                  noButton: 'No',
-                  title: 'Import will remove existing locations');
+                  texts.removeExistingLocations,
+                  yesButton: texts.yes,
+                  noButton: texts.no,
+                  title: texts.removeExistingLocationsTitle);
               if (action == true) {
                 await read_location_file(file);
                 locData.save_locations();
               }
             }
           } catch (e) {
-            showErrorDialog(context, e.toString(), title:'Import failed');
+            showErrorDialog(context, e.toString(), title:texts.importFailed);
           }
         } else if (file.path.endsWith('.csv')) {
-          showErrorDialog(context, 'csv-loction files not implemented yet. Use json-files instead');
+          showErrorDialog(context, texts.csvNotImplemented);
         } else {
-          showErrorDialog(context, 'Unknown file-extension. Extension needs to be .json');
+          showErrorDialog(context, texts.unknownFileExtension);
         }
       } else {
         try {
           await measurementProvider.importFromCsv(file);
         } catch (e) {
-          showErrorDialog(context, e.toString(), title:'Import failed');
+          showErrorDialog(context, e.toString(), title:texts.importFailed);
         }
       }
     }
@@ -812,8 +814,8 @@ class _MyAppState extends State<MyApp> {
     // First upload existing measurements
     if (await measurementProvider.areThereMessagesToBeSent(prefs)){
       // Check if user wants to send unsent measurements
-      var action = await showContinueDialog(context, 'There are unsent measurements. Do you want to upload these first? Otherwise they will be lost.',
-          yesButton: 'Yes', noButton: 'No', title: 'Unsent measurements');
+      var action = await showContinueDialog(context, texts.uploadUnsentMeasurements,
+          yesButton: texts.yes, noButton: texts.no, title: texts.unsentMeasurementsTitle);
       var ftpConnect;
       if (action == true){
         // connect to the current ftp folder and send the measurements
@@ -861,41 +863,64 @@ class _MyAppState extends State<MyApp> {
         return;
       }
 
-      displayInformation(context, 'Synchronisation complete');
+      displayInformation(context, texts.syncCompleted);
     }
     // finish up
     unawaited(ftpConnect.disconnect());
     setState(() {isLoading = false;});
   }
 
-  void unawaited(Future<void>? future) {}
-
   Future<bool> sendMeasurementsToFtp(FTPConnect ftpConnect, SharedPreferences prefs) async {
     var only_export_new_data = prefs.getBool('only_export_new_data') ?? true;
     var new_file_name = getMeasurementFileName();
-    var tempDir = await getTemporaryDirectory();
-    File? file = File(p.join(tempDir.path, new_file_name));
-    file = await measurementProvider.exportToCsv(file,
-        only_export_new_data: only_export_new_data);
-    if (file == null) {
-      return false;
+    final tempDir = await getTemporaryDirectory();
+    final docsDir = await getApplicationDocumentsDirectory();
+    var file = File(p.join(tempDir.path, new_file_name));
+    // Get photos
+    // get measurements
+    List<Measurement> measurements;
+    if (only_export_new_data) {
+      measurements = await measurementProvider.getMeasurements(where: 'exported = ?', whereArgs: [0]);
     } else {
-      displayInformation(context, 'Sending measurements');
-      // file is null when there are no (new) measurements
-      var success = await ftpConnect.uploadFile(file, supportIPV6: supportIPv6);
-      if (!success) {
-        unawaited(ftpConnect.disconnect());
-        showErrorDialog(context, 'Unable to upload measurements');
-        return false;
-      }
-      var importedMeasurementFiles = prefs.getStringList('imported_measurement_files') ?? <String>[];
-      importedMeasurementFiles.add(new_file_name);
-      await prefs.setStringList(
-          'imported_measurement_files', importedMeasurementFiles);
-      // set all measurements to exported
-      await measurementProvider.setAllExported();
-      return true;
+      measurements = await measurementProvider.getMeasurements();
     }
+    if (measurements.isEmpty) {
+      return false;
+    }
+    file = await measurementProvider.measurementsToCsv(measurements, file);
+
+    displayInformation(context, texts.sendingMeasurements);
+    // file is null when there are no (new) measurements
+    var success = await ftpConnect.uploadFile(file, supportIPV6: supportIPv6);
+    if (!success) {
+      unawaited(ftpConnect.disconnect());
+      showErrorDialog(context, texts.uploadMeasurementsFailed);
+      return false;
+    }
+    // Send photos
+    for (var measurement in measurements){
+      if (!locData.inputFields.containsKey(measurement.type)) {
+        continue;
+      }
+      if (locData.inputFields[measurement.type]!.type == 'photo') {
+        var file = File(p.join(docsDir.path, measurement.value));
+        if (await file.exists()) {
+          var success = await ftpConnect.uploadFile(file, supportIPV6: supportIPv6);
+          if (!success) {
+            unawaited(ftpConnect.disconnect());
+            showErrorDialog(context, texts.uploadPhotoFailed + measurement.value);
+            return false;
+          }
+        }
+      }
+    }
+    var importedMeasurementFiles = prefs.getStringList('imported_measurement_files') ?? <String>[];
+    importedMeasurementFiles.add(new_file_name);
+    await prefs.setStringList(
+        'imported_measurement_files', importedMeasurementFiles);
+    // set all measurements to exported
+    await measurementProvider.setAllExported();
+    return true;
   }
 
   void synchroniseWithFtp(BuildContext context) async {
@@ -928,7 +953,7 @@ class _MyAppState extends State<MyApp> {
     // finish up
     unawaited(ftpConnect.disconnect());
     setState(() {isLoading = false;});
-    displayInformation(context, 'Synchronisation complete');
+    displayInformation(context, texts.syncCompleted);
   }
 
   Future <bool> downloadDataFromFtp(FTPConnect ftpConnect, BuildContext context, SharedPreferences prefs) async{
@@ -936,12 +961,12 @@ class _MyAppState extends State<MyApp> {
     var importedLocationFiles = prefs.getStringList('imported_location_files') ?? <String>[];
     var tempDir = await getTemporaryDirectory();
 
-    displayInformation(context, 'Retrieving file list');
+    displayInformation(context, texts.retreivingFiles);
     final list = await ftpConnect.listDirectoryContent(supportIPv6:supportIPv6);
     var names = list.map((f) => f.name).whereType<String>().toList();
     names.sort((a, b) => a.toString().compareTo(b.toString()));
 
-    displayInformation(context, 'Retrieved files');
+    displayInformation(context, texts.retreivedFiles);
 
     // Read last locations-file
     var name;
@@ -951,13 +976,13 @@ class _MyAppState extends State<MyApp> {
       }
     }
     if ((name != null) & !importedLocationFiles.contains(name)) {
-      displayInformation(context, 'Downloading $name');
+      displayInformation(context, texts.downloading + name);
       // download locations
       var file = File(p.join(tempDir.path, name));
       var success = await ftpConnect.downloadFile(name, file, supportIPv6: supportIPv6);
       if (!success){
         unawaited(ftpConnect.disconnect());
-        showErrorDialog(context, 'Unable to download ' + name);
+        showErrorDialog(context, texts.downloadFailed + name);
         return false;
       }
       // read locations
@@ -982,14 +1007,14 @@ class _MyAppState extends State<MyApp> {
         if (importedMeasurementFiles.contains(name)){
           continue;
         }
-        displayInformation(context, 'Downloading ' + name);
+        displayInformation(context, texts.downloading + name);
         // download measurements
         var file = File(p.join(tempDir.path, name));
         try {
           var success = await ftpConnect.downloadFile(name, file, supportIPv6:supportIPv6);
           if (!success) {
             unawaited(ftpConnect.disconnect());
-            showErrorDialog(context, 'Unable to download ' + name);
+            showErrorDialog(context, texts.downloadFailed + name);
             return false;
           }
         } catch (e) {
@@ -1035,7 +1060,7 @@ class _MyAppState extends State<MyApp> {
       files.add(meas_file.path);
     }
     if (files.isEmpty){
-      showErrorDialog(context, 'There is no data to share');
+      showErrorDialog(context, texts.noDataToShare);
       return;
     }
     await Share.shareFiles(files);

@@ -1,12 +1,10 @@
-
-
-
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import 'constants.dart';
 import 'dialogs.dart';
 import 'locations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class NewLocationScreen extends StatefulWidget {
 
@@ -22,6 +20,7 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
   late Location location;
   String id = '';
   late LocationData locData;
+  late AppLocalizations texts;
 
   @override
   void initState() {
@@ -32,10 +31,11 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    texts = AppLocalizations.of(context)!;
     final node = FocusScope.of(context);
     return Scaffold(
         appBar: AppBar(
-          title: Text('New Location'),
+          title: Text(texts.newLocation),
           backgroundColor: Constant.primaryColor,
         ),
         body: ListView(
@@ -50,8 +50,8 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
                 ]
             ),
             TextFormField(
-              decoration: const InputDecoration(
-                hintText: 'Please specify a unique id',
+              decoration: InputDecoration(
+                hintText: texts.specifyUniqueId,
                 labelText: 'Id',
               ),
               onChanged: (String text) {
@@ -62,9 +62,9 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
               onEditingComplete: () => node.nextFocus(),
             ),
             TextFormField(
-              decoration: const InputDecoration(
-                hintText: 'An optional name',
-                labelText: 'Name',
+              decoration: InputDecoration(
+                hintText: texts.anOptionalName,
+                labelText: texts.name,
               ),
               onChanged: (String text) {
                 if (text.isNotEmpty) {
@@ -76,9 +76,9 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
               onEditingComplete: () => node.nextFocus(),
             ),
             DropdownButtonFormField(
-              decoration: const InputDecoration(
-                hintText: 'An optional group',
-                labelText: 'Group',
+              decoration: InputDecoration(
+                hintText: texts.anOptionalGroup,
+                labelText: texts.group,
               ),
               items: getDropdownMenuItems(locData.groups.keys),
               onChanged: (String? text) {
@@ -95,15 +95,16 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
             TextFormField(
               readOnly: true,
               decoration: InputDecoration(
-                labelText: 'Input fields',
-                hintText: 'Tap to add input fields',
+                labelText: texts.inputFields,
+                hintText: texts.tapToAddInputFields,
               ),
               controller: TextEditingController(text: (location.inputfields ?? '').toString()),
               onTap: () async {
                 final items = <MultiSelectDialogItem<String>>[];
                 locData.inputFields.forEach((id, inputField){
                   var label = inputField.name ?? id;
-                  items.add(MultiSelectDialogItem(id, label));
+                  var icon = Icon(Icons.input);
+                  items.add(MultiSelectDialogItem(id, label, icon));
                 });
                 final initialSelectedValues = location.inputfields ?? <String>[];
                 final selection = await showDialog<Set<String>>(
@@ -112,7 +113,7 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
                     return MultiSelectDialog(
                       items: items,
                       initialSelectedValues: initialSelectedValues.toSet(),
-                      title: 'Select input fields',
+                      title: texts.selectInputFields,
                     );
                   },
                 );
@@ -132,11 +133,11 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
             ElevatedButton(
               onPressed: () async {
                 if (id.isEmpty) {
-                  showErrorDialog(context, 'Please specify an id.');
+                  showErrorDialog(context, texts.specifyId);
                   return;
                 }
                 if (locData.locations.containsKey(id)) {
-                  showErrorDialog(context, 'The id $id already exists. Please enter another id.');
+                  showErrorDialog(context, id +  texts.locationIdExists);
                   return;
                 }
                 locData.locations[id] = location;
@@ -146,7 +147,7 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
               style: ElevatedButton.styleFrom(
                 primary: Constant.primaryColor,
               ),
-              child: Text('Done'),
+              child: Text(texts.done),
             )
           ],
         )

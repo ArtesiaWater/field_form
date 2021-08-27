@@ -10,6 +10,7 @@ Future<FTPConnect?> connectToFtp(BuildContext context, SharedPreferences prefs, 
   var host = prefs.getString('ftp_hostname') ?? '';
   var user = prefs.getString('ftp_username') ?? '';
   var pass = prefs.getString('ftp_password') ?? '';
+  var isSecured = prefs.getBool('use_ftps') ?? false;
 
   if (host == '') {
     showErrorDialog(context, 'No hostname defined. Please assign a hostname in the settings',
@@ -17,7 +18,7 @@ Future<FTPConnect?> connectToFtp(BuildContext context, SharedPreferences prefs, 
     return null;
   }
 
-  var ftpConnect = FTPConnect(host, user: user, pass: pass, timeout: 30);
+  var ftpConnect = FTPConnect(host, user: user, pass: pass, timeout: 30, isSecured:isSecured);
   try {
     await ftpConnect.connect();
   } catch (e) {
