@@ -780,6 +780,7 @@ class _MyAppState extends State<MyApp> {
     locData.locations.clear();
     locData.inputFields = getDefaultInputFields();
     locData.groups = <String, Group>{};
+    prefs.remove('selected_groups');
 
     //delete all data in the documents-directory (location-data and photos)
     var docsDir = await getApplicationDocumentsDirectory();
@@ -816,7 +817,6 @@ class _MyAppState extends State<MyApp> {
       // Check if user wants to send unsent measurements
       var action = await showContinueDialog(context, texts.uploadUnsentMeasurements,
           yesButton: texts.yes, noButton: texts.no, title: texts.unsentMeasurementsTitle);
-      var ftpConnect;
       if (action == true){
         // connect to the current ftp folder and send the measurements
         var path = prefs.getString('ftp_path') ?? '';
