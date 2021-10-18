@@ -1,7 +1,6 @@
 
 
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 void showLoaderDialog(BuildContext context, {String text='Loading...'}) {
   showDialog(barrierDismissible: false,
