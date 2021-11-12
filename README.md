@@ -6,7 +6,7 @@ On Android:
 https://play.google.com/store/apps/details?id=nl.artesia.field_form
 
 On iOS:
-link will follow when released
+https://apps.apple.com/bg/app/fieldform/id1571910702
 
 ## Getting Started
 
