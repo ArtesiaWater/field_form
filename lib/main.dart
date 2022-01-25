@@ -12,7 +12,6 @@ import 'package:field_form/wms.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:ftpconnect/ftpconnect.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -780,14 +779,14 @@ class _MyAppState extends State<MyApp> {
     locData.locations.clear();
     locData.inputFields = getDefaultInputFields();
     locData.groups = <String, Group>{};
-    prefs.remove('selected_groups');
+    unawaited(prefs.remove('selected_groups'));
 
     //delete all data in the documents-directory (location-data and photos)
     var docsDir = await getApplicationDocumentsDirectory();
     if (docsDir.existsSync()){
       for (var file in docsDir.listSync()) {
         if (p.basename(file.path) == 'measurements.db'){
-          // Do not delete the empty databse with measurements
+          // Do not delete the empty database with measurements
           continue;
         }
         unawaited(file.delete());
@@ -807,11 +806,13 @@ class _MyAppState extends State<MyApp> {
     setState(() {isLoading = true;});
     // connect to ftp folder
     var prefs = await SharedPreferences.getInstance();
-    var ftpConnect = await connectToFtp(context, prefs, path:'');
-    if (ftpConnect == null) {
+    var root = prefs.getString('ftp_root') ?? '';
+    var ftp = await connectToFtp(context, prefs, path:root);
+    if (ftp == null) {
       setState(() {isLoading = false;});
       return;
     }
+    var use_sftp = prefs.getBool('use_ftps') ?? false;
     // First upload existing measurements
     if (await measurementProvider.areThereMessagesToBeSent(prefs)){
       // Check if user wants to send unsent measurements
@@ -820,21 +821,21 @@ class _MyAppState extends State<MyApp> {
       if (action == true){
         // connect to the current ftp folder and send the measurements
         var path = prefs.getString('ftp_path') ?? '';
-        if (path.isNotEmpty) {
-          var success = await changeDirectory(ftpConnect, context, path);
+        if (!use_sftp && path.isNotEmpty) {
+          var success = await changeDirectory(ftp, context, path);
           if (!success){
             setState(() {isLoading = false;});
             return;
           }
         }
-        var success = await sendMeasurementsToFtp(ftpConnect, prefs);
+        var success = await sendMeasurementsToFtp(ftp, prefs);
         if (!success) {
           setState(() {isLoading = false;});
           return;
         }
-        if (path.isNotEmpty) {
+        if (!use_sftp && path.isNotEmpty) {
           // Go to root of ftp server again
-          var success = await changeDirectory(ftpConnect, context, '..');
+          var success = await changeDirectory(ftp, context, '..');
           if (!success){
             setState(() {isLoading = false;});
             return;
@@ -844,20 +845,22 @@ class _MyAppState extends State<MyApp> {
     }
 
     // Choose FTP folder
-    var path = await chooseFtpPath(ftpConnect, context, prefs);
+    var path = await chooseFtpPath(ftp, context, prefs);
     if (path != null) {
       // Delete all data
       deleteAllData();
 
-      // Go to the specified folder
-      var success = await changeDirectory(ftpConnect, context, path);
-      if (!success) {
-        setState(() {isLoading = false;});
-        return;
+      if (!use_sftp){
+        // Go to the specified folder
+        var success = await changeDirectory(ftp, context, path);
+        if (!success) {
+          setState(() {isLoading = false;});
+          return;
+        }
       }
 
       // sync with the new ftp folder
-      success = await downloadDataFromFtp(ftpConnect, context, prefs);
+      var success = await downloadDataFromFtp(ftp, context, prefs);
       if (!success) {
         setState(() {isLoading = false;});
         return;
@@ -866,11 +869,11 @@ class _MyAppState extends State<MyApp> {
       displayInformation(context, texts.syncCompleted);
     }
     // finish up
-    unawaited(ftpConnect.disconnect());
+    closeFtp(ftp, prefs);
     setState(() {isLoading = false;});
   }
 
-  Future<bool> sendMeasurementsToFtp(FTPConnect ftpConnect, SharedPreferences prefs) async {
+  Future<bool> sendMeasurementsToFtp(connection, SharedPreferences prefs) async {
     var only_export_new_data = prefs.getBool('only_export_new_data') ?? true;
     var new_file_name = getMeasurementFileName();
     final tempDir = await getTemporaryDirectory();
@@ -890,10 +893,8 @@ class _MyAppState extends State<MyApp> {
     file = await measurementProvider.measurementsToCsv(measurements, file);
 
     displayInformation(context, texts.sendingMeasurements);
-    // file is null when there are no (new) measurements
-    var success = await ftpConnect.uploadFile(file, supportIPV6: supportIPv6);
+    var success = await uploadFileToFtp(connection, file, prefs);
     if (!success) {
-      unawaited(ftpConnect.disconnect());
       showErrorDialog(context, texts.uploadMeasurementsFailed);
       return false;
     }
@@ -905,9 +906,8 @@ class _MyAppState extends State<MyApp> {
       if (locData.inputFields[measurement.type]!.type == 'photo') {
         var file = File(p.join(docsDir.path, measurement.value));
         if (await file.exists()) {
-          var success = await ftpConnect.uploadFile(file, supportIPV6: supportIPv6);
-          if (!success) {
-            unawaited(ftpConnect.disconnect());
+          var success = await uploadFileToFtp(connection, file, prefs);
+          if (!success){
             showErrorDialog(context, texts.uploadPhotoFailed + measurement.value);
             return false;
           }
@@ -928,15 +928,15 @@ class _MyAppState extends State<MyApp> {
     setState(() {isLoading = true;});
     //showLoaderDialog(context, text: 'Synchronising with FTP server');
     var prefs = await SharedPreferences.getInstance();
-    var ftpConnect = await connectToFtp(context, prefs);
-    if (ftpConnect==null){
+    var ftp = await connectToFtp(context, prefs);
+    if (ftp==null){
       setState(() {isLoading = false;});
       return;
     }
 
     // send measurements
     if (await measurementProvider.areThereMessagesToBeSent(prefs)) {
-      success = await sendMeasurementsToFtp(ftpConnect, prefs);
+      success = await sendMeasurementsToFtp(ftp, prefs);
       if (!success) {
         setState(() {isLoading = false;});
         return;
@@ -944,28 +944,28 @@ class _MyAppState extends State<MyApp> {
     }
 
     // download (new) locations and measurements
-    success = await downloadDataFromFtp(ftpConnect, context, prefs);
+    success = await downloadDataFromFtp(ftp, context, prefs);
     if (!success) {
       setState(() {isLoading = false;});
       return;
     }
 
     // finish up
-    unawaited(ftpConnect.disconnect());
+    closeFtp(ftp, prefs);
     setState(() {isLoading = false;});
     displayInformation(context, texts.syncCompleted);
   }
 
-  Future <bool> downloadDataFromFtp(FTPConnect ftpConnect, BuildContext context, SharedPreferences prefs) async{
+  Future <bool> downloadDataFromFtp(connection, BuildContext context, SharedPreferences prefs) async {
     var importedMeasurementFiles = prefs.getStringList('imported_measurement_files') ?? <String>[];
     var importedLocationFiles = prefs.getStringList('imported_location_files') ?? <String>[];
     var tempDir = await getTemporaryDirectory();
 
     displayInformation(context, texts.retreivingFiles);
-    final list = await ftpConnect.listDirectoryContent(supportIPv6:supportIPv6);
-    var names = list.map((f) => f.name).whereType<String>().toList();
-    names.sort((a, b) => a.toString().compareTo(b.toString()));
-
+    final names  = await listFilesOnFtp(connection, prefs, context);
+    if (names == null) {
+      return false;
+    }
     displayInformation(context, texts.retreivedFiles);
 
     // Read last locations-file
@@ -979,9 +979,8 @@ class _MyAppState extends State<MyApp> {
       displayInformation(context, texts.downloading + name);
       // download locations
       var file = File(p.join(tempDir.path, name));
-      var success = await ftpConnect.downloadFile(name, file, supportIPv6: supportIPv6);
+      var success = await downloadFileFromFtp(connection, file, prefs);
       if (!success){
-        unawaited(ftpConnect.disconnect());
         showErrorDialog(context, texts.downloadFailed + name);
         return false;
       }
@@ -989,7 +988,7 @@ class _MyAppState extends State<MyApp> {
       try {
         await read_location_file(file);
       } catch (e) {
-        unawaited(ftpConnect.disconnect());
+        closeFtp(connection, prefs);
         showErrorDialog(context, e.toString());
         return false;
       }
@@ -1011,9 +1010,8 @@ class _MyAppState extends State<MyApp> {
         // download measurements
         var file = File(p.join(tempDir.path, name));
         try {
-          var success = await ftpConnect.downloadFile(name, file, supportIPv6:supportIPv6);
+          var success = await downloadFileFromFtp(connection, file, prefs);
           if (!success) {
-            unawaited(ftpConnect.disconnect());
             showErrorDialog(context, texts.downloadFailed + name);
             return false;
           }
@@ -1027,7 +1025,7 @@ class _MyAppState extends State<MyApp> {
           await measurementProvider.importFromCsv(file);
           importedMeasurements = true;
         } catch (e) {
-          unawaited(ftpConnect.disconnect());
+          closeFtp(connection, prefs);
           showErrorDialog(context, e.toString());
           return false;
         }

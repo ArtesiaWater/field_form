@@ -150,17 +150,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
             ),
             SettingsTile(
+              title: texts.rootFolder,
+              subtitle: widget.prefs.getString('ftp_root'),
+              leading: Icon(Icons.home),
+              onPressed: (BuildContext context) {
+                editStringSetting(context, 'ftp_root', texts.changeFtpRoot);
+              },
+            ),
+            SettingsTile(
               title: texts.path,
               subtitle: widget.prefs.getString('ftp_path'),
               leading: Icon(Icons.folder),
               onPressed: (BuildContext context) async {
                 setState(() {isLoading = true;});
-                var ftpConnect = await connectToFtp(context, widget.prefs, path:'');
-                if (ftpConnect == null) {
+                var root = widget.prefs.getString('ftp_root') ?? '';
+                var ftp = await connectToFtp(context, widget.prefs, path:root);
+                if (ftp == null) {
                   setState(() {isLoading = false;});
                   return;
                 }
-                var ftp_path = await chooseFtpPath(ftpConnect, context, widget.prefs);
+                var ftp_path = await chooseFtpPath(ftp, context, widget.prefs);
                 if (ftp_path != null) {
                   setState(() {
                     widget.prefs.setString('ftp_path', ftp_path);
@@ -172,13 +181,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 //editStringSetting(context, 'ftp_path', 'Change ftp path');
               },
             ),
-            if (false) SettingsTile.switchTile(
+            if (true) SettingsTile.switchTile(
               title: texts.useFtps,
               leading: Icon(Icons.security),
               switchValue: widget.prefs.getBool('use_ftps') ?? false,
               onToggle: (bool value) {
                 setState(() {
                   widget.prefs.setBool('use_ftps', value);
+                  if (value){
+                    widget.prefs.setBool('use_sftp', false);
+                  }
+                });
+              },
+            ),
+            SettingsTile.switchTile(
+              title: texts.useSftp,
+              leading: Icon(Icons.security),
+              switchValue: widget.prefs.getBool('use_sftp') ?? false,
+              onToggle: (bool value) {
+                setState(() {
+                  widget.prefs.setBool('use_sftp', value);
+                  if (value){
+                    widget.prefs.setBool('use_ftps', false);
+                  }
                 });
               },
             ),
@@ -249,6 +274,7 @@ void parseSettings(Map<String, String> settings, SharedPreferences prefs) async{
         await prefs.setString(key, settings[key]!);
         break;
       case 'use_ftps':
+      case 'use_sftp':
       case 'only_export_new_data':
       case 'use_standard_time':
       case 'automatic_synchronisation_on':
@@ -260,6 +286,12 @@ void parseSettings(Map<String, String> settings, SharedPreferences prefs) async{
       // boolean setting
         var stringValue = settings[key]!.toLowerCase();
         var value = (stringValue == 'yes') || (stringValue == 'true');
+        if (key == 'use_ftps' && value){
+          await prefs.setBool('use_sftp', false);
+        }
+        if (key == 'use_sftp' && value){
+          await prefs.setBool('use_ftps', false);
+        }
         await prefs.setBool(key, value);
         break;
     }

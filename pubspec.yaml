@@ -45,6 +45,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   camera:
+  dartssh2: ^2.4.1
 
 dev_dependencies:
   flutter_test:

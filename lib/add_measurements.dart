@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:field_form/dialogs.dart';
@@ -116,6 +117,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
         )
       ));
     } else if (false) {
+      // add a button to take a picture
       actions.add(Padding(
           padding: EdgeInsets.only(right: 20.0),
           child: GestureDetector(
@@ -445,27 +447,21 @@ class _AddMeasurementsState extends State<AddMeasurements> {
     if (!file.existsSync()){
       setState(() {isLoading = true;});
       var prefs = await SharedPreferences.getInstance();
-      var ftpConnect = await connectToFtp(context, prefs);
-      if (ftpConnect == null) {
+      var connection = await connectToFtp(context, prefs);
+      if (connection == null) {
         setState(() {isLoading = false;});
         showErrorDialog(context, texts.connectToFtpFailed);
         return;
       }
-      if (await ftpConnect.existFile(name)) {
-        // Download photo
-        displayInformation(context, texts.downloading + name);
-        var success = await ftpConnect.downloadFile(name, file, supportIPv6:supportIPv6);
-        await ftpConnect.disconnect();
+      displayInformation(context, texts.downloading + name);
+      var success = await downloadFileFromFtp(connection, file, prefs);
+      if (!success){
         setState(() {isLoading = false;});
-        if (!success){
-          showErrorDialog(context, texts.downloadFailed + name);
-          return;
-        }
-      } else {
-        setState(() {isLoading = false;});
-        showErrorDialog(context, texts.unableToFindOnFtp + name);
+        showErrorDialog(context, texts.downloadFailed + name);
         return;
       }
+      closeFtp(connection, prefs);
+      setState(() {isLoading = false;});
     }
     // Open the photo screen
     await Navigator.push(

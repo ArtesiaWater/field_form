@@ -128,7 +128,7 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
   Widget build(BuildContext context) {
     texts = AppLocalizations.of(context)!;
     var items = <DropdownMenuItem<String>>[];
-    final types = ['number', 'text', 'choice']; // 'photo'
+    final types = ['number', 'text', 'choice', 'photo'];
     for (final type in types) {
       items.add(
           DropdownMenuItem(
