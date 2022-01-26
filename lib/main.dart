@@ -772,7 +772,7 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  void deleteAllData() async {
+  Future<bool> deleteAllData() async {
     var prefs = await SharedPreferences.getInstance();
 
     // delete all locations
@@ -805,6 +805,7 @@ class _MyAppState extends State<MyApp> {
     // delete all measurements
     await measurementProvider.deleteAllMeasurements();
     await prefs.remove('imported_location_files');
+    return true;
   }
 
   Future<void> switchFtpFolder(context) async{
@@ -817,7 +818,7 @@ class _MyAppState extends State<MyApp> {
       setState(() {isLoading = false;});
       return;
     }
-    var use_sftp = prefs.getBool('use_ftps') ?? false;
+    var use_sftp = prefs.getBool('use_sftp') ?? false;
     // First upload existing measurements
     if (await measurementProvider.areThereMessagesToBeSent(prefs)){
       // Check if user wants to send unsent measurements
@@ -853,7 +854,7 @@ class _MyAppState extends State<MyApp> {
     var path = await chooseFtpPath(ftp, context, prefs);
     if (path != null) {
       // Delete all data
-      deleteAllData();
+      await deleteAllData();
 
       if (!use_sftp){
         // Go to the specified folder
@@ -1062,6 +1063,7 @@ class _MyAppState extends State<MyApp> {
     if (meas_file != null) {
       files.add(meas_file.path);
     }
+    // TODO: add photos in a zip-file
     if (files.isEmpty){
       showErrorDialog(context, texts.noDataToShare);
       return;
