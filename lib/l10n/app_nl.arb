@@ -1,6 +1,7 @@
 {
     "chooseMaptype": "Kies een kaart-type",
     "loadingMap": "laad de kaart..",
+    "loading": "Laden...",
     "fieldForm": "FieldForm",
     "menu": "Menu",
     "addDataFromFile": "Voeg data toe uit een bestand",
@@ -46,7 +47,11 @@
     "ignoreFilledValuesTitle": "Negeer waarden?",
     "imageNotSupported": ": dit bestand wordt niet ondersteund. Alleen jpg, png en pdf worden ondersteund",
     "connectToFtpFailed": "Het lukt niet om met de FTP-server te verbinden",
-    "unableToFindOnFtp": "Het lukt niet om het bestand op de FTP-server te vinden: ",
+    "unableToFindOnFtp": "Kan het bestand niet vinden op de FTP-server: ",
+    "unableToFindPathOnFtp": "Kan de map niet vinden op de FTP-server: ",
+    "noHostnameDefined": "Geen hostnaam opgegeven. Geef aub een hostname op in de instellingen.",
+    "connected": "Verbonden",
+    "chooseAFolder": "Kies een map",
     "removePhoto": "Wilt u de foto verwijderen van het invoerveld?",
     "removePhotoTitle": "Verwijder foto",
 
@@ -59,6 +64,7 @@
     "changeWmsUrl": "Verander WMS url",
     "wmsLayers": "WMS lagen",
     "changeWmsLayers": "Verander WMS lagen",
+    "ftp": "FTP",
     "hostname": "Hostnaam",
     "changeFtpHostname": "Verander FTP hostnaam",
     "username": "Gebruikersnaam",
@@ -96,5 +102,17 @@
     "tapToAddInputFields": "Tik om invoervelden toe te voegen",
     "selectInputFields": "Selecteer invoervelden",
     "specifyId": "Vul aub een id in",
-    "locationIdExists": ": dit id bestaat al. Vul aub een ander id in voor deze locatie."
+    "locationIdExists": ": dit id bestaat al. Vul aub een ander id in voor deze locatie.",
+
+    "takePicture": "Neem een foto",
+
+    "photos": "Foto's",
+    "resolution": "Resolutie",
+    "choosePhotoResolution": "Kies een resolutie van foto's",
+    "photoResolutionLow": "Laag (240p)",
+    "photoResolutionMedium": "Gemiddeld (480p)",
+    "photoResolutionHigh": "Hoog (720p)",
+    "photoResolutionVeryHigh": "Heel hoog (1080p)",
+    "photoResolutionUltraHigh": "Zeer hoog (2160p)",
+    "photoResolutionMax": "Maximaal"
 }

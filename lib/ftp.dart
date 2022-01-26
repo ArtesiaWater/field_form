@@ -6,6 +6,7 @@ import 'package:ftpconnect/ftpconnect.dart';
 import 'package:path/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dartssh2/dartssh2.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import 'dialogs.dart';
 
@@ -17,10 +18,10 @@ connectToFtp(BuildContext context, SharedPreferences prefs, {String? path}) asyn
   var pass = prefs.getString('ftp_password') ?? '';
   var use_ftps = prefs.getBool('use_ftps') ?? false;
   var use_sftp = prefs.getBool('use_sftp') ?? false;
+  var texts = AppLocalizations.of(context)!;
 
   if (host == '') {
-    showErrorDialog(context, 'No hostname defined. Please assign a hostname in the settings',
-        title:'Cannot connect of ftp-server');
+    showErrorDialog(context, texts.noHostnameDefined, title:texts.connectToFtpFailed);
     return null;
   }
 
@@ -35,7 +36,7 @@ connectToFtp(BuildContext context, SharedPreferences prefs, {String? path}) asyn
       return sftp;
     } catch (e) {
       showErrorDialog(
-          context, e.toString(), title: 'Cannot connect of ftp-server');
+          context, e.toString(), title: texts.connectToFtpFailed);
       return null;
     }
   }
@@ -44,10 +45,10 @@ connectToFtp(BuildContext context, SharedPreferences prefs, {String? path}) asyn
   try {
     await ftpConnect.connect();
   } catch (e) {
-    showErrorDialog(context, e.toString(), title:'Cannot connect of ftp-server');
+    showErrorDialog(context, e.toString(), title:texts.connectToFtpFailed);
     return null;
   }
-  displayInformation(context, 'Connected');
+  displayInformation(context, texts.connected);
   path ??= getFtpPath(prefs);
   if (path.isEmpty) {
     // we do not need to change path
@@ -68,7 +69,8 @@ Future<bool> changeDirectory(FTPConnect ftpConnect, BuildContext context, String
       var success = await ftpConnect.changeDirectory(folder);
       if (!success) {
         await ftpConnect.disconnect();
-        showErrorDialog(context, 'Unable to find FTP-path: ' + folder);
+        var texts = AppLocalizations.of(context)!;
+        showErrorDialog(context, texts.unableToFindPathOnFtp + folder);
         return success;
       }
     }
@@ -190,8 +192,9 @@ Future<String?> chooseFtpPath(connection, BuildContext context, SharedPreference
   var action = await showDialog(
       context: context,
       builder: (context) {
+        var texts = AppLocalizations.of(context)!;
         return SimpleDialog(
-          title: const Text('Choose a folder'),
+          title: Text(texts.chooseAFolder),
           children: options,
         );
       }

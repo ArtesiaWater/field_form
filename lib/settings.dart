@@ -1,6 +1,6 @@
 import 'package:field_form/inputfield_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:settings_ui/settings_ui.dart';
+import 'package:flutter_settings_ui/flutter_settings_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'constants.dart';
@@ -52,6 +52,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   SettingsList buildSettings(){
+    var resolutions = {
+      'low': texts.photoResolutionLow,
+      'medium': texts.photoResolutionMedium,
+      'high': texts.photoResolutionHigh,
+      'veryHigh': texts.photoResolutionVeryHigh,
+      'ultraHigh': texts.photoResolutionUltraHigh,
+      'max': texts.photoResolutionMax,
+    };
     var password = '';
     if (widget.prefs.containsKey('ftp_password')) {
       password = widget.prefs.getString('ftp_password')!;
@@ -122,7 +130,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ]
         ),
         SettingsSection(
-          title: 'FTP',
+          title: texts.photos,
+          tiles: [
+            SettingsTile(
+              title: texts.resolution,
+              subtitle: resolutions[widget.prefs.getString('photo_resolution') ?? 'medium'],
+              leading: Icon(Icons.apps),
+              onPressed: (BuildContext context) async {
+                var options = <Widget>[];
+                resolutions.forEach((key, value){
+                  options.add(SimpleDialogOption(
+                    onPressed: () {
+                      Navigator.of(context).pop(key);
+                    },
+                    child: Text(value),
+                  ));
+                });
+                var resolution = await showDialog(
+                    context: context,
+                    builder: (context) {
+                      var texts = AppLocalizations.of(context)!;
+                      return SimpleDialog(
+                        title: Text(texts.choosePhotoResolution),
+                        children: options,
+                      );
+                    }
+                );
+                if (resolution != null) {
+                  setState(() {
+                    widget.prefs.setString('photo_resolution', resolution);
+                  });
+                }
+              }
+            ),
+          ]
+        ),
+        SettingsSection(
+          title: texts.ftp,
           tiles: [
             SettingsTile(
               title: texts.hostname,
@@ -264,9 +308,11 @@ void parseSettings(Map<String, String> settings, SharedPreferences prefs) async{
   for (var key in settings.keys) {
     switch (key) {
       case 'email_address':
+      case 'photo_resolution':
       case 'ftp_hostname':
       case 'ftp_username':
       case 'ftp_password':
+      case 'ftp_root':
       case 'ftp_path':
       case 'wms_url':
       case 'wms_layers':

@@ -138,7 +138,7 @@ class _MyAppState extends State<MyApp> {
           buildMap(),
           buildShowAllMarkerButton(),
           buildChangeMapTypeButton(),
-          if (isLoading) buildLoadingIndicator(),
+          if (isLoading) buildLoadingIndicator(text:texts.loading),
         ]
       ),
     );
@@ -784,12 +784,17 @@ class _MyAppState extends State<MyApp> {
     //delete all data in the documents-directory (location-data and photos)
     var docsDir = await getApplicationDocumentsDirectory();
     if (docsDir.existsSync()){
-      for (var file in docsDir.listSync()) {
-        if (p.basename(file.path) == 'measurements.db'){
-          // Do not delete the empty database with measurements
-          continue;
-        }
+      // Delete location file
+      var file = File(p.join(docsDir.path, 'locations.json'));
+      if (await file.exists()){
         unawaited(file.delete());
+      }
+      // Delete photos
+      var dir = Directory(p.join(docsDir.path, 'photos'));
+      if (dir.existsSync()){
+        for (var file in dir.listSync()) {
+          unawaited(file.delete());
+        }
       }
     }
 
@@ -904,7 +909,7 @@ class _MyAppState extends State<MyApp> {
         continue;
       }
       if (locData.inputFields[measurement.type]!.type == 'photo') {
-        var file = File(p.join(docsDir.path, measurement.value));
+        var file = File(p.join(docsDir.path, 'photos', measurement.value));
         if (await file.exists()) {
           var success = await uploadFileToFtp(connection, file, prefs);
           if (!success){

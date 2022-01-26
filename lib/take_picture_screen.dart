@@ -2,15 +2,18 @@ import 'dart:async';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 // A screen that allows users to take a picture using a given camera.
 class TakePictureScreen extends StatefulWidget {
   const TakePictureScreen({
     Key? key,
     required this.camera,
+    this.resolution,
   }) : super(key: key);
 
   final CameraDescription camera;
+  final String? resolution;
 
   @override
   TakePictureScreenState createState() => TakePictureScreenState();
@@ -22,6 +25,29 @@ class TakePictureScreenState extends State<TakePictureScreen> {
 
   @override
   void initState() {
+    var resolutionPreset;
+    switch (widget.resolution ?? 'medium'){
+      case "low":
+        resolutionPreset = ResolutionPreset.low;
+        break;
+      case "medium":
+        resolutionPreset = ResolutionPreset.medium;
+        break;
+      case "high":
+        resolutionPreset = ResolutionPreset.high;
+        break;
+      case "veryHigh":
+        resolutionPreset = ResolutionPreset.veryHigh;
+        break;
+      case "ultraHigh":
+        resolutionPreset = ResolutionPreset.ultraHigh;
+        break;
+      case "max":
+        resolutionPreset = ResolutionPreset.max;
+        break;
+      default:
+        resolutionPreset = ResolutionPreset.medium;
+    }
     super.initState();
     // To display the current output from the Camera,
     // create a CameraController.
@@ -29,7 +55,7 @@ class TakePictureScreenState extends State<TakePictureScreen> {
       // Get a specific camera from the list of available cameras.
       widget.camera,
       // Define the resolution to use.
-      ResolutionPreset.medium,
+      resolutionPreset,
       // Do not request audio permission
       enableAudio: false,
     );
@@ -47,8 +73,9 @@ class TakePictureScreenState extends State<TakePictureScreen> {
 
   @override
   Widget build(BuildContext context) {
+    var texts = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text('Take a picture')),
+      appBar: AppBar(title: Text(texts.takePicture)),
       // You must wait until the controller is initialized before displaying the
       // camera preview. Use a FutureBuilder to display a loading spinner until the
       // controller has finished initializing.

@@ -122,8 +122,9 @@ Future<String?> showInputDialog(BuildContext context, String text,
 
 void displayInformation(context, text){
   var snackBar = SnackBar(content: Text(text));
-  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-  ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  ScaffoldMessenger.of(context)
+    ..removeCurrentSnackBar()
+    ..showSnackBar(snackBar);
 }
 
 class MultiSelectDialogItem<V> {

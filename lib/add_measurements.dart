@@ -94,7 +94,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
                 children: buildRows(),
               ),
             ),
-            if (isLoading) buildLoadingIndicator(),
+            if (isLoading) buildLoadingIndicator(text:texts.loading),
           ],
         )
       )
@@ -232,7 +232,8 @@ class _AddMeasurementsState extends State<AddMeasurements> {
               final image = await Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) {
-                  return TakePictureScreen(camera: firstCamera);
+                  var resolution = widget.prefs.getString('photo_resolution');
+                  return TakePictureScreen(camera: firstCamera, resolution: resolution);
                 }),
               );
               if (image != null) {
@@ -243,7 +244,11 @@ class _AddMeasurementsState extends State<AddMeasurements> {
                   // Set the filename as the measuremen
                   values[id] = name;
                 });
-                await File(image.path).copy(p.join((await docsDir).path, name));
+                var dir = Directory(p.join((await docsDir).path, 'photos'));
+                if (!dir.existsSync()){
+                  await dir.create();
+                }
+                await File(image.path).copy(p.join(dir.path, name));
               }
             } else {
               // Show the current photo
@@ -258,8 +263,10 @@ class _AddMeasurementsState extends State<AddMeasurements> {
                   title: texts.removePhotoTitle);
               if (action == true) {
                 // remove photo from disk and remove filename from values
-                var file = File(p.join((await docsDir).path, values[id]));
-                unawaited(file.delete());
+                var file = File(p.join((await docsDir).path, 'photos', values[id]));
+                if (await file.exists()) {
+                  unawaited(file.delete());
+                }
                 setState(() {
                   values.remove(id);
                 });
@@ -414,7 +421,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
           var inputField = locData.inputFields[id]!;
           if (inputField.type == 'photo') {
             // remove photo from disk
-            var file = File(p.join((await docsDir).path, values[id]));
+            var file = File(p.join((await docsDir).path, 'photos', values[id]));
             if (await file.exists()) {
               unawaited(file.delete());
             }
@@ -442,7 +449,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
     }
     // check if photo exists in documents-directory
     var docsDir = await getApplicationDocumentsDirectory();
-    File? file = File(p.join(docsDir.path, name));
+    File? file = File(p.join(docsDir.path, 'photos', name));
     // check if photo exists on ftp-server
     if (!file.existsSync()){
       setState(() {isLoading = true;});

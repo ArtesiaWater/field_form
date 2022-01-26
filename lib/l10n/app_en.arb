@@ -1,6 +1,7 @@
 {
     "chooseMaptype": "Choose a maptype",
     "loadingMap": "loading map..",
+    "loading": "Loading...",
     "fieldForm": "FieldForm",
     "menu": "Menu",
     "addDataFromFile": "Add data from file",
@@ -47,6 +48,10 @@
     "imageNotSupported": ": this file is not supported. Only jpg, png and pdf are supported",
     "connectToFtpFailed": "Unable to connect to FTP-server",
     "unableToFindOnFtp": "Unable to find the file on FTP-server: ",
+    "unableToFindPathOnFtp": "Unable to find path on FTP-server: ",
+    "noHostnameDefined": "No hostname defined. Please assign a hostname in the settings",
+    "connected": "Connected",
+    "chooseAFolder": "Choose a folder",
     "removePhoto": "Do you want to remove the photo from the inputfield?",
     "removePhotoTitle": "Remove photo",
 
@@ -59,6 +64,7 @@
     "changeWmsUrl": "Change WMS url",
     "wmsLayers": "WMS layers",
     "changeWmsLayers": "Change WMS layers",
+    "ftp": "FTP",
     "hostname": "Hostname",
     "changeFtpHostname": "Change FTP hostname",
     "username": "Username",
@@ -96,5 +102,17 @@
     "tapToAddInputFields": "Tap to add input fields",
     "selectInputFields": "Select input fields",
     "specifyId": "Please specify an id",
-    "locationIdExists": ": this id already exists. Please enter another id for this location."
+    "locationIdExists": ": this id already exists. Please enter another id for this location.",
+
+    "takePicture": "Take a picture",
+
+    "photos": "Photos",
+    "resolution": "Resolution",
+    "choosePhotoResolution": "Choose a resolution for photos",
+    "photoResolutionLow": "Low (240p)",
+    "photoResolutionMedium": "Medium (480p)",
+    "photoResolutionHigh": "High (720p)",
+    "photoResolutionVeryHigh": "Very high (1080p)",
+    "photoResolutionUltraHigh": "Ultra high (2160p)",
+    "photoResolutionMax": "Maximum"
 }
