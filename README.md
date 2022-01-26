@@ -133,17 +133,21 @@ An example of the contents of a location file without settings, but with inputfi
 ```
 
 Possible keys for the settings are:
+* 'use_standard_time' (boolean)
+* 'wms_on' (boolean)
+* 'wms_url'
+* 'wms_layers' (use , to separate layers)
+* 'photo_resolution' (possible values: 'low', 'medium', 'high', 'veryHigh', 'ultraHigh' and 'max')
 * 'ftp_hostname'
 * 'ftp_username'
 * 'ftp_password'
+* 'ftp_root' (use / to separate folders)
 * 'ftp_path'
-* 'use_ftps' (boolean, not implemented yet)
+* 'use_ftps' (boolean)
+* 'use_sftp' (boolean)
 * 'only_export_new_data' (boolean)
-* 'wms_on' (boolean, not implemented yet)
-* 'wms_url' (not implemented yet)
-* 'wms_layers' (not implemented yet)
-* 'use_standard_time' (boolean)
 
+Boolean settings will be either true or false. To set a setting to true, use a string like 'yes', 'Yes', 'true' or 'True'. Otherwise the setting will be set to false.
 
 ### Measurement File
 A measurement-file contains measurements performed by the user or other users. The measurement-file is a ';'-delimited csv-file with the headers LOCATION, DATE, TIME, TYPE, VALUE.
