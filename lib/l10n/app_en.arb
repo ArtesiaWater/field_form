@@ -114,5 +114,12 @@
     "photoResolutionHigh": "High (720p)",
     "photoResolutionVeryHigh": "Very high (1080p)",
     "photoResolutionUltraHigh": "Ultra high (2160p)",
-    "photoResolutionMax": "Maximum"
+    "photoResolutionMax": "Maximum",
+
+    "n_sublocations": "{count,plural, one{1 sublocation} other{{count} sublocations}}",
+    "@n_sublocations": {
+        "placeholders": {
+            "count": {}
+        }
+    }
 }

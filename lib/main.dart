@@ -618,7 +618,7 @@ class _MyAppState extends State<MyApp> {
         snippet = null;
       } else {
         final n = location.sublocations!.length;
-        snippet = '$n sublocations';
+        snippet = texts.n_sublocations(n);
       }
       markers.add(Marker(
         markerId: MarkerId(id),
