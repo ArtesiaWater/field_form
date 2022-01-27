@@ -399,10 +399,10 @@ class _MyAppState extends State<MyApp> {
                       yesButton: texts.yes,
                       noButton: texts.no);
                   if (action == true) {
-                    deleteAllData();
+                    await deleteAllData();
                   }
                 } else {
-                  deleteAllData();
+                  await deleteAllData();
                 }
               }
             },

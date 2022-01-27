@@ -27,22 +27,22 @@ class TakePictureScreenState extends State<TakePictureScreen> {
   void initState() {
     var resolutionPreset;
     switch (widget.resolution ?? 'medium'){
-      case "low":
+      case 'low':
         resolutionPreset = ResolutionPreset.low;
         break;
-      case "medium":
+      case 'medium':
         resolutionPreset = ResolutionPreset.medium;
         break;
-      case "high":
+      case 'high':
         resolutionPreset = ResolutionPreset.high;
         break;
-      case "veryHigh":
+      case 'veryHigh':
         resolutionPreset = ResolutionPreset.veryHigh;
         break;
-      case "ultraHigh":
+      case 'ultraHigh':
         resolutionPreset = ResolutionPreset.ultraHigh;
         break;
-      case "max":
+      case 'max':
         resolutionPreset = ResolutionPreset.max;
         break;
       default:
