@@ -138,10 +138,9 @@ Possible keys for the settings are:
 * 'wms_url'
 * 'wms_layers' (use , to separate layers)
 * 'photo_resolution' (possible values: 'low', 'medium', 'high', 'veryHigh', 'ultraHigh' and 'max')
-* 'ftp_hostname'
+* 'ftp_hostname' (optionally use / behind the hostname to separate folders and to specify the ftp-root)
 * 'ftp_username'
 * 'ftp_password'
-* 'ftp_root' (use / to separate folders)
 * 'ftp_path'
 * 'use_ftps' (boolean)
 * 'use_sftp' (boolean)

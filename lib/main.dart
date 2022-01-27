@@ -812,7 +812,7 @@ class _MyAppState extends State<MyApp> {
     setState(() {isLoading = true;});
     // connect to ftp folder
     var prefs = await SharedPreferences.getInstance();
-    var root = prefs.getString('ftp_root') ?? '';
+    var root = getFtpRoot(prefs);
     var ftp = await connectToFtp(context, prefs, path:root);
     if (ftp == null) {
       setState(() {isLoading = false;});

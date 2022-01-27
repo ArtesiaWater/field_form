@@ -194,20 +194,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
             ),
             SettingsTile(
-              title: texts.rootFolder,
-              subtitle: widget.prefs.getString('ftp_root'),
-              leading: Icon(Icons.home),
-              onPressed: (BuildContext context) {
-                editStringSetting(context, 'ftp_root', texts.changeFtpRoot);
-              },
-            ),
-            SettingsTile(
               title: texts.path,
               subtitle: widget.prefs.getString('ftp_path'),
               leading: Icon(Icons.folder),
               onPressed: (BuildContext context) async {
                 setState(() {isLoading = true;});
-                var root = widget.prefs.getString('ftp_root') ?? '';
+                var root = getFtpRoot(widget.prefs);
                 var ftp = await connectToFtp(context, widget.prefs, path:root);
                 if (ftp == null) {
                   setState(() {isLoading = false;});
@@ -272,13 +264,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return showDialog(
       context: context,
       builder: (context) {
+        var textEditingController = TextEditingController();
+        textEditingController.text = settingValue;
+        // Select the initial text, so it can be deleted quickly
+        textEditingController.selection = TextSelection(
+          baseOffset: 0,
+          extentOffset: settingValue.length,
+        );
         return AlertDialog(
           title: Text(title),
           content: TextField(
-            controller: TextEditingController(text: settingValue),
+            controller: textEditingController,
             onChanged: (value) {
               settingValue = value;
             },
+            autofocus: true,
             obscureText: password,
           ),
           actions: <Widget>[
@@ -312,7 +312,6 @@ void parseSettings(Map<String, String> settings, SharedPreferences prefs) async{
       case 'ftp_hostname':
       case 'ftp_username':
       case 'ftp_password':
-      case 'ftp_root':
       case 'ftp_path':
       case 'wms_url':
       case 'wms_layers':

@@ -116,7 +116,7 @@
     "photoResolutionUltraHigh": "Zeer hoog (2160p)",
     "photoResolutionMax": "Maximaal",
 
-    "n_sublocations": "{count, plural, one{1 sublocatie} other{{count} sublocaties}}",
+    "n_sublocations": "{count, plural, =1{1 sublocatie} other{{count} sublocaties}}",
     "@n_sublocations": {
         "placeholders": {
             "count": {}

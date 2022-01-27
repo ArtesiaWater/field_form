@@ -124,6 +124,9 @@ class _AddMeasurementsState extends State<AddMeasurements> {
             onTap: () async {
               // Obtain a list of the available cameras on the device.
               final cameras = await availableCameras();
+              if (cameras.isEmpty){
+                return;
+              }
               // Get a specific camera from the list of available cameras.
               final firstCamera = cameras.first;
               // Open the camera screen
@@ -226,6 +229,9 @@ class _AddMeasurementsState extends State<AddMeasurements> {
               // take a new photo
               // Obtain a list of the available cameras on the device.
               final cameras = await availableCameras();
+              if (cameras.isEmpty){
+                return;
+              }
               // Get a specific camera from the list of available cameras.
               final firstCamera = cameras.first;
               // Open the camera screen

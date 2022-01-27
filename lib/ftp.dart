@@ -25,6 +25,12 @@ connectToFtp(BuildContext context, SharedPreferences prefs, {String? path}) asyn
     return null;
   }
 
+
+  if (host.contains('/')) {
+    int idx = host.indexOf('/');
+    host = host.substring(0, idx);
+  }
+
   if (use_sftp) {
     try {
       final client = SSHClient(
@@ -147,9 +153,6 @@ Future<List<String>?> listFilesOnFtp(connection, SharedPreferences prefs, BuildC
     try {
       ftpPath ??= getFtpPath(prefs);
       final items = await sftp.listdir('/' + ftpPath);
-      for (final item in items) {
-        print(item.filename);
-      }
       names = items.map((f) => f.filename).whereType<String>().toList();
     } catch (e) {
       sftp.close();
@@ -168,13 +171,15 @@ Future<List<String>?> listFilesOnFtp(connection, SharedPreferences prefs, BuildC
       return null;
     }
   }
+  names.remove('.');
+  names.remove('..');
   // sort the files alphabetcally
   names.sort((a, b) => a.toString().compareTo(b.toString()));
   return names;
 }
 
 Future<String?> chooseFtpPath(connection, BuildContext context, SharedPreferences prefs) async {
-  var root = prefs.getString('ftp_root') ?? '';
+  var root = getFtpRoot(prefs);
   var names = await listFilesOnFtp(connection, prefs, context, ftpPath: root);
   if (names == null) {
     return null;
@@ -202,9 +207,19 @@ Future<String?> chooseFtpPath(connection, BuildContext context, SharedPreference
   return action;
 }
 
+String getFtpRoot(SharedPreferences prefs) {
+  var root = '';
+  var host = prefs.getString('ftp_hostname') ?? '';
+  if (host.contains('/')) {
+    int idx = host.indexOf('/');
+    root = host.substring(idx+1).trim();
+  }
+  return root;
+}
+
 String getFtpPath(SharedPreferences prefs) {
-  var root = prefs.getString('ftp_root') ?? '';
   var path = prefs.getString('ftp_path') ?? '';
+  var root = getFtpRoot(prefs);
   if (root.isNotEmpty){
     var start = 0;
     var end = root.length;
