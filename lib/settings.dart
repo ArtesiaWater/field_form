@@ -280,6 +280,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
             autofocus: true,
             obscureText: password,
+            autocorrect: false,
           ),
           actions: <Widget>[
             TextButton(

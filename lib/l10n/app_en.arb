@@ -66,7 +66,7 @@
     "changeWmsLayers": "Change WMS layers",
     "ftp": "FTP",
     "hostname": "Hostname",
-    "changeFtpHostname": "Change FTP hostname",
+    "changeFtpHostname": "Change FTP hostname (use / to specify folders)",
     "username": "Username",
     "changeFtpUsername": "Change FTP username",
     "password": "Password",
