@@ -455,7 +455,8 @@ class _AddMeasurementsState extends State<AddMeasurements> {
     }
     // check if photo exists in documents-directory
     var docsDir = await getApplicationDocumentsDirectory();
-    File? file = File(p.join(docsDir.path, 'photos', name));
+    var dir = Directory(p.join((await docsDir).path, 'photos'));
+    File? file = File(p.join(dir.path, name));
     // check if photo exists on ftp-server
     if (!file.existsSync()){
       setState(() {isLoading = true;});
@@ -467,6 +468,9 @@ class _AddMeasurementsState extends State<AddMeasurements> {
         return;
       }
       displayInformation(context, texts.downloading + name);
+      if (!dir.existsSync()){
+        await dir.create();
+      }
       var success = await downloadFileFromFtp(connection, file, prefs);
       if (!success){
         setState(() {isLoading = false;});
