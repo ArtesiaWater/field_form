@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:camera/camera.dart';
+import 'package:field_form/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
@@ -75,7 +76,10 @@ class TakePictureScreenState extends State<TakePictureScreen> {
   Widget build(BuildContext context) {
     var texts = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: Text(texts.takePicture)),
+      appBar: AppBar(
+        title: Text(texts.takePicture),
+        backgroundColor: Constant.primaryColor,
+      ),
       // You must wait until the controller is initialized before displaying the
       // camera preview. Use a FutureBuilder to display a loading spinner until the
       // controller has finished initializing.
