@@ -29,8 +29,12 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>NSLocationWhenInUseUsageDescription</key>
+	<key>NSLocationAlwaysUsageDescription</key>
 	<string>FieldForm needs access to your location to display it on the map.</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>FieldForm needs access to your location to display it on the map.</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>FieldForm needs access to your location to display it on the map.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>FieldForm needs access to the photo library to look for location or measurement-data.</string>
 	<key>NSCameraUsageDescription</key>
