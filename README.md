@@ -59,9 +59,12 @@ where:
 An example of the contents of a location file without settings, but with inputfields, groups, locations and sublocations is:
 ```json
 {
+  "settings": {
+    "use_standard_time": "YES"
+  },
   "inputfields": {
     "value": {
-      "type": "number",
+      "type": "number"
     },
     "comment": {
       "type": "text",
@@ -69,17 +72,25 @@ An example of the contents of a location file without settings, but with inputfi
     },
     "reliable": {
       "type": "choice",
-      "hint": "place a comment",
+      "hint": "is this measurement reliable?",
       "options": [
         "yes",
         "no"
       ]
+    },
+    "photo": {
+      "type": "photo",
+      "hint": "take a picture"
     }
   },
   "groups": {
     "group_1": {
       "name": "Group 1",
       "color": "orange"
+    },
+    "group_2": {
+      "name": "Group 2",
+      "color": "blue"
     }
   },
   "locations": {
@@ -88,25 +99,25 @@ An example of the contents of a location file without settings, but with inputfi
       "lon": 6.5,
       "group": "group_1",
       "sublocations": {
-        "group_1_1": {
+        "loc_1_1": {
           "inputfields": [
-            "head",
+            "value",
             "reliable",
             "comment"
           ],
-          "photo": "group_1_1.png",
+          "photo": "loc_1.png",
           "properties": {
             "surface level": "20.74",
             "filter level": 18.64
           }
         },
-		"group_1_2": {
+        "loc_1_2": {
           "inputfields": [
-            "head",
+            "value",
             "reliable",
             "comment"
           ],
-          "photo": "group_1_2.png",
+          "photo": "loc_1.png",
           "properties": {
             "surface level": "20.74",
             "filter level": 10.0
@@ -117,10 +128,14 @@ An example of the contents of a location file without settings, but with inputfi
     "location_2": {
       "lat": 52.1,
       "lon": 6.3,
-      "group": "group_1",
+      "group": "group_2",
       "sublocations": {
-        "group_2_1": {
-          "photo": "group_1_1.pdf",
+        "loc_2_1": {
+          "inputfields": [
+            "value",
+            "photo"
+          ],
+          "photo": "loc_2.pdf",
           "properties": {
             "surface level": "10.41",
             "filter level": 8.26
