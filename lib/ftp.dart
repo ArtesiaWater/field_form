@@ -126,7 +126,11 @@ Future<bool> downloadFileFromFtp(connection, File file, SharedPreferences prefs)
     }
   } else {
     FTPConnect ftp = connection;
-    success = await ftp.downloadFile(basename(file.path), file, supportIPv6:supportIPv6);
+    try {
+      success = await ftp.downloadFile(basename(file.path), file, supportIPv6:supportIPv6);
+    } catch (e) {
+      success = false;
+    }
   }
   if (!success){
     closeFtp(connection, prefs);

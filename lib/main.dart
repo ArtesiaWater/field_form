@@ -853,6 +853,7 @@ class _MyAppState extends State<MyApp> {
     // Choose FTP folder
     var path = await chooseFtpPath(ftp, context, prefs);
     if (path != null) {
+      prefs.setString('ftp_path', path);
       // Delete all data
       await deleteAllData();
 
