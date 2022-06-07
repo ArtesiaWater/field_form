@@ -205,7 +205,7 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
                 );
                 if (new_options != null) {
                   setState(() {
-                    if (new_options.isEmpty()){
+                    if (new_options.isEmpty){
                       inputField.options = null;
                     } else {
                       inputField.options = new_options;
