@@ -720,9 +720,9 @@ class _MyAppState extends State<MyApp> {
     if (result != null) {
       var file = File(result.files.single.path!);
       var is_location_file;
-      if (file.path.startsWith('locations')) {
+      if (file.path.startsWith('locations') || (file.path.endsWith('.json'))) {
         is_location_file = true;
-      } else if (file.path.startsWith('measurements')) {
+      } else if (file.path.startsWith('measurements') || (file.path.endsWith('.csv'))) {
         is_location_file = false;
       } else {
         // Ask whether the file contains locations or measurements
@@ -805,6 +805,8 @@ class _MyAppState extends State<MyApp> {
     // delete all measurements
     await measurementProvider.deleteAllMeasurements();
     await prefs.remove('imported_location_files');
+
+    await prefs.remove('disable_adding_locations');
     return true;
   }
 

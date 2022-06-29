@@ -78,7 +78,7 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
             DropdownButtonFormField(
               decoration: InputDecoration(
                 hintText: texts.anOptionalGroup,
-                labelText: texts.group,
+                labelText: texts.group_optional,
               ),
               items: getDropdownMenuItems(locData.groups.keys),
               onChanged: (String? text) {
@@ -95,7 +95,7 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
             TextFormField(
               readOnly: true,
               decoration: InputDecoration(
-                labelText: texts.inputFields,
+                labelText: texts.inputfields_optional,
                 hintText: texts.tapToAddInputFields,
               ),
               controller: TextEditingController(text: (location.inputfields ?? '').toString()),
