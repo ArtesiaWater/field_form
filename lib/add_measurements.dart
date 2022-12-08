@@ -302,7 +302,16 @@ class _AddMeasurementsState extends State<AddMeasurements> {
             }
           },
         );
-      } else if (inputField.type == 'datetime') {
+      } else if ((inputField.type == 'date') |  (inputField.type == 'time') | (inputField.type == 'datetime')) {
+        var picker;
+        var date_format;
+        if (inputField.type == 'date') {
+          date_format = Constant.date_format;
+        } else if (inputField.type == 'time'){
+          date_format = Constant.time_format;
+        } else {
+          date_format = Constant.datetime_format;
+        }
         input = TextButton(
           onPressed: () async {
             var currentTime;
@@ -311,18 +320,42 @@ class _AddMeasurementsState extends State<AddMeasurements> {
               currentTime = DateTime.now();
             } else {
               // start date is previous value
-              currentTime = Constant.datetime_format.parse(values[id]!);
+              currentTime = date_format.parse(values[id]!);
             }
-            DatePicker.showDatePicker(context,
-                showTitleActions: true,
-                onChanged: (date) {
-                  print('change $date');
-                },
-                onConfirm: (date) {
-                  print('confirm $date');
-                  values[id] = Constant.datetime_format.format(date);
-                },
-                currentTime: currentTime);
+            if (inputField.type == 'date') {
+              await DatePicker.showDatePicker(context,
+                  showTitleActions: true,
+                  onChanged: (date) {
+                    print('change $date');
+                  },
+                  onConfirm: (date) {
+                    print('confirm $date');
+                    values[id] = date_format.format(date);
+                  },
+                  currentTime: currentTime);
+            } else if (inputField.type == 'time'){
+              await DatePicker.showTimePicker(context,
+                  showTitleActions: true,
+                  onChanged: (date) {
+                    print('change $date');
+                  },
+                  onConfirm: (date) {
+                    print('confirm $date');
+                    values[id] = date_format.format(date);
+                  },
+                  currentTime: currentTime);
+            } else {
+              await DatePicker.showDateTimePicker(context,
+                  showTitleActions: true,
+                  onChanged: (date) {
+                    print('change $date');
+                  },
+                  onConfirm: (date) {
+                    print('confirm $date');
+                    values[id] = date_format.format(date);
+                  },
+                  currentTime: currentTime);
+            }
           },
           onLongPress: () async {
             if (values[id] != null) {

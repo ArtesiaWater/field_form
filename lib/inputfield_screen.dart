@@ -180,7 +180,7 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
                 labelText: texts.type,
               ),
               isExpanded: true,
-              items: generateDropDownItems(['number', 'text', 'choice', 'photo', 'check', 'datetime']),
+              items: generateDropDownItems(['number', 'text', 'choice', 'photo', 'check', 'date', 'time', 'datetime']),
               value: inputField.type,
               onChanged: (String? text) {
                 if (text != null) {
