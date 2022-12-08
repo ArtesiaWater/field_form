@@ -122,5 +122,9 @@
         "placeholders": {
             "count": {}
         }
-    }
+    },
+
+    "default_value": "Standaard waarde",
+    "removeDate": "Wilt u de foto verwijderen van het invoerveld?",
+    "removeDateTitle": "Verwijder datum"
 }

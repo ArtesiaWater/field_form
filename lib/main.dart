@@ -10,7 +10,6 @@ import 'package:field_form/settings.dart';
 import 'package:field_form/measurements.dart';
 import 'package:field_form/wms.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:path_provider/path_provider.dart';
@@ -147,7 +146,7 @@ class _MyAppState extends State<MyApp> {
   ButtonStyle getMapButtonStyle() {
     return TextButton.styleFrom(
       padding: EdgeInsets.all(0),
-      primary: Colors.black54,
+      foregroundColor: Colors.black54,
       backgroundColor: Color.fromRGBO(255, 255, 255, 0.7),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2),
       side: BorderSide(width: 0.2, color: Colors.grey),
@@ -855,7 +854,7 @@ class _MyAppState extends State<MyApp> {
     // Choose FTP folder
     var path = await chooseFtpPath(ftp, context, prefs);
     if (path != null) {
-      prefs.setString('ftp_path', path);
+      unawaited(prefs.setString('ftp_path', path));
       // Delete all data
       await deleteAllData();
 

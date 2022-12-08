@@ -145,7 +145,7 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
                 Navigator.pop(context, location);
               },
               style: ElevatedButton.styleFrom(
-                primary: Constant.primaryColor,
+                backgroundColor: Constant.primaryColor,
               ),
               child: Text(texts.done),
             )

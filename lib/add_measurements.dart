@@ -8,6 +8,7 @@ import 'package:field_form/locations.dart';
 import 'package:field_form/measurements.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart' as p;
@@ -64,9 +65,18 @@ class _AddMeasurementsState extends State<AddMeasurements> {
     inputFieldIds ??= locData.inputFields.keys.toList();
 
     // Drop inputFields that are not defined
-    // copy the inputfields, so we do not alter the orinal list
+    // copy the inputfields, so we do not alter the original list
     inputFieldIds = List.from(inputFieldIds!);
     inputFieldIds!.removeWhere((id) => !locData.inputFields.containsKey(id));
+    // set Default values
+    for (final id in inputFieldIds!) {
+      var inputField = locData.inputFields[id]!;
+      if (inputField.type == 'choice'){
+        if (inputField.default_value != null) {
+          values[id] = inputField.default_value!;
+        }
+      }
+    }
     getPreviousMeasurements();
   }
 
@@ -247,7 +257,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
                 var name = id + '_' + widget.locationId + '_' +
                     Constant.file_datetime_format.format(now) + '.jpg';
                 setState(() {
-                  // Set the filename as the measuremen
+                  // Set the filename as the measurement
                   values[id] = name;
                 });
                 var dir = Directory(p.join((await docsDir).path, 'photos'));
@@ -277,6 +287,53 @@ class _AddMeasurementsState extends State<AddMeasurements> {
                   values.remove(id);
                 });
 
+              }
+            }
+          },
+          child: Text(values[id] ?? inputField.hint ?? ''),
+        );
+      } else if (inputField.type == 'check') {
+        var value = (values[id] ?? 'false') == 'true';
+        input = Checkbox(
+          value: value,
+          onChanged: (bool? value) {
+            if (value!){
+              values[id] = 'true';
+            }
+          },
+        );
+      } else if (inputField.type == 'datetime') {
+        input = TextButton(
+          onPressed: () async {
+            var currentTime;
+            if (values[id] == null) {
+              // start date is now
+              currentTime = DateTime.now();
+            } else {
+              // start date is previous value
+              currentTime = Constant.datetime_format.parse(values[id]!);
+            }
+            DatePicker.showDatePicker(context,
+                showTitleActions: true,
+                onChanged: (date) {
+                  print('change $date');
+                },
+                onConfirm: (date) {
+                  print('confirm $date');
+                  values[id] = Constant.datetime_format.format(date);
+                },
+                currentTime: currentTime);
+          },
+          onLongPress: () async {
+            if (values[id] != null) {
+              var action = await showContinueDialog(context, texts.removeDate,
+                  yesButton: texts.yes,
+                  noButton: texts.no,
+                  title: texts.removeDateTitle);
+              if (action == true) {
+                setState(() {
+                  values.remove(id);
+                });
               }
             }
           },
@@ -336,7 +393,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
         }
       },
       style: ElevatedButton.styleFrom(
-        primary: Constant.primaryColor,
+        backgroundColor: Constant.primaryColor,
       ),
       child: Text(texts.done),
     ));
@@ -386,7 +443,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    primary: Constant.primaryColor,
+                    backgroundColor: Constant.primaryColor,
                   ),
                   child: Text('x'),
                 )
@@ -455,7 +512,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
     }
     // check if photo exists in documents-directory
     var docsDir = await getApplicationDocumentsDirectory();
-    var dir = Directory(p.join((await docsDir).path, 'photos'));
+    var dir = Directory(p.join((docsDir).path, 'photos'));
     File? file = File(p.join(dir.path, name));
     // check if photo exists on ftp-server
     if (!file.existsSync()){

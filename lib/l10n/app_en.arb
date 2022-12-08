@@ -122,5 +122,9 @@
         "placeholders": {
             "count": {}
         }
-    }
+    },
+
+    "default_value": "Default value",
+    "removeDate": "Do you want to remove the date from the inputfield?",
+    "removeDateTitle": "Remove date"
 }

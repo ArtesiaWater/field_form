@@ -1,5 +1,4 @@
 import 'package:field_form/locations.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'constants.dart';
@@ -124,11 +123,8 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    texts = AppLocalizations.of(context)!;
+  List<DropdownMenuItem<String>> generateDropDownItems(types) {
     var items = <DropdownMenuItem<String>>[];
-    final types = ['number', 'text', 'choice', 'photo'];
     for (final type in types) {
       items.add(
           DropdownMenuItem(
@@ -137,6 +133,12 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
           )
       );
     }
+    return items;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    texts = AppLocalizations.of(context)!;
     final node = FocusScope.of(context);
     return Scaffold(
         appBar: AppBar(
@@ -178,7 +180,7 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
                 labelText: texts.type,
               ),
               isExpanded: true,
-              items: items,
+              items: generateDropDownItems(['number', 'text', 'choice', 'photo', 'check', 'datetime']),
               value: inputField.type,
               onChanged: (String? text) {
                 if (text != null) {
@@ -196,7 +198,7 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
               ),
               controller: TextEditingController(text: (inputField.options ?? '').toString()),
               onTap: () async {
-                // make sure the textfield is not focussed
+                // make sure the text-field is not focussed
                 final new_options = await Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) {
@@ -210,6 +212,22 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
                     } else {
                       inputField.options = new_options;
                     }
+                  });
+                }
+
+              },
+            ),
+            if (inputField.type == 'choice') DropdownButtonFormField(
+              decoration: InputDecoration(
+                labelText: texts.default_value,
+              ),
+              isExpanded: true,
+              items: generateDropDownItems(inputField.options ?? <String>[]),
+              value: inputField.default_value,
+              onChanged: (String? text) {
+                if (text != null) {
+                  setState((){
+                    inputField.default_value = text;
                   });
                 }
               },
@@ -230,7 +248,7 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
                 Navigator.pop(context, inputField);
               },
               style: ElevatedButton.styleFrom(
-                primary: Constant.primaryColor,
+                backgroundColor: Constant.primaryColor,
               ),
               child: Text(texts.done),
             )
@@ -311,7 +329,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  primary: Constant.primaryColor,
+                  backgroundColor: Constant.primaryColor,
                 ),
                 child: Text('x'),
               )
@@ -329,7 +347,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
               Navigator.pop(context, options);
             },
             style: ElevatedButton.styleFrom(
-              primary: Constant.primaryColor,
+              backgroundColor: Constant.primaryColor,
             ),
             child: Text(texts.done),
           )

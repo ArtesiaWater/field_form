@@ -27,7 +27,7 @@ connectToFtp(BuildContext context, SharedPreferences prefs, {String? path}) asyn
 
 
   if (host.contains('/')) {
-    int idx = host.indexOf('/');
+    var idx = host.indexOf('/');
     host = host.substring(0, idx);
   }
 
@@ -215,7 +215,7 @@ String getFtpRoot(SharedPreferences prefs) {
   var root = '';
   var host = prefs.getString('ftp_hostname') ?? '';
   if (host.contains('/')) {
-    int idx = host.indexOf('/');
+    var idx = host.indexOf('/');
     root = host.substring(idx+1).trim();
   }
   return root;
