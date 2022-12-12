@@ -35,10 +35,11 @@ A location file contains the data of the locations, locations-groups, inputfield
 where:
 
 **InputField**:
-* String type: the type, must be 'number', 'text' or 'choice'.
+* String type: the type, must be 'number', 'text', 'choice', 'photo', 'check', 'date', 'time' or 'datetime'.
 * String? hint: the hint to display in the inputfield.
 * String? name: the name to display, use inputfield-id when null.
-* List<String>? options: the options between which the user can choose type='choice'.
+* List<String>? options: the options between which the user can choose when type='choice'.
+* String? default_value: the default value for an inputfield, only supported for type='choice'.
 
 **Group**:
 * String? name: the name to display, use group-id when null.
