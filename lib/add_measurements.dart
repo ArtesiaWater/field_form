@@ -273,7 +273,8 @@ class _AddMeasurementsState extends State<AddMeasurements> {
           },
           onLongPress: () async {
             if (values[id] != null) {
-              var action = await showContinueDialog(context, texts.removePhoto,
+              var action = await showContinueDialog(context,
+                  texts.removeValueFromId(values[id]!, id),
                   yesButton: texts.yes,
                   noButton: texts.no,
                   title: texts.removePhotoTitle);
@@ -309,7 +310,6 @@ class _AddMeasurementsState extends State<AddMeasurements> {
           title: Text(inputField.hint ?? ''),
         );
       } else if ((inputField.type == 'date') |  (inputField.type == 'time') | (inputField.type == 'datetime')) {
-        var picker;
         var date_format;
         if (inputField.type == 'date') {
           date_format = Constant.date_format;
@@ -365,7 +365,8 @@ class _AddMeasurementsState extends State<AddMeasurements> {
           },
           onLongPress: () async {
             if (values[id] != null) {
-              var action = await showContinueDialog(context, texts.removeDate,
+              var action = await showContinueDialog(context,
+                  texts.removeValueFromId(values[id]!, id),
                   yesButton: texts.yes,
                   noButton: texts.no,
                   title: texts.removeDateTitle);
@@ -476,7 +477,8 @@ class _AddMeasurementsState extends State<AddMeasurements> {
                 flex: 1,
                 child: ElevatedButton(
                   onPressed: () async {
-                    var action = await showContinueDialog(context, texts.sureToDeleteMeasurement);
+                    var action = await showContinueDialog(context,
+                        texts.sureToDeleteMeasurement(measurement.value, measurement.type));
                     if (action == true) {
                       deleteMeasurement(measurement);
                     }

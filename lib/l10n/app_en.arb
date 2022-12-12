@@ -41,7 +41,17 @@
     "uploadPhotoFailed": "Unable to upload photo: ",
 
     "done": "Done",
-    "sureToDeleteMeasurement": "Are you sure you want to delete this measurement?",
+    "sureToDeleteMeasurement": "Are you sure you want to delete {value} of type {id}?",
+    "@sureToDeleteMeasurement": {
+                "placeholders": {
+                    "value": {
+                        "type": "String"
+                    },
+                    "id": {
+                        "type": "String"
+                    }
+                }
+            },
     "isNotValidNumber": " is not a valid number",
     "ignoreFilledValues": "All values will be deleted when going back. Do you still want to go back?",
     "ignoreFilledValuesTitle": "Ignore values?",
@@ -52,7 +62,6 @@
     "noHostnameDefined": "No hostname defined. Please assign a hostname in the settings",
     "connected": "Connected",
     "chooseAFolder": "Choose a folder",
-    "removePhoto": "Do you want to remove the photo from the inputfield?",
     "removePhotoTitle": "Remove photo",
 
     "editInputFields": "Edit input fields",
@@ -125,6 +134,16 @@
     },
 
     "default_value": "Default value",
-    "removeDate": "Do you want to remove the date from the inputfield?",
+    "removeValueFromId": "Do you want to remove {value} from the inputfield {id}?",
+    "@removeValueFromId": {
+            "placeholders": {
+                "value": {
+                    "type": "String"
+                },
+                "id": {
+                    "type": "String"
+                }
+            }
+        },
     "removeDateTitle": "Remove date"
 }

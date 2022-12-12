@@ -41,7 +41,7 @@
     "uploadPhotoFailed": "Het lukt niet om foto te versturen: ",
 
     "done": "Gereed",
-    "sureToDeleteMeasurement": "Weet u zeker dat u de meting wilt verwijderen?",
+    "sureToDeleteMeasurement": "Weet u zeker dat u de meting {value} van het type {id} wilt verwijderen?",
     "isNotValidNumber": " is geen geldig getal",
     "ignoreFilledValues": "Alle waarden worden verwijderd wanneer u teruggaat. Wilt u nog steeds terug gaan?",
     "ignoreFilledValuesTitle": "Negeer waarden?",
@@ -52,7 +52,6 @@
     "noHostnameDefined": "Geen hostnaam opgegeven. Geef aub een hostname op in de instellingen.",
     "connected": "Verbonden",
     "chooseAFolder": "Kies een map",
-    "removePhoto": "Wilt u de foto verwijderen van het invoerveld?",
     "removePhotoTitle": "Verwijder foto",
 
     "editInputFields": "Pas invoervelden aan",
@@ -118,13 +117,8 @@
     "photoResolutionMax": "Maximaal",
 
     "n_sublocations": "{count, plural, =1{1 sublocatie} other{{count} sublocaties}}",
-    "@n_sublocations": {
-        "placeholders": {
-            "count": {}
-        }
-    },
 
     "default_value": "Standaard waarde",
-    "removeDate": "Wilt u de foto verwijderen van het invoerveld?",
+    "removeValueFromId": "Wilt u {value} verwijderen van het invoerveld {id}?",
     "removeDateTitle": "Verwijder datum"
 }
