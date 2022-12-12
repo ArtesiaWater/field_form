@@ -294,13 +294,19 @@ class _AddMeasurementsState extends State<AddMeasurements> {
         );
       } else if (inputField.type == 'check') {
         var value = (values[id] ?? 'false') == 'true';
-        input = Checkbox(
+        input = CheckboxListTile(
           value: value,
           onChanged: (bool? value) {
-            if (value!){
-              values[id] = 'true';
-            }
+            setState(() {
+              if (value!) {
+                values[id] = 'true';
+              } else {
+                values.remove(id);
+                // values[id] = 'false';
+              }
+            });
           },
+          title: Text(inputField.hint ?? ''),
         );
       } else if ((inputField.type == 'date') |  (inputField.type == 'time') | (inputField.type == 'datetime')) {
         var picker;
