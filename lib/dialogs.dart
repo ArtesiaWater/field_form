@@ -212,15 +212,17 @@ class _MultiSelectDialogState<V> extends State<MultiSelectDialog<V>> {
   }
 }
 
-List<DropdownMenuItem<String>> getDropdownMenuItems(options) {
+List<DropdownMenuItem<String>> getDropdownMenuItems(options, {add_empty=false}) {
   var items = <DropdownMenuItem<String>>[];
-  // add an empty value
-  items.add(
-      DropdownMenuItem(
-        value: '',
-        child: Text(''),
-      )
-  );
+  if (add_empty) {
+    // add an empty value
+    items.add(
+        DropdownMenuItem(
+          value: '',
+          child: Text(''),
+        )
+    );
+  }
   for (var option in options) {
     items.add(
       DropdownMenuItem(

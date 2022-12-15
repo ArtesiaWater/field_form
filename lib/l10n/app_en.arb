@@ -145,5 +145,9 @@
                 }
             }
         },
-    "removeDateTitle": "Remove date"
+    "removeDateTitle": "Remove date",
+
+    "isRequired": " is required",
+    "requiredInputField": "This is a required field",
+    "required": "required"
 }

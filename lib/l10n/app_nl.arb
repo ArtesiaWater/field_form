@@ -120,5 +120,9 @@
 
     "default_value": "Standaard waarde",
     "removeValueFromId": "Wilt u {value} verwijderen van het invoerveld {id}?",
-    "removeDateTitle": "Verwijder datum"
+    "removeDateTitle": "Verwijder datum",
+
+    "isRequired": " is verplicht",
+    "requiredInputField": "Dit is een verplicht veld",
+    "required": "verplicht"
 }

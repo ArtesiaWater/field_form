@@ -73,7 +73,9 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       var inputField = locData.inputFields[id]!;
       if (inputField.type == 'choice'){
         if (inputField.default_value != null) {
-          values[id] = inputField.default_value!;
+          if ((inputField.options ?? <String>[]).contains(inputField.default_value)) {
+            values[id] = inputField.default_value!;
+          }
         }
       }
     }
@@ -204,10 +206,17 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       List<TextInputFormatter>? inputFormatters = [];
       if (inputField.type == 'number'){
         keyboardType = TextInputType.number;
-        validator = numberValidator;
+        if (inputField.required){
+          validator = requiredNumberValidator;
+        } else {
+          validator = numberValidator;
+        }
         inputFormatters.add(CommaTextInputFormatter());
       } else {
         inputFormatters.add(FilteringTextInputFormatter.deny(RegExp('[;]')));
+        if (inputField.required){
+          validator = requiredValidator;
+        }
       }
       var input;
       if (inputField.type == 'choice'){
@@ -219,7 +228,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
         }
         input = DropdownButtonFormField(
           isExpanded: true,
-          items: getDropdownMenuItems(inputField.options ?? <String>[]),
+          items: getDropdownMenuItems(inputField.options ?? <String>[], add_empty:true),
           onChanged: (String? text) {
             setState(() {
               values[id] = text!;
@@ -230,6 +239,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
             //  'steal' focuses off of the TextField that was previously focused on the dropdown tap
             node.requestFocus(FocusNode());
           },
+          validator: validator,
           hint: hint,
         );
       } else if (inputField.type == 'photo') {
@@ -415,8 +425,13 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       onPressed: () async {
         if (_formKey.currentState!.validate()) {
           for (var id in inputFieldIds!) {
+            var inputField = locData.inputFields[id]!;
             if (values.containsKey(id)) {
               if (values[id]!.isEmpty) {
+                if (inputField.required) {
+
+                  return;
+                }
                 continue;
               }
               var measurement = Measurement(
@@ -425,7 +440,11 @@ class _AddMeasurementsState extends State<AddMeasurements> {
                   type: id,
                   value: values[id]!);
               await widget.measurementProvider.insert(measurement);
+            } else if (inputField.required) {
+              showErrorDialog(context, inputField.name ?? id + texts.isRequired);
+              return;
             }
+
           }
 
           // Navigate back to the map when tapped.
@@ -506,10 +525,35 @@ class _AddMeasurementsState extends State<AddMeasurements> {
     return null;
   }
 
+  String? requiredValidator(String? value) {
+    if ((value == null) || (value.isEmpty)) {
+      return texts.requiredInputField;
+    }
+  }
+
+  String? requiredNumberValidator(String? value) {
+    if ((value == null) || (value.isEmpty)) {
+      return texts.requiredInputField;
+    }
+    final n = num.tryParse(value);
+    if(n == null) {
+      return value + texts.isNotValidNumber;
+    }
+    return null;
+  }
+
+
   Future<bool> checkToGoBack() async {
     var hasValues = false;
-    for (var value in values.values){
-      if (value.isNotEmpty){
+
+    for (var id in values.keys){
+      if (values[id]!.isNotEmpty){
+        var inputField = locData.inputFields[id]!;
+        if (inputField.default_value != null){
+          if (values[id] == inputField.default_value){
+            continue;
+          }
+        }
         hasValues = true;
         break;
       }

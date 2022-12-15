@@ -123,19 +123,6 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
     }
   }
 
-  List<DropdownMenuItem<String>> generateDropDownItems(types) {
-    var items = <DropdownMenuItem<String>>[];
-    for (final type in types) {
-      items.add(
-          DropdownMenuItem(
-            value: type,
-            child: Text(type),
-          )
-      );
-    }
-    return items;
-  }
-
   @override
   Widget build(BuildContext context) {
     texts = AppLocalizations.of(context)!;
@@ -180,7 +167,7 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
                 labelText: texts.type,
               ),
               isExpanded: true,
-              items: generateDropDownItems(['number', 'text', 'choice', 'photo', 'check', 'date', 'time', 'datetime']),
+              items: getDropdownMenuItems(['number', 'text', 'choice', 'photo', 'check', 'date', 'time', 'datetime']),
               value: inputField.type,
               onChanged: (String? text) {
                 if (text != null) {
@@ -209,8 +196,13 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
                   setState(() {
                     if (new_options.isEmpty){
                       inputField.options = null;
+                      inputField.default_value = null;
                     } else {
                       inputField.options = new_options;
+                      if (!inputField.options!.contains(inputField.default_value)){
+                        // the default option was removed, make it null
+                        inputField.default_value = null;
+                      }
                     }
                   });
                 }
@@ -222,8 +214,8 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
                 labelText: texts.default_value,
               ),
               isExpanded: true,
-              items: generateDropDownItems(inputField.options ?? <String>[]),
-              value: inputField.default_value,
+              items: getDropdownMenuItems(inputField.options ?? <String>[], add_empty: true),
+              value: (inputField.options ?? <String>[]).contains(inputField.default_value) ? inputField.default_value : "",
               onChanged: (String? text) {
                 if (text != null) {
                   setState((){
@@ -241,6 +233,17 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
               onChanged: (String text) {
                 inputField.hint = text;
               },
+            ),
+            CheckboxListTile(
+                value: inputField.required,
+                onChanged: (bool? value) {
+                  setState(() {
+                    if (value != null) {
+                      inputField.required = value;
+                    }
+                  });
+                },
+                title: Text(texts.required),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -293,15 +296,6 @@ class _OptionsScreenState extends State<OptionsScreen> {
   @override
   Widget build(BuildContext context) {
     texts = AppLocalizations.of(context)!;
-    var items = <DropdownMenuItem<String>>[];
-    for (final type in ['number', 'text', 'choice']) {
-      items.add(
-          DropdownMenuItem(
-            value: type,
-            child: Text(type),
-          )
-      );
-    }
 
     final children = <Widget> [];
     options.asMap().forEach((index, option){

@@ -66,7 +66,8 @@ class InputField {
     this.hint,
     this.name,
     this.options,
-    this.required,
+    this.default_value,
+    this.required=false,
   });
 
   factory InputField.fromJson(Map<String, dynamic> json) => _$InputFieldFromJson(json);
@@ -81,7 +82,7 @@ class InputField {
   String? name;
   List<String>? options;
   String? default_value;
-  final bool? required;
+  bool required;
 }
 
 Map<String, InputField> getDefaultInputFields(){

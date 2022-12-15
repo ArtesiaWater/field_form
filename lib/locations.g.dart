@@ -6,23 +6,27 @@ part of 'locations.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-Location _$LocationFromJson(Map<String, dynamic> json) {
-  return Location(
-    lat: (json['lat'] as num?)?.toDouble(),
-    lon: (json['lon'] as num?)?.toDouble(),
-    name: json['name'] as String?,
-    inputfields: (json['inputfields'] as List<dynamic>?)
-        ?.map((e) => e as String)
-        .toList(),
-    properties: json['properties'] as Map<String, dynamic>?,
-    photo: json['photo'] as String?,
-    sublocations: (json['sublocations'] as Map<String, dynamic>?)?.map(
-      (k, e) => MapEntry(k, Location.fromJson(e as Map<String, dynamic>)),
-    ),
-    group: json['group'] as String?,
-    color: json['color'] as String?,
-  );
-}
+Location _$LocationFromJson(Map<String, dynamic> json) => Location(
+      lat: (json['lat'] as num?)?.toDouble(),
+      lon: (json['lon'] as num?)?.toDouble(),
+      name: json['name'] as String?,
+      inputfields: (json['inputfields'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      properties: json['properties'] as Map<String, dynamic>?,
+      photo: json['photo'] as String?,
+      sublocations: (json['sublocations'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, Location.fromJson(e as Map<String, dynamic>)),
+      ),
+      group: json['group'] as String?,
+      color: json['color'] as String?,
+      min: (json['min'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, (e as num).toDouble()),
+      ),
+      max: (json['max'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, (e as num).toDouble()),
+      ),
+    );
 
 Map<String, dynamic> _$LocationToJson(Location instance) => <String, dynamic>{
       'lat': instance.lat,
@@ -34,24 +38,24 @@ Map<String, dynamic> _$LocationToJson(Location instance) => <String, dynamic>{
       'sublocations': instance.sublocations,
       'group': instance.group,
       'color': instance.color,
+      'min': instance.min,
+      'max': instance.max,
     };
 
-LocationFile _$LocationFileFromJson(Map<String, dynamic> json) {
-  return LocationFile(
-    settings: (json['settings'] as Map<String, dynamic>?)?.map(
-      (k, e) => MapEntry(k, e as String),
-    ),
-    inputfields: (json['inputfields'] as Map<String, dynamic>?)?.map(
-      (k, e) => MapEntry(k, InputField.fromJson(e as Map<String, dynamic>)),
-    ),
-    groups: (json['groups'] as Map<String, dynamic>?)?.map(
-      (k, e) => MapEntry(k, Group.fromJson(e as Map<String, dynamic>)),
-    ),
-    locations: (json['locations'] as Map<String, dynamic>?)?.map(
-      (k, e) => MapEntry(k, Location.fromJson(e as Map<String, dynamic>)),
-    ),
-  );
-}
+LocationFile _$LocationFileFromJson(Map<String, dynamic> json) => LocationFile(
+      settings: (json['settings'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, e as String),
+      ),
+      inputfields: (json['inputfields'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, InputField.fromJson(e as Map<String, dynamic>)),
+      ),
+      groups: (json['groups'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, Group.fromJson(e as Map<String, dynamic>)),
+      ),
+      locations: (json['locations'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, Location.fromJson(e as Map<String, dynamic>)),
+      ),
+    );
 
 Map<String, dynamic> _$LocationFileToJson(LocationFile instance) =>
     <String, dynamic>{
@@ -61,16 +65,15 @@ Map<String, dynamic> _$LocationFileToJson(LocationFile instance) =>
       'locations': instance.locations,
     };
 
-InputField _$InputFieldFromJson(Map<String, dynamic> json) {
-  return InputField(
-    type: json['type'] as String,
-    hint: json['hint'] as String?,
-    name: json['name'] as String?,
-    options:
-        (json['options'] as List<dynamic>?)?.map((e) => e as String).toList(),
-    required: json['required'] as bool?,
-  );
-}
+InputField _$InputFieldFromJson(Map<String, dynamic> json) => InputField(
+      type: json['type'] as String,
+      hint: json['hint'] as String?,
+      name: json['name'] as String?,
+      options:
+          (json['options'] as List<dynamic>?)?.map((e) => e as String).toList(),
+      default_value: json['default_value'] as String?,
+      required: json['required'] as bool? ?? false,
+    );
 
 Map<String, dynamic> _$InputFieldToJson(InputField instance) =>
     <String, dynamic>{
@@ -78,18 +81,17 @@ Map<String, dynamic> _$InputFieldToJson(InputField instance) =>
       'hint': instance.hint,
       'name': instance.name,
       'options': instance.options,
+      'default_value': instance.default_value,
       'required': instance.required,
     };
 
-Group _$GroupFromJson(Map<String, dynamic> json) {
-  return Group(
-    name: json['name'] as String?,
-    color: json['color'] as String?,
-    inputfields: (json['inputfields'] as List<dynamic>?)
-        ?.map((e) => e as String)
-        .toList(),
-  );
-}
+Group _$GroupFromJson(Map<String, dynamic> json) => Group(
+      name: json['name'] as String?,
+      color: json['color'] as String?,
+      inputfields: (json['inputfields'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+    );
 
 Map<String, dynamic> _$GroupToJson(Group instance) => <String, dynamic>{
       'name': instance.name,
