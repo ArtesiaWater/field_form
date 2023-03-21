@@ -205,7 +205,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       var validator;
       List<TextInputFormatter>? inputFormatters = [];
       if (inputField.type == 'number'){
-        keyboardType = TextInputType.number;
+        keyboardType = TextInputType.numberWithOptions(decimal: true, signed: true);
         if (inputField.required){
           validator = requiredNumberValidator;
         } else {
@@ -529,6 +529,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
     if ((value == null) || (value.isEmpty)) {
       return texts.requiredInputField;
     }
+    return null;
   }
 
   String? requiredNumberValidator(String? value) {
