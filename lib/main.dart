@@ -12,6 +12,7 @@ import 'package:field_form/measurements.dart';
 import 'package:field_form/wms.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_archive/flutter_archive.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:map_launcher/map_launcher.dart' as map_launcher;
 import 'package:path_provider/path_provider.dart';
@@ -29,7 +30,6 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 // TODO: Make a manual
 // TODO: Minimal and maximal values (HHNK)
 // TODO: Improve localisation
-// TODO: Add photos to mail
 
 void main() {
   runApp(
@@ -47,7 +47,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  final markers = Map<String, Marker>();
+  final markers = <String, Marker>{};
   final locData = LocationData();
   var isLoading = false;
   SharedPreferences? prefs;
@@ -64,7 +64,7 @@ class _MyAppState extends State<MyApp> {
   late BitmapDescriptor markedIcon;
   bool myLocationEnabled = false;
   late AppLocalizations texts;
-  var activeMarker = null;
+  var activeMarker;
 
   @override
   void initState() {
@@ -318,7 +318,7 @@ class _MyAppState extends State<MyApp> {
       actions: actions,
       onSearch: (String key) {
         if (locData.locations.containsKey(key)){
-          Location location = locData.locations[key]!;
+          var location = locData.locations[key]!;
           // first move the camera to the marker
           if ((location.lat != null) & (location.lon != null)){
             mapController.animateCamera(CameraUpdate.newLatLng(LatLng(location.lat!, location.lon!)));
@@ -595,7 +595,7 @@ class _MyAppState extends State<MyApp> {
         });
       },
       onTap: (latlng) async {
-        checkActiveMarker();
+        await checkActiveMarker();
         final id = 'new_marker';
         if (markers.containsKey(id)){
           setState(() {
@@ -1146,15 +1146,44 @@ class _MyAppState extends State<MyApp> {
     if (await file.exists()){
       files.add(file.path);
     }
-    var new_file_name = getMeasurementFileName();
-    var tempDir = await getTemporaryDirectory();
-    file = File(p.join(tempDir.path, new_file_name));
-    var meas_file = await measurementProvider.exportToCsv(file,
-        only_export_new_data: false);
-    if (meas_file != null) {
-      files.add(meas_file.path);
+
+    final measurements = await measurementProvider.getMeasurements();
+    if (measurements.isNotEmpty) {
+      var new_file_name = getMeasurementFileName();
+      final tempDir = await getTemporaryDirectory();
+      file = File(p.join(tempDir.path, new_file_name));
+      file = await measurementProvider.measurementsToCsv(measurements, file);
+      files.add(file.path);
+
+      // Combine photos in a zip-file
+      final photos = <File>[];
+      final photosDir = p.join(docsDir.path, 'photos');
+      for (var measurement in measurements){
+        if (!locData.inputFields.containsKey(measurement.type)) {
+          continue;
+        }
+        if (locData.inputFields[measurement.type]!.type == 'photo') {
+          var file = File(p.join(photosDir, measurement.value));
+          if (await file.exists()) {
+            // add file to zip
+            photos.add(file);
+          }
+        }
+      }
+      if (photos.isNotEmpty){
+        // zip photos and add zip-file to files
+        final zipname = new_file_name.replaceAll('measurements', 'photos').replaceAll('.csv', '.zip');
+        final zipFile = File(p.join(tempDir.path, zipname));
+        try {
+          await ZipFile.createFromFiles(
+              sourceDir: Directory(photosDir), files: photos, zipFile: zipFile);
+        } catch (e) {
+          showErrorDialog(context, e.toString());
+        }
+        files.add(zipFile.path);
+      }
     }
-    // TODO: add photos in a zip-file
+
     if (files.isEmpty){
       showErrorDialog(context, texts.noDataToShare);
       return;

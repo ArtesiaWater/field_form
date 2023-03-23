@@ -49,6 +49,7 @@ dependencies:
   pdfx: ^2.3.0
   easy_search_bar: ^2.4.2
   map_launcher: ^2.5.0
+  flutter_archive: ^5.0.0
 
 dev_dependencies:
   flutter_test:

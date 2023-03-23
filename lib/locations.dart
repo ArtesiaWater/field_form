@@ -128,7 +128,8 @@ class LocationData {
     var location_file = LocationFile(locations: locations,
         inputfields: inputFields,
         groups: groups);
-    await file.writeAsString(json.encode(location_file.toJson()));
+    var encoder = JsonEncoder.withIndent('  ');
+    await file.writeAsString(encoder.convert(location_file.toJson()));
   }
 }
 
