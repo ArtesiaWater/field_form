@@ -490,7 +490,7 @@ class _MyAppState extends State<MyApp> {
   void chooseMeasuredInterval(BuildContext context, SharedPreferences prefs) async{
     final mark_measured_days = prefs.getInt('mark_measured_days') ?? 0;
     var options = <Widget>[];
-    for (var interval in [0, 1, 7, 30]){
+    for (var interval in [0, 1, 7, 30, 365]){
       final icon;
       if (interval == mark_measured_days){
         icon = Icon(Icons.check_box_outlined);
