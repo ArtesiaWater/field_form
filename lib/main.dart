@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:easy_search_bar/easy_search_bar.dart';
 import 'package:field_form/constants.dart';
 import 'package:field_form/new_location_screen.dart';
 import 'package:field_form/settings.dart';
@@ -12,6 +13,7 @@ import 'package:field_form/wms.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:map_launcher/map_launcher.dart' as map_launcher;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:share/share.dart';
@@ -45,7 +47,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  final markers = <Marker>[];
+  final markers = Map<String, Marker>();
   final locData = LocationData();
   var isLoading = false;
   SharedPreferences? prefs;
@@ -62,6 +64,7 @@ class _MyAppState extends State<MyApp> {
   late BitmapDescriptor markedIcon;
   bool myLocationEnabled = false;
   late AppLocalizations texts;
+  var activeMarker = null;
 
   @override
   void initState() {
@@ -244,19 +247,21 @@ class _MyAppState extends State<MyApp> {
     // Zoom out to all locations
     if (markers.length > 1){
       double x0, x1, y0, y1;
-      x0 = x1 = markers[0].position.latitude;
-      y0 = y1 = markers[0].position.longitude;
-      for (var marker in markers) {
+      x0 = x1 = markers.values.first.position.latitude;
+      y0 = y1 = markers.values.first.position.longitude;
+
+      markers.values.forEach((marker){
         var latLng = marker.position;
         if (latLng.latitude > x1) x1 = latLng.latitude;
         if (latLng.latitude < x0) x0 = latLng.latitude;
         if (latLng.longitude > y1) y1 = latLng.longitude;
         if (latLng.longitude < y0) y0 = latLng.longitude;
-      }
+      });
       var bounds = LatLngBounds(northeast: LatLng(x1, y1), southwest: LatLng(x0, y0));
       mapController.animateCamera(CameraUpdate.newLatLngBounds(bounds, 20));
     } else if (markers.length == 1) {
-      var latLng = LatLng(markers[0].position.latitude, markers[0].position.longitude);
+      final position = markers.values.first.position;
+      var latLng = LatLng(position.latitude, position.longitude);
       mapController.animateCamera(CameraUpdate.newLatLng(latLng));
     }
   }
@@ -280,24 +285,55 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
-  AppBar buildAppBar() {
-    return AppBar(
-      title: Text(texts.fieldForm),
-      backgroundColor: Constant.primaryColor,
-      actions: <Widget>[
-        Padding(
+  EasySearchBar buildAppBar() {
+    var actions = <Widget>[];
+    if (activeMarker != null) {
+      actions.add(Padding(
           padding: EdgeInsets.only(right: 20.0),
           child: GestureDetector(
             onTap: () {
-              synchroniseWithFtp(context);
+              navigateToActiveMarker(true, activeMarker);
             },
             child: Icon(
-              Icons.sync,
+              Icons.navigation,
             ),
           )
-        ),
-      ],
+      ));
+    }
+    actions.add(Padding(
+        padding: EdgeInsets.only(right: 20.0),
+        child: GestureDetector(
+          onTap: () {
+            synchroniseWithFtp(context);
+          },
+          child: Icon(
+            Icons.sync,
+          ),
+        )
+    ));
+
+    var esb = EasySearchBar(
+      title: Text(texts.fieldForm),
+      backgroundColor: Constant.primaryColor,
+      actions: actions,
+      onSearch: (String key) {
+        if (locData.locations.containsKey(key)){
+          Location location = locData.locations[key]!;
+          // first move the camera to the marker
+          if ((location.lat != null) & (location.lon != null)){
+            mapController.animateCamera(CameraUpdate.newLatLng(LatLng(location.lat!, location.lon!)));
+            // then show the infowindow
+            mapController.showMarkerInfoWindow(MarkerId(key));
+            setState(() {activeMarker = key;});
+            // close the search overlay, so the user can select other actions (navigation, synchronisation) again
+            // closeOverlay();
+          }
+        }
+      },
+      suggestions: getSuggestions(),
+      openOverlayOnSearch: true,
     );
+    return esb;
   }
 
   Drawer buildDrawer() {
@@ -430,6 +466,27 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
+  List<String>? getSuggestions() {
+    return locData.locations.keys.toList();
+  }
+
+  Future<void> navigateToActiveMarker(bool isDir, String activeMarker) async {
+    if (!locData.locations.containsKey(activeMarker)) {
+      return;
+    }
+    var location = locData.locations[activeMarker]!;
+    if ((location.lat == null) | (location.lon==null)) {
+      return;
+    }
+    var lat = location.lat!;
+    var lon = location.lon!;
+
+    final availableMaps = await map_launcher.MapLauncher.installedMaps;
+    await availableMaps.first.showDirections(
+        destination: map_launcher.Coords(lat, lon),
+      );
+  }
+
   void chooseMeasuredInterval(BuildContext context, SharedPreferences prefs) async{
     final mark_measured_days = prefs.getInt('mark_measured_days') ?? 0;
     var options = <Widget>[];
@@ -510,7 +567,7 @@ class _MyAppState extends State<MyApp> {
       myLocationEnabled: myLocationEnabled,
       initialCameraPosition: initialCameraPosition,
       compassEnabled: true,
-      markers: markers.toSet(),
+      markers: markers.values.toSet(),
       mapType: mapType,
       mapToolbarEnabled: false,
       tileOverlays: tileOverlays,
@@ -519,6 +576,7 @@ class _MyAppState extends State<MyApp> {
           return;
         }
         setState(() {
+          activeMarker = null;
           final id = 'new_marker';
           final marker = Marker(
             markerId: MarkerId(id),
@@ -532,8 +590,19 @@ class _MyAppState extends State<MyApp> {
             icon: BitmapDescriptor.defaultMarkerWithHue(
                 BitmapDescriptor.hueBlue),
           );
-          markers.add(marker);
+          markers[id] = marker;
+          mapController.showMarkerInfoWindow(MarkerId(id));
         });
+      },
+      onTap: (latlng) async {
+        checkActiveMarker();
+        final id = 'new_marker';
+        if (markers.containsKey(id)){
+          setState(() {
+            markers.remove(id);
+          }
+          );
+        }
       },
       onCameraMove: (CameraPosition position) async {
         var prefs = await SharedPreferences.getInstance();
@@ -556,6 +625,15 @@ class _MyAppState extends State<MyApp> {
       await read_location_file(file, zoom: false);
     } catch (e) {
       showErrorDialog(context, e.toString());
+    }
+  }
+
+  Future <void> checkActiveMarker() async {
+    if (activeMarker != null){
+      final markerIsActive = await mapController.isMarkerInfoWindowShown(MarkerId(activeMarker));
+      if (!markerIsActive) {
+        setState(() {activeMarker = null;});
+      }
     }
   }
 
@@ -619,10 +697,18 @@ class _MyAppState extends State<MyApp> {
         final n = location.sublocations!.length;
         snippet = texts.n_sublocations(n);
       }
-      markers.add(Marker(
+      var marker = Marker(
         markerId: MarkerId(id),
         position: LatLng(location.lat!, location.lon!),
         icon: icon,
+        onTap: () {
+          setState(() {
+            activeMarker = id;
+            if (markers.containsKey('new_marker')) {
+              markers.remove('new_marker');
+            }
+          });
+        },
         infoWindow: InfoWindow(
           title: location.name ?? id,
           snippet: snippet,
@@ -663,7 +749,8 @@ class _MyAppState extends State<MyApp> {
             }
           },
         ),
-      ));
+      );
+      markers[id] = marker;
 
       var lastMeasurement = DateTime(0);
       if (lastMeasPerLoc.containsKey(id)) {
@@ -682,17 +769,19 @@ class _MyAppState extends State<MyApp> {
       }
       if (lastMeasurement.isAfter(reftime)) {
         // add a marker with a vink
-        markers.add(Marker(
+        markers[id + '_v'] = Marker(
           markerId: MarkerId(id + '_v'),
           position: LatLng(location.lat!, location.lon!),
           icon: markedIcon,
           consumeTapEvents: false,
           onTap: () {
             mapController.showMarkerInfoWindow(MarkerId(id));
+            setState(() {activeMarker = id;});
           }
-        ));
+        );
       }
     }
+    activeMarker = null;
   }
 
   void open_add_measurements(locationId, location) async {
