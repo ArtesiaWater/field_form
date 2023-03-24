@@ -23,7 +23,7 @@ This repository holds the source code of FieldForm, with which the app can be bu
 Also, the Google Maps api-key is not contained in the repository. When building the app, the Google Maps api-key is taken from an environmental variable named 'maps_api_key', defined in the operating system that builds the app. To get a working Google Maps, a developer should therefore request an api-key at Google, and add this environmental variable.
 
 ## Files
-Currenly FieldForm uses two types of files: location- and measurement-files.
+Currenly FieldForm uses two types of files: location- and measurement-files. Measurements are stored using a location-id. This id is the **location-id** (when no sublocations are used) or the **sublocation-id**. It is important that these id's are **unique strings**, which is not checked by FieldForm (yet).
 
 ### Location File
 A location file contains the data of the locations, locations-groups, inputfields and settings. The location file is a json-file, of which the structure is described below, in simplified Dart-Code. Each field is preceded by the variable-type. When a variable is optional, which is the case for most variables, this type is followed by a question-mark. A short description follows the colon after the variable-name.
@@ -166,7 +166,7 @@ Boolean settings will be either true or false. To set a setting to true, use a s
 
 ### Measurement File
 A measurement-file contains measurements performed by the user or other users. The measurement-file is a ';'-delimited csv-file with the headers LOCATION, DATE, TIME, TYPE, VALUE.
-* LOCATION: The location-id
+* LOCATION: The location- or sublocation-id
 * DATE: the date in yyyy-mm-dd notation
 * TIME: the time in HH:MM:SS notation
 * TYPE: the inputfield-id
