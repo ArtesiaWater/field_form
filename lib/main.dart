@@ -61,7 +61,9 @@ class _MyAppState extends State<MyApp> {
     'terrain': MapType.terrain,
     'OSM': MapType.none
   };
-  late BitmapDescriptor markedIcon;
+  late BitmapDescriptor notMeasuredIcon;
+  late BitmapDescriptor halfMeasuredIcon;
+  late BitmapDescriptor fullMeasuredIcon;
   bool myLocationEnabled = false;
   late AppLocalizations texts;
   var activeMarker;
@@ -74,31 +76,38 @@ class _MyAppState extends State<MyApp> {
     measurementProvider = MeasurementProvider();
     measurementProvider.open();
     requestPermission();
-    setMarkedIcon();
+    setMeasuredIcons();
+
   }
 
-  Future<void> setMarkedIcon() async {
-    //var bytes = await getBytesFromAsset('assets/check-mark-icon-transparent-6.png', 64);
-    var bytes = await getBytesFromCanvas('✓');
-    markedIcon = BitmapDescriptor.fromBytes(bytes);
+  Future<void> setMeasuredIcons() async {
+    var bytes;
+
+    bytes = await getBytesFromCanvas('⦻', color:Colors.red);
+    notMeasuredIcon = BitmapDescriptor.fromBytes(bytes);
+
+    bytes = await getBytesFromCanvas('✓', color:Colors.yellow, offset_x: 10);
+    halfMeasuredIcon = BitmapDescriptor.fromBytes(bytes);
+
+    bytes = await getBytesFromCanvas('✓', color: Colors.green, offset_x: 10);
+    fullMeasuredIcon = BitmapDescriptor.fromBytes(bytes);
   }
 
-  Future<Uint8List> getBytesFromCanvas(String text) async {
+  Future<Uint8List> getBytesFromCanvas(String text, {color = Colors.green, size = 100, offset_x=0, offset_y=30}) async {
     final pictureRecorder = ui.PictureRecorder();
     final canvas = Canvas(pictureRecorder);
-    final size = 100; //change this according to your app
     final painter = TextPainter(textDirection: TextDirection.ltr);
     painter.text = TextSpan(
       text: text,
       style: TextStyle(
         fontSize: size.toDouble(),
-        color: Colors.green,
+        color: color,
       ),
     );
     painter.layout();
     painter.paint(
       canvas,
-      Offset(size / 2 - painter.width / 2 + 10, size / 2 - painter.height / 2 - 20),
+      Offset(size / 2 - painter.width / 2 + offset_x, size / 2 - painter.height / 2 - offset_y),
     );
     final img = await pictureRecorder.endRecording().toImage(size, size);
     final data = await img.toByteData(format: ui.ImageByteFormat.png);
@@ -140,6 +149,8 @@ class _MyAppState extends State<MyApp> {
           buildMap(),
           buildShowAllMarkerButton(),
           buildChangeMapTypeButton(),
+          if (checkPreviuosButton()) buildPreviousButton(),
+          if (checkNextButton()) buildNextButton(),
           if (isLoading) buildLoadingIndicator(text:texts.loading),
         ]
       ),
@@ -266,6 +277,84 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
+  bool checkPreviuosButton(){
+    if (prefs == null){
+      return false;
+    }
+    if (prefs!.getBool('show_previous_and_next_location') ?? true){
+      if (activeMarker == null){
+        return false;
+      }
+      if (activeMarker == locData.locations.keys.first){
+        return false;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  bool checkNextButton(){
+    if (prefs == null){
+      return false;
+    }
+    if (prefs!.getBool('show_previous_and_next_location') ?? true){
+      if (activeMarker == null){
+        return false;
+      }
+      if (activeMarker == locData.locations.keys.last){
+        return false;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  Align buildPreviousButton(){
+    return Align(
+        alignment: Alignment.centerLeft,
+        child: Container(
+            margin: EdgeInsets.all(12),
+            width: 38,
+            height: 38,
+            child: TextButton(
+              onPressed: () {
+                selectPreviousLocation();
+              },
+              style: getMapButtonStyle(),
+              child: const Icon(Icons.navigate_before),
+            )
+        )
+    );
+  }
+
+  Align buildNextButton(){
+    return Align(
+        alignment: Alignment.centerRight,
+        child: Container(
+            margin: EdgeInsets.all(12),
+            width: 38,
+            height: 38,
+            child: TextButton(
+              onPressed: () {
+                selectNextLocation();
+              },
+              style: getMapButtonStyle(),
+              child: const Icon(Icons.navigate_next),
+            )
+        )
+    );
+  }
+
+  void selectPreviousLocation() {
+    var keys = locData.locations.keys.toList();
+    selectLocation(keys[keys.indexOf(activeMarker)-1]);
+  }
+
+  void selectNextLocation() {
+    var keys = locData.locations.keys.toList();
+    selectLocation(keys[keys.indexOf(activeMarker)+1]);
+  }
+
   @override
   void dispose() {
     // Dispose of the controller when the widget is disposed.
@@ -317,23 +406,27 @@ class _MyAppState extends State<MyApp> {
       backgroundColor: Constant.primaryColor,
       actions: actions,
       onSearch: (String key) {
-        if (locData.locations.containsKey(key)){
-          var location = locData.locations[key]!;
-          // first move the camera to the marker
-          if ((location.lat != null) & (location.lon != null)){
-            mapController.animateCamera(CameraUpdate.newLatLng(LatLng(location.lat!, location.lon!)));
-            // then show the infowindow
-            mapController.showMarkerInfoWindow(MarkerId(key));
-            setState(() {activeMarker = key;});
-            // close the search overlay, so the user can select other actions (navigation, synchronisation) again
-            // closeOverlay();
-          }
-        }
+        selectLocation(key);
       },
       suggestions: getSuggestions(),
       openOverlayOnSearch: true,
     );
     return esb;
+  }
+
+  void selectLocation(String key) {
+    if (locData.locations.containsKey(key)){
+      var location = locData.locations[key]!;
+      // first move the camera to the marker
+      if ((location.lat != null) & (location.lon != null)){
+        mapController.animateCamera(CameraUpdate.newLatLng(LatLng(location.lat!, location.lon!)));
+        // then show the infowindow
+        mapController.showMarkerInfoWindow(MarkerId(key));
+        setState(() {activeMarker = key;});
+        // close the search overlay, so the user can select other actions (navigation, synchronisation) again
+        // closeOverlay();
+      }
+    }
   }
 
   Drawer buildDrawer() {
@@ -414,7 +507,12 @@ class _MyAppState extends State<MyApp> {
               onTap: () async {
                 // Close the drawer
                 Navigator.pop(context);
-                chooseMeasuredInterval(context, prefs!);
+                var interval = await chooseMeasuredInterval(context, prefs!, texts.choose_number_of_days);
+                if (interval != null) {
+                  await prefs!.setInt('mark_measured_days', interval);
+                  await setMarkers();
+                  setState(() {});
+                }
               },
               leading: Icon(Icons.verified_user)
           ),
@@ -456,7 +554,9 @@ class _MyAppState extends State<MyApp> {
                 }),
               );
               if (redrawMap) {
-                setState(() {});
+                setState(() {
+                  setMarkers();
+                });
               }
             },
             leading: Icon(Icons.settings),
@@ -485,46 +585,6 @@ class _MyAppState extends State<MyApp> {
     await availableMaps.first.showDirections(
         destination: map_launcher.Coords(lat, lon),
       );
-  }
-
-  void chooseMeasuredInterval(BuildContext context, SharedPreferences prefs) async{
-    final mark_measured_days = prefs.getInt('mark_measured_days') ?? 0;
-    var options = <Widget>[];
-    for (var interval in [0, 1, 7, 30, 365]){
-      final icon;
-      if (interval == mark_measured_days){
-        icon = Icon(Icons.check_box_outlined);
-      } else {
-        icon = Icon(Icons.check_box_outline_blank);
-      }
-      options.add(SimpleDialogOption(
-          onPressed: () {
-            Navigator.of(context).pop(interval);
-          },
-          child: Row(
-              children:[
-                icon,
-                SizedBox(width: 10),
-                Text(interval.toString()),
-              ]
-          )
-      ));
-    }
-
-    var action = await showDialog(
-        context: context,
-        builder: (context) {
-          return SimpleDialog(
-            title: Text(texts.choose_number_of_days),
-            children: options,
-          );
-        }
-    );
-    if (action != null) {
-      await prefs.setInt('mark_measured_days', action);
-      await setMarkers();
-      setState(() {});
-    }
   }
 
   Widget buildMap() {
@@ -664,6 +724,13 @@ class _MyAppState extends State<MyApp> {
         ZoomToAllLocations();
       }
     }
+    if (prefs!.getBool('request_user') ?? false){
+      final user = await editStringSettingDialog(context, 'user', texts.changeUser, prefs, texts) ?? '';
+      if (user != ''){
+        await prefs!.setString('user', user);
+        await prefs!.setBool('request_user', false);
+      }
+    }
   }
 
   Future<void> setMarkers() async {
@@ -679,6 +746,10 @@ class _MyAppState extends State<MyApp> {
     }
     markers.clear();
     final selectedGroups = prefs!.getStringList('selected_groups') ?? locData.groups.keys.toList();
+    final markNotMeasured = prefs!.getBool('mark_not_measured') ?? false;
+    if (markNotMeasured){
+
+    }
     for (var id in locData.locations.keys) {
       var location = locData.locations[id]!;
       if ((location.lat == null) | (location.lon==null)){
@@ -714,11 +785,10 @@ class _MyAppState extends State<MyApp> {
           snippet: snippet,
           onTap: () async {
             if (location.sublocations == null) {
-              open_add_measurements(id, location);
+              open_add_measurements(id, null);
             } else{
               if (location.sublocations!.length == 1){
-                open_add_measurements(location.sublocations!.keys.first,
-                    location.sublocations!.values.first);
+                open_add_measurements(location.sublocations!.keys.first, id);
               } else {
                 // choose a sublocation
                 var options = <Widget>[];
@@ -744,7 +814,7 @@ class _MyAppState extends State<MyApp> {
                 if (result == null) {
                   return;
                 }
-                open_add_measurements(result, location.sublocations![result]!);
+                open_add_measurements(result, id);
               }
             }
           },
@@ -752,45 +822,58 @@ class _MyAppState extends State<MyApp> {
       );
       markers[id] = marker;
 
-      var lastMeasurement = DateTime(0);
-      if (lastMeasPerLoc.containsKey(id)) {
-        if (lastMeasPerLoc[id].isAfter(lastMeasurement)) {
-          lastMeasurement = lastMeasPerLoc[id];
-        }
+      // Add extra icon for non-measured locations
+      var extraIcon;
+      if (markNotMeasured){
+        extraIcon = notMeasuredIcon;
       }
-      if (location.sublocations != null) {
+
+      if (location.sublocations == null) {
+        if (lastMeasPerLoc.containsKey(id) && lastMeasPerLoc[id].isAfter(reftime)) {
+          extraIcon = fullMeasuredIcon;
+        }
+      } else {
+        var halfMeasured = false;
+        var fullMeasured = true;
         for (var key in location.sublocations!.keys){
-          if (lastMeasPerLoc.containsKey(key)) {
-            if (lastMeasPerLoc[key].isAfter(lastMeasurement)){
-              lastMeasurement = lastMeasPerLoc[key];
+          if (lastMeasPerLoc.containsKey(key) && lastMeasPerLoc[key].isAfter(reftime)) {
+              halfMeasured = true;
+            } else {
+              fullMeasured = false;
             }
           }
+
+        if (fullMeasured) {
+          extraIcon = fullMeasuredIcon;
+        } else if (halfMeasured) {
+          extraIcon = halfMeasuredIcon;
         }
       }
-      if (lastMeasurement.isAfter(reftime)) {
-        // add a marker with a vink
+
+      if (extraIcon != null){
+        // add a secondary marker with added information
         markers[id + '_v'] = Marker(
-          markerId: MarkerId(id + '_v'),
-          position: LatLng(location.lat!, location.lon!),
-          icon: markedIcon,
-          consumeTapEvents: false,
-          onTap: () {
-            mapController.showMarkerInfoWindow(MarkerId(id));
-            setState(() {activeMarker = id;});
-          }
+            markerId: MarkerId(id + '_v'),
+            position: LatLng(location.lat!, location.lon!),
+            icon: extraIcon,
+            consumeTapEvents: false,
+            onTap: () {
+              mapController.showMarkerInfoWindow(MarkerId(id));
+              setState(() {activeMarker = id;});
+            }
         );
       }
     }
     activeMarker = null;
   }
 
-  void open_add_measurements(locationId, location) async {
+  void open_add_measurements(locationId, parentId) async {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) {
         return AddMeasurements(
             locationId: locationId,
-            location: location,
+            parentId: parentId,
             measurementProvider: measurementProvider,
             prefs: prefs!);
       }),

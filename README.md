@@ -35,10 +35,10 @@ A location file contains the data of the locations, locations-groups, inputfield
 where:
 
 **InputField**:
-* String type: the type, must be 'number', 'text', 'choice', 'photo', 'check', 'date', 'time' or 'datetime'.
+* String type: the type, must be 'number', 'text', 'choice', 'multichoice', 'photo', 'check', 'date', 'time' or 'datetime'.
 * String? hint: the hint to display in the inputfield.
 * String? name: the name to display, use inputfield-id when null.
-* List<String>? options: the options between which the user can choose when type='choice'.
+* List<String>? options: the options between which the user can choose when type='choice' or type='multichoice'.
 * String? default_value: the default value for an inputfield, only supported for type='choice'.
 
 **Group**:
@@ -151,16 +151,23 @@ An example of the contents of a location file without settings, but with inputfi
 Possible keys for the settings are:
 * 'use_standard_time' (boolean)
 * 'wms_on' (boolean)
-* 'wms_url'
-* 'wms_layers' (use , to separate layers)
-* 'photo_resolution' (possible values: 'low', 'medium', 'high', 'veryHigh', 'ultraHigh' and 'max')
-* 'ftp_hostname' (optionally use / behind the hostname to separate folders and to specify the ftp-root)
-* 'ftp_username'
-* 'ftp_password'
-* 'ftp_path'
+* 'wms_url' (string)
+* 'wms_layers' (string, use , to separate layers)
+* 'photo_resolution' (string, possible values: 'low', 'medium', 'high', 'veryHigh', 'ultraHigh' and 'max')
+* 'ftp_hostname' (string, optionally use / behind the hostname to separate folders and to specify the ftp-root)
+* 'ftp_username' (string)
+* 'ftp_password' (string)
+* 'ftp_path' (string)
 * 'use_ftps' (boolean)
 * 'use_sftp' (boolean)
 * 'only_export_new_data' (boolean)
+* 'show_previous_and_next_location' (boolean)
+* 'request_user' (boolean)
+* 'add_user_to_measurements' (boolean)
+* 'user_inputfield' (string)
+* 'user' (string)
+* 'mark_measured_days' (integer)
+* 'mark_not_measured' (boolean)
 
 Boolean settings will be either true or false. To set a setting to true, use a string like 'yes', 'Yes', 'true' or 'True'. Otherwise the setting will be set to false.
 

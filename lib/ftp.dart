@@ -10,9 +10,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import 'dialogs.dart';
 
-const supportIPv6 = false;
-
-connectToFtp(BuildContext context, SharedPreferences prefs, {String? path}) async {
+connectToFtp(BuildContext context, SharedPreferences prefs, {path: null, transferType: TransferType.binary}) async {
   var host = prefs.getString('ftp_hostname') ?? '';
   var user = prefs.getString('ftp_username') ?? '';
   var pass = prefs.getString('ftp_password') ?? '';
@@ -46,14 +44,15 @@ connectToFtp(BuildContext context, SharedPreferences prefs, {String? path}) asyn
       return null;
     }
   }
-
-  var ftpConnect = FTPConnect(host, user: user, pass: pass, timeout: 5, isSecured:use_ftps);
+  var securityType = use_ftps ? SecurityType.FTPS : SecurityType.FTP;
+  var ftpConnect = FTPConnect(host, user: user, pass: pass, timeout: 5, securityType: securityType);
   try {
     await ftpConnect.connect();
   } catch (e) {
     showErrorDialog(context, e.toString(), title:texts.connectToFtpFailed);
     return null;
   }
+  await ftpConnect.setTransferType(transferType);
   displayInformation(context, texts.connected);
   path ??= getFtpPath(prefs);
   if (path.isEmpty) {
@@ -100,7 +99,7 @@ Future<bool> uploadFileToFtp(connection, File file, SharedPreferences prefs) asy
     }
   } else {
     FTPConnect ftp = connection;
-    success = await ftp.uploadFile(file, supportIPV6: supportIPv6);
+    success = await ftp.uploadFile(file);
     if (!success) {
       unawaited(ftp.disconnect());
     }
@@ -127,7 +126,7 @@ Future<bool> downloadFileFromFtp(connection, File file, SharedPreferences prefs)
   } else {
     FTPConnect ftp = connection;
     try {
-      success = await ftp.downloadFile(basename(file.path), file, supportIPv6:supportIPv6);
+      success = await ftp.downloadFile(basename(file.path), file);
     } catch (e) {
       success = false;
     }
@@ -167,7 +166,7 @@ Future<List<String>?> listFilesOnFtp(connection, SharedPreferences prefs, BuildC
     FTPConnect ftp = connection;
     try {
       //Get directory content
-      final list = await ftp.listDirectoryContent(supportIPv6:supportIPv6);
+      final list = await ftp.listDirectoryContent();
       names = list.map((f) => f.name).whereType<String>().toList();
     } catch (e) {
       await ftp.disconnect();

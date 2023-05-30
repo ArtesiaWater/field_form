@@ -18,7 +18,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.1.1+13
 
 environment:
-  sdk: '>=2.12.0 <3.0.0'
+  sdk: '>=2.15.0 <3.0.0'
 
 dependencies:
   flutter:
@@ -34,18 +34,18 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
   shared_preferences: ^2.0.5
-  intl: ^0.17.0
+  intl: ^0.18.0
   sqflite:
   path:
-  ftpconnect: 1.0.1
-  csv: ^5.0.0
+  ftpconnect: ^2.0.5
+  csv: ^5.0.2
   permission_handler: ^10.2.0
   http: ^0.13.3
   flutter_localizations:
     sdk: flutter
   camera:
   dartssh2: ^2.4.1
-  flutter_datetime_picker: ^1.5.1
+  flutter_datetime_picker_plus: ^2.0.1
   pdfx: ^2.3.0
   easy_search_bar: ^2.4.2
   map_launcher: ^2.5.0
@@ -57,7 +57,7 @@ dev_dependencies:
   # Add the following two lines
   pedantic: ^1.11.0
   build_runner: ^2.1.4
-  flutter_launcher_icons: ^0.11.0
+  flutter_launcher_icons: ^0.13.1
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

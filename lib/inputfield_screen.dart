@@ -167,7 +167,7 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
                 labelText: texts.type,
               ),
               isExpanded: true,
-              items: getDropdownMenuItems(['number', 'text', 'choice', 'photo', 'check', 'date', 'time', 'datetime']),
+              items: getDropdownMenuItems(['number', 'text', 'choice', 'multichoice', 'photo', 'check', 'date', 'time', 'datetime']),
               value: inputField.type,
               onChanged: (String? text) {
                 if (text != null) {
@@ -177,7 +177,7 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
                 }
               },
             ),
-            if (inputField.type == 'choice') TextFormField(
+            if (inputField.type == 'choice' || inputField.type == 'multichoice') TextFormField(
               readOnly: true,
               decoration: InputDecoration(
                 labelText: texts.options,
@@ -206,7 +206,6 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
                     }
                   });
                 }
-
               },
             ),
             if (inputField.type == 'choice') DropdownButtonFormField(

@@ -186,13 +186,21 @@ create table measurements (
   Future <void> importFromCsv(File file, {exported = true}) async {
     var converter = const CsvToListConverter(fieldDelimiter: ';',
         shouldParseNumbers: false);
-    var rows = converter.convert(await file.readAsString());
+    var text = await file.readAsString();
+    var rows = converter.convert(text);
+    var row = rows[0];
+    if (row.last.endsWith('\r')) {
+      row.last = row.last.substring(0, row.last.length - 1);
+    }
     var LOCATION = rows[0].indexOf('LOCATION');
     var DATE = rows[0].indexOf('DATE');
     var TIME = rows[0].indexOf('TIME');
     var TYPE = rows[0].indexOf('TYPE');
     var VALUE = rows[0].indexOf('VALUE');
-    for (var row in rows.sublist(1)) {
+    for (row in rows.sublist(1)) {
+      if (row.last.endsWith('\r')) {
+        row.last = row.last.substring(0, row.last.length - 1);
+      }
       var date = Constant.datetime_format.parse(row[DATE] + ' ' + row[TIME]);
       var meas = Measurement(location: row[LOCATION],
           datetime: date,

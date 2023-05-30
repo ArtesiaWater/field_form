@@ -65,6 +65,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       password = widget.prefs.getString('ftp_password')!;
     };
     final wmsOn = widget.prefs.getBool('wms_on') ?? false;
+    final mark_measured_days = widget.prefs.getInt('mark_measured_days') ?? 0;
+    final add_user_to_measurements = widget.prefs.getBool('add_user_to_measurements')?? false;
     return SettingsList(
       sections: [
         SettingsSection(
@@ -81,6 +83,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     }),
                   );
                 }
+            ),
+            SettingsTile.switchTile(
+              title: texts.addUserToMeasurements,
+              leading: Icon(Icons.account_circle_outlined),
+              switchValue: add_user_to_measurements,
+              onToggle: (bool value) {
+                setState(() {
+                  widget.prefs.setBool('add_user_to_measurements', value);
+                  if (value){
+                    editStringSetting(context, 'user', texts.changeUser);
+                  }
+                });
+              },
+            ),
+            if (add_user_to_measurements) SettingsTile(
+              title: texts.user,
+              subtitle: widget.prefs.getString('user') ?? '',
+              leading: Icon(Icons.account_circle),
+              onPressed: (BuildContext context) {
+                editStringSetting(context, 'user', texts.changeUser);
+              },
+            ),
+            if (add_user_to_measurements) SettingsTile(
+              title: texts.userInputfield,
+              subtitle: widget.prefs.getString('user_inputfield') ?? 'user',
+              leading: Icon(Icons.manage_accounts_outlined),
+              onPressed: (BuildContext context) {
+                editStringSetting(context, 'user_inputfield', texts.changeUserInputfield, default_value: 'user');
+              },
             ),
             SettingsTile.switchTile(
               title: texts.useStandardTime,
@@ -125,6 +156,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onPressed: (BuildContext context) {
                 editStringSetting(context, 'wms_layers', texts.changeWmsLayers);
                 redrawMap = true;
+              },
+            ),
+          ]
+        ),
+        SettingsSection(
+          title: 'Map',
+          tiles: [
+            SettingsTile.switchTile(
+              title: 'Show previous and next location',
+              leading: Icon(Icons.navigate_next_outlined),
+              switchValue: widget.prefs.getBool('show_previous_and_next_location') ?? true,
+              onToggle: (bool value) {
+                setState(() {
+                  widget.prefs.setBool('show_previous_and_next_location', value);
+                });
+              },
+            ),
+            SettingsTile(
+              title: texts.markMeasuredLocations,
+              subtitle: texts.withinIntervalDays(mark_measured_days),
+              leading: Icon(Icons.verified_user),
+              onPressed: (BuildContext context) async {
+                var interval = await chooseMeasuredInterval(context, widget.prefs, texts.choose_number_of_days);
+                if (interval != null) {
+                  setState(() {
+                    widget.prefs.setInt('mark_measured_days', interval);
+                    redrawMap = true;
+                  });
+                }
+              }
+            ),
+            if (mark_measured_days > 0) SettingsTile.switchTile(
+              title: 'Mark locations without measurements',
+              leading: Icon(Icons.dangerous_outlined),
+              switchValue: widget.prefs.getBool('mark_not_measured') ?? false,
+              onToggle: (bool value) {
+                setState(() {
+                  widget.prefs.setBool('mark_not_measured', value);
+                  redrawMap = true;
+                });
               },
             ),
           ]
@@ -259,49 +330,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void editStringSetting(BuildContext context, String key, String title, {bool password=false}) async {
-    var settingValue = widget.prefs.getString(key) ?? '';
-    return showDialog(
-      context: context,
-      builder: (context) {
-        var textEditingController = TextEditingController();
-        textEditingController.text = settingValue;
-        // Select the initial text, so it can be deleted quickly
-        textEditingController.selection = TextSelection(
-          baseOffset: 0,
-          extentOffset: settingValue.length,
-        );
-        return AlertDialog(
-          title: Text(title),
-          content: TextField(
-            controller: textEditingController,
-            onChanged: (value) {
-              settingValue = value;
-            },
-            autofocus: true,
-            obscureText: password,
-            autocorrect: false,
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: Text(texts.cancel),
-            ),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  widget.prefs.setString(key, settingValue);
-                  Navigator.pop(context);
-                });
-              },
-              child: Text(texts.ok),
-            ),
-          ],
-        );
-      }
-    );
+  void editStringSetting(BuildContext context, String key, String title, {bool password=false, default_value=''}) async {
+    final new_setting = await editStringSettingDialog(context, key, title, widget.prefs, texts, password:password, default_value:default_value);
+    if (new_setting != null){
+      setState(() {
+        widget.prefs.setString(key, new_setting);
+      });
+    }
   }
 }
 
@@ -316,6 +351,9 @@ void parseSettings(Map<String, String> settings, SharedPreferences prefs) async{
       case 'ftp_path':
       case 'wms_url':
       case 'wms_layers':
+      case 'user_inputfield':
+      case 'user':
+      case 'mark_measured_days':
       // string setting
         await prefs.setString(key, settings[key]!);
         break;
@@ -329,6 +367,10 @@ void parseSettings(Map<String, String> settings, SharedPreferences prefs) async{
       case 'only_upload_measurements':
       case 'settings_button_off':
       case 'wms_on':
+      case 'show_previous_and_next_location':
+      case 'request_user':
+      case 'add_user_to_measurements':
+      case 'mark_not_measured':
       // boolean setting
         var stringValue = settings[key]!.toLowerCase();
         var value = (stringValue == 'yes') || (stringValue == 'true');

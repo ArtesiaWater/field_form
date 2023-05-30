@@ -9,14 +9,22 @@
     "changeFtpFolder": "Change FTP Folder",
     "chooseGroups": "Choose groups",
     "selectGroups": "Select groups",
-    "markMeasuredLocations": "Mark measured locations",
     "deleteAllData": "Delete all data",
     "sureToDeleteData": "Are you sure you wish to delete all data?",
     "unsentMeasurementsTitle": "Unsent measurements",
     "unsentMeasurements": "There are still unsent measurements. Are you really sure you want to delete all data?",
     "uploadUnsentMeasurements": "There are unsent measurements. Do you want to upload these first? Otherwise they will be lost.",
     "settings": "Settings",
+    "markMeasuredLocations": "Mark measured locations",
     "choose_number_of_days": "Choose number of days",
+    "withinIntervalDays": "Within {interval} days",
+    "@withinIntervalDays": {
+            "placeholders": {
+                "interval": {
+                    "type": "num"
+                }
+            }
+        },
     "addNewLocation": "Add a new location",
     "chooseSublocation": "Choose a sublocation",
     "locsOrMeasTitle": "Locations or measurements",
@@ -53,8 +61,8 @@
                 }
             },
     "isNotValidNumber": " is not a valid number",
-    "ignoreFilledValues": "All values will be deleted when going back. Do you still want to go back?",
-    "ignoreFilledValuesTitle": "Ignore values?",
+    "ignoreFilledValues": "All entered values will be deleted when leaving this location. Do you still want to leave?",
+    "ignoreFilledValuesTitle": "Leave without saving?",
     "imageNotSupported": ": this file is not supported. Only jpg, png and pdf are supported",
     "connectToFtpFailed": "Unable to connect to FTP-server",
     "unableToFindOnFtp": "Unable to find the file on FTP-server: ",
@@ -82,6 +90,11 @@
     "changeFtpPassword": "Change FTP password",
     "rootFolder": "Root folder",
     "changeFtpRoot": "Change FTP root (use / to separate folders)",
+    "addUserToMeasurements": "Add user to each measurement",
+    "user": "User",
+    "changeUser": "Change the name of the user",
+    "userInputfield": "Name of inputfield for user",
+    "changeUserInputfield": "Change name of inputfield for user",
     "path": "Path",
     "onlyExportNewMeasurements": "Only export new measurements",
     "cancel": "Cancel",

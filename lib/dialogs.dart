@@ -1,6 +1,7 @@
 
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void showLoaderDialog(BuildContext context, {String text='Loading...'}) {
   showDialog(barrierDismissible: false,
@@ -128,11 +129,11 @@ void displayInformation(context, text){
 }
 
 class MultiSelectDialogItem<V> {
-  MultiSelectDialogItem(this.value, this.label, this.icon);
+  MultiSelectDialogItem(this.value, this.label, [this.icon]);
 
   final V value;
   final String label;
-  final Icon icon;
+  final Icon? icon;
 }
 
 class MultiSelectDialog<V> extends StatefulWidget {
@@ -232,4 +233,82 @@ List<DropdownMenuItem<String>> getDropdownMenuItems(options, {add_empty=false}) 
     );
   }
   return items;
+}
+
+Future<int?> chooseMeasuredInterval(BuildContext context, SharedPreferences prefs, String title) async{
+  final mark_measured_days = prefs.getInt('mark_measured_days') ?? 0;
+  var options = <Widget>[];
+  for (var interval in [0, 1, 7, 30, 365]){
+    final icon;
+    if (interval == mark_measured_days){
+      icon = Icon(Icons.check_box_outlined);
+    } else {
+      icon = Icon(Icons.check_box_outline_blank);
+    }
+    options.add(SimpleDialogOption(
+        onPressed: () {
+          Navigator.of(context).pop(interval);
+        },
+        child: Row(
+            children:[
+              icon,
+              SizedBox(width: 10),
+              Text(interval.toString()),
+            ]
+        )
+    ));
+  }
+
+  var interval = await showDialog(
+      context: context,
+      builder: (context) {
+        return SimpleDialog(
+          title: Text(title),
+          children: options,
+        );
+      }
+  );
+  return interval;
+}
+
+Future<String?> editStringSettingDialog(BuildContext context, String key, String title, prefs, texts, {bool password=false, String default_value=''}) async {
+  var settingValue = prefs.getString(key) ?? default_value;
+  return showDialog(
+      context: context,
+      builder: (context) {
+        var textEditingController = TextEditingController();
+        textEditingController.text = settingValue;
+        // Select the initial text, so it can be deleted quickly
+        textEditingController.selection = TextSelection(
+          baseOffset: 0,
+          extentOffset: settingValue.length,
+        );
+        return AlertDialog(
+          title: Text(title),
+          content: TextField(
+            controller: textEditingController,
+            onChanged: (value) {
+              settingValue = value;
+            },
+            autofocus: true,
+            obscureText: password,
+            autocorrect: false,
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: Text(texts.cancel),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context, settingValue);
+              },
+              child: Text(texts.ok),
+            ),
+          ],
+        );
+      }
+  );
 }

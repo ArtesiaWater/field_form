@@ -8,7 +8,8 @@ import 'package:field_form/locations.dart';
 import 'package:field_form/measurements.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
+import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart';
+import 'package:ftpconnect/ftpconnect.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart' as p;
@@ -19,12 +20,12 @@ import 'package:camera/camera.dart';
 import 'take_picture_screen.dart';
 
 class AddMeasurements extends StatefulWidget {
-  AddMeasurements({key, required this.locationId, required this.location,
+  AddMeasurements({key, required this.locationId, this.parentId,
     required this.measurementProvider, required this.prefs})
       : super(key: key);
 
   final String locationId;
-  final Location location;
+  final String? parentId;
   final MeasurementProvider measurementProvider;
   final SharedPreferences prefs;
 
@@ -34,6 +35,8 @@ class AddMeasurements extends StatefulWidget {
 
 class _AddMeasurementsState extends State<AddMeasurements> {
   final locData = LocationData();
+  var location;
+  var parent;
   late DateTime now;
   final Map<String, String> values = {};
   List<Measurement> measurements = <Measurement>[];
@@ -41,16 +44,23 @@ class _AddMeasurementsState extends State<AddMeasurements> {
   List<String>? inputFieldIds;
   final _formKey = GlobalKey<FormState>();
   late AppLocalizations texts;
+  var changedMeasurements;
 
   @override
   void initState() {
     super.initState();
+    changedMeasurements = false;
     now = DateTime.now();
     if (widget.prefs.getBool('use_standard_time') ?? false) {
       var offset = now.timeZoneOffset - (DateTime(now.year, 1, 1).timeZoneOffset);
       now = now.subtract(offset);
     }
-    final location = widget.location;
+    if (widget.parentId == null) {
+      location = locData.locations[widget.locationId];
+    } else {
+      parent = locData.locations[widget.parentId]!;
+      location = parent.sublocations![widget.locationId];
+    }
     inputFieldIds = location.inputfields;
     if (inputFieldIds == null) {
       if (location.group != null){
@@ -93,7 +103,10 @@ class _AddMeasurementsState extends State<AddMeasurements> {
     texts = AppLocalizations.of(context)!;
     return WillPopScope(
       onWillPop: () async {
-        return checkToGoBack();
+        if (await checkToGoBack()) {
+          Navigator.pop(context, changedMeasurements);
+        }
+        return false;
       },
       child: Scaffold(
         appBar: buildAppBar(),
@@ -114,8 +127,39 @@ class _AddMeasurementsState extends State<AddMeasurements> {
   }
 
   AppBar buildAppBar() {
-    final location = widget.location;
     var actions = <Widget>[];
+    if (parent != null && (widget.prefs.getBool('show_previous_and_next_location') ?? true)) {
+      if (widget.locationId != parent.sublocations.keys.first){
+        actions.add(Padding(
+            padding: EdgeInsets.only(right: 20.0),
+            child: GestureDetector(
+              onTap: () {
+                var keys = parent.sublocations!.keys.toList();
+                var locationId = keys[keys.indexOf(widget.locationId)-1];
+                open_add_measurements(locationId, widget.parentId);
+              },
+              child: Icon(
+                Icons.keyboard_arrow_left,
+              ),
+            )
+        ));
+      }
+      if (widget.locationId != parent.sublocations.keys.last){
+        actions.add(Padding(
+            padding: EdgeInsets.only(right: 20.0),
+            child: GestureDetector(
+              onTap: () {
+                var keys = parent.sublocations!.keys.toList();
+                var locationId = keys[keys.indexOf(widget.locationId)+1];
+                open_add_measurements(locationId, widget.parentId);
+              },
+              child: Icon(
+                Icons.keyboard_arrow_right,
+              ),
+            )
+        ));
+      }
+    }
     if (location.photo != null){
       actions.add(Padding(
         padding: EdgeInsets.only(right: 20.0),
@@ -219,7 +263,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
         }
       }
       var input;
-      if (inputField.type == 'choice'){
+      if (inputField.type == 'choice') {
         final hint;
         if (inputField.hint == null) {
           hint = null;
@@ -228,7 +272,8 @@ class _AddMeasurementsState extends State<AddMeasurements> {
         }
         input = DropdownButtonFormField(
           isExpanded: true,
-          items: getDropdownMenuItems(inputField.options ?? <String>[], add_empty:true),
+          items: getDropdownMenuItems(
+              inputField.options ?? <String>[], add_empty: true),
           onChanged: (String? text) {
             setState(() {
               values[id] = text!;
@@ -241,6 +286,52 @@ class _AddMeasurementsState extends State<AddMeasurements> {
           },
           validator: validator,
           hint: hint,
+        );
+      } else if (inputField.type == 'multichoice') {
+        input = TextButton(
+          onPressed: () async {
+            final items = <MultiSelectDialogItem<String>>[];
+            final icon = Icon(Icons.check_box_outline_blank);
+            for (var option in inputField.options ?? <String>[]) {
+              items.add(MultiSelectDialogItem(option, option));
+            }
+
+            List<String> initialSelectedValues;
+            if (values[id] == null) {
+              initialSelectedValues = <String>[];
+            } else {
+              initialSelectedValues = values[id]!.split('|');
+            }
+
+            final selectedItems = await showDialog<Set<String>>(
+              context: context,
+              builder: (BuildContext context) {
+                return MultiSelectDialog(
+                  items: items,
+                  initialSelectedValues: initialSelectedValues.toSet(),
+                  title: texts.selectGroups,
+                );
+              },
+            );
+
+            if (selectedItems != null) {
+              values[id] = selectedItems.toList().join("|");
+            }
+          },
+          onLongPress: () async {
+            if (values[id] != null) {
+              var action = await showContinueDialog(context,
+                  texts.removeValueFromId(values[id]!, id),
+                  yesButton: texts.yes,
+                  noButton: texts.no);
+              if (action == true) {
+                setState(() {
+                  values.remove(id);
+                });
+              }
+            }
+          },
+          child: Text(values[id] ?? inputField.hint ?? ''),
         );
       } else if (inputField.type == 'photo') {
         input = TextButton(
@@ -424,6 +515,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
     rows.add(ElevatedButton(
       onPressed: () async {
         if (_formKey.currentState!.validate()) {
+          var added_measurements = false;
           for (var id in inputFieldIds!) {
             var inputField = locData.inputFields[id]!;
             if (values.containsKey(id)) {
@@ -440,15 +532,34 @@ class _AddMeasurementsState extends State<AddMeasurements> {
                   type: id,
                   value: values[id]!);
               await widget.measurementProvider.insert(measurement);
+              added_measurements = true;
             } else if (inputField.required) {
               showErrorDialog(context, inputField.name ?? id + texts.isRequired);
               return;
             }
 
           }
+          if (added_measurements) {
+            if (widget.prefs.getBool('add_user_to_measurements')?? false){
+              final user = widget.prefs.getString('user') ?? '';
+              if (user != '') {
+                final user_inputfield =
+                    widget.prefs.getString('user_inputfield') ?? 'user';
+                if (user_inputfield != '') {
+                  var measurement = Measurement(
+                      location: widget.locationId,
+                      datetime: now,
+                      type: user_inputfield,
+                      value: user);
+                  await widget.measurementProvider.insert(measurement);
+                }
+              }
+            }
+          }
 
           // Navigate back to the map when tapped.
-          Navigator.pop(context, true);
+          changedMeasurements = true;
+          Navigator.pop(context, changedMeasurements);
         }
       },
       style: ElevatedButton.styleFrom(
@@ -545,8 +656,8 @@ class _AddMeasurementsState extends State<AddMeasurements> {
 
 
   Future<bool> checkToGoBack() async {
+    // did the user fill in any values yet?
     var hasValues = false;
-
     for (var id in values.keys){
       if (values[id]!.isNotEmpty){
         var inputField = locData.inputFields[id]!;
@@ -576,12 +687,12 @@ class _AddMeasurementsState extends State<AddMeasurements> {
             }
           }
         }
-        return true;
+        return Future.value(true);
       } else {
-        return false;
+        return Future.value(false);
       }
     }
-    return true;
+    return Future.value(true);
   }
 
   void deleteMeasurement(Measurement measurement){
@@ -589,6 +700,29 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       measurement.value = '';
       widget.measurementProvider.update(measurement);
     });
+    changedMeasurements = true;
+  }
+
+  void open_add_measurements(locationId, parentId) async {
+    if (await checkToGoBack()) {
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) {
+          return AddMeasurements(
+              locationId: locationId,
+              parentId: parentId,
+              measurementProvider: widget.measurementProvider,
+              prefs: widget.prefs);
+        }),
+      );
+      if (result != null) {
+        if (result) {
+          // there are changed measurements in the other sublocation
+          changedMeasurements = true;
+        }
+      }
+      Navigator.pop(context, changedMeasurements);
+    }
   }
 
   Future<void> displayPhoto(String name) async {
@@ -604,7 +738,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
     if (!file.existsSync()){
       setState(() {isLoading = true;});
       var prefs = await SharedPreferences.getInstance();
-      var connection = await connectToFtp(context, prefs);
+      var connection = await connectToFtp(context, prefs, transferType:TransferType.binary);
       if (connection == null) {
         setState(() {isLoading = false;});
         showErrorDialog(context, texts.connectToFtpFailed);

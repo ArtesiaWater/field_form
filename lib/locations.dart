@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
@@ -115,7 +116,7 @@ class LocationData {
     return _instance;
   }
 
-  Map<String, Location> locations = <String, Location>{};
+  Map<String, Location> locations = Map<String, Location>();
   var inputFields = <String, InputField>{};
   var groups = <String, Group>{};
 
