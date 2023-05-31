@@ -235,7 +235,7 @@ List<DropdownMenuItem<String>> getDropdownMenuItems(options, {add_empty=false}) 
   return items;
 }
 
-Future<int?> chooseMeasuredInterval(BuildContext context, SharedPreferences prefs, String title) async{
+Future<int?> chooseMeasuredInterval(BuildContext context, SharedPreferences prefs, texts) async{
   final mark_measured_days = prefs.getInt('mark_measured_days') ?? 0;
   var options = <Widget>[];
   for (var interval in [0, 1, 7, 30, 365]){
@@ -253,7 +253,7 @@ Future<int?> chooseMeasuredInterval(BuildContext context, SharedPreferences pref
             children:[
               icon,
               SizedBox(width: 10),
-              Text(interval.toString()),
+              Text(texts.withinIntervalDays(interval)),
             ]
         )
     ));
@@ -263,7 +263,7 @@ Future<int?> chooseMeasuredInterval(BuildContext context, SharedPreferences pref
       context: context,
       builder: (context) {
         return SimpleDialog(
-          title: Text(title),
+          title: Text(texts.markMeasuredLocations),
           children: options,
         );
       }

@@ -471,7 +471,7 @@ class _MyAppState extends State<MyApp> {
             },
             leading: Icon(Icons.reset_tv),
           ),
-          ListTile(
+          if (locData.groups.isNotEmpty) ListTile(
             title: Text(texts.chooseGroups),
             onTap: () async {
               // Close the drawer
@@ -479,7 +479,8 @@ class _MyAppState extends State<MyApp> {
               final items = <MultiSelectDialogItem<String>>[];
               locData.groups.forEach((id, group){
                 var label = group.name ?? id;
-                var icon = Icon(Icons.location_pin);
+                var color = getIconColor(group.color);
+                var icon = Icon(Icons.location_pin, color:color);
                 items.add(MultiSelectDialogItem(id, label, icon));
               });
               final initialSelectedValues = prefs!.getStringList('selected_groups') ?? locData.groups.keys.toList();
@@ -507,7 +508,7 @@ class _MyAppState extends State<MyApp> {
               onTap: () async {
                 // Close the drawer
                 Navigator.pop(context);
-                var interval = await chooseMeasuredInterval(context, prefs!, texts.choose_number_of_days);
+                var interval = await chooseMeasuredInterval(context, prefs!, texts);
                 if (interval != null) {
                   await prefs!.setInt('mark_measured_days', interval);
                   await setMarkers();
@@ -541,7 +542,7 @@ class _MyAppState extends State<MyApp> {
             },
             leading: Icon(Icons.delete),
           ),
-          ListTile(
+          if (!(prefs!.getBool('hide_settings_button') ?? false)) ListTile(
             title: Text(texts.settings),
             onTap: () async {
               // Close the drawer
@@ -725,7 +726,7 @@ class _MyAppState extends State<MyApp> {
       }
     }
     if (prefs!.getBool('request_user') ?? false){
-      final user = await editStringSettingDialog(context, 'user', texts.changeUser, prefs, texts) ?? '';
+      final user = await editStringSettingDialog(context, 'user', texts.setUser, prefs, texts) ?? '';
       if (user != ''){
         await prefs!.setString('user', user);
         await prefs!.setBool('request_user', false);
@@ -971,13 +972,14 @@ class _MyAppState extends State<MyApp> {
 
     await setMarkers();
     setState(() {});
-    await prefs.remove('imported_measurement_files');
+    await prefs.remove('imported_location_files');
 
     // delete all measurements
     await measurementProvider.deleteAllMeasurements();
-    await prefs.remove('imported_location_files');
+    await prefs.remove('imported_measurement_files');
 
     await prefs.remove('disable_adding_locations');
+    await prefs.remove('hide_settings_button');
     return true;
   }
 

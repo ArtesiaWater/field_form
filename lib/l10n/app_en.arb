@@ -1,4 +1,5 @@
 {
+    "map": "Map",
     "chooseMaptype": "Choose a maptype",
     "loadingMap": "loading map..",
     "loading": "Loading...",
@@ -16,7 +17,6 @@
     "uploadUnsentMeasurements": "There are unsent measurements. Do you want to upload these first? Otherwise they will be lost.",
     "settings": "Settings",
     "markMeasuredLocations": "Mark measured locations",
-    "choose_number_of_days": "Choose number of days",
     "withinIntervalDays": "Within {interval} days",
     "@withinIntervalDays": {
             "placeholders": {
@@ -25,6 +25,7 @@
                 }
             }
         },
+    "markNotMeasured": "Mark locations without measurements",
     "addNewLocation": "Add a new location",
     "chooseSublocation": "Choose a sublocation",
     "locsOrMeasTitle": "Locations or measurements",
@@ -92,7 +93,7 @@
     "changeFtpRoot": "Change FTP root (use / to separate folders)",
     "addUserToMeasurements": "Add user to each measurement",
     "user": "User",
-    "changeUser": "Change the name of the user",
+    "setUser": "Please provide your name",
     "userInputfield": "Name of inputfield for user",
     "changeUserInputfield": "Change name of inputfield for user",
     "path": "Path",
@@ -162,5 +163,6 @@
 
     "isRequired": " is required",
     "requiredInputField": "This is a required field",
-    "required": "required"
+    "required": "required",
+    "showPreviousAndNextLocation": "Buttons previous/next location"
 }

@@ -1,4 +1,3 @@
-import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
@@ -116,7 +115,7 @@ class LocationData {
     return _instance;
   }
 
-  Map<String, Location> locations = Map<String, Location>();
+  Map<String, Location> locations = <String, Location>{};
   var inputFields = <String, InputField>{};
   var groups = <String, Group>{};
 
@@ -200,4 +199,42 @@ BitmapDescriptor? getIconFromString(String? color) {
     }
   }
   return BitmapDescriptor.defaultMarkerWithHue(hue);
+}
+
+Color? getIconColor(String? color){
+  if (color == null) {
+    return null;
+  }
+  if (color[0] == '#') {
+    try {
+      return Color(int.parse(color.substring(1, 7), radix: 16) + 0xFF000000);
+    } catch (e) {
+      return null;
+    }
+  } else {
+    switch (color) {
+      case 'red':
+        return Colors.red;
+      case 'orange':
+        return Colors.orange;
+      case 'yellow':
+        return Colors.yellow;
+      case 'green':
+        return Colors.green;
+      case 'cyan':
+        return Colors.cyan;
+      case 'azure':
+        return Colors.lightBlueAccent;
+      case 'blue':
+        return Colors.blue;
+      case 'violet':
+        return Colors.purple;
+      case 'magenta':
+        return Colors.pink;
+      case 'rose':
+        return Colors.purpleAccent;
+      default:
+        return null;
+    }
+  }
 }

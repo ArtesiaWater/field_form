@@ -1,4 +1,5 @@
 {
+    "map": "Kaart",
     "chooseMaptype": "Kies een kaart-type",
     "loadingMap": "laad de kaart..",
     "loading": "Laden...",
@@ -16,8 +17,8 @@
     "uploadUnsentMeasurements": "Er zijn nog niet-verzonden metingen. Wilt u deze eerst uploaden? Zo niet, dan gaan ze verloren.",
     "settings": "Instellingen",
     "markMeasuredLocations": "Markeer bemeten locaties",
-    "choose_number_of_days": "Kies het aantal dagen",
     "withinIntervalDays": "Binnen {interval} dagen",
+    "markNotMeasured": "Markeer locaties zonder metingen",
     "addNewLocation": "Voeg een nieuwe locatie toe",
     "chooseSublocation": "Kies een sublocatie",
     "locsOrMeasTitle": "Locaties of metingen",
@@ -75,7 +76,7 @@
     "changeFtpRoot": "Verander hoofdmap (gebruik / om mappen te scheiden)",
     "addUserToMeasurements": "Voeg gebruiker toe aan elke meting",
     "user": "Gebruiker",
-    "changeUser": "Verander de naam van de gebruiker",
+    "setUser": "Geef uw naam op",
     "userInputfield": "Naam van invoerveld voor gebruiker",
     "changeUserInputfield": "Verander naam van invoerveld voor gebruiker",
     "path": "Pad",
@@ -130,5 +131,6 @@
 
     "isRequired": " is verplicht",
     "requiredInputField": "Dit is een verplicht veld",
-    "required": "verplicht"
+    "required": "verplicht",
+    "showPreviousAndNextLocation": "Knoppen vorige/volgende locatie"
 }

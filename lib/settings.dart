@@ -92,7 +92,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 setState(() {
                   widget.prefs.setBool('add_user_to_measurements', value);
                   if (value){
-                    editStringSetting(context, 'user', texts.changeUser);
+                    editStringSetting(context, 'user', texts.setUser);
                   }
                 });
               },
@@ -102,7 +102,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               subtitle: widget.prefs.getString('user') ?? '',
               leading: Icon(Icons.account_circle),
               onPressed: (BuildContext context) {
-                editStringSetting(context, 'user', texts.changeUser);
+                editStringSetting(context, 'user', texts.setUser);
               },
             ),
             if (add_user_to_measurements) SettingsTile(
@@ -161,11 +161,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ]
         ),
         SettingsSection(
-          title: 'Map',
+          title: texts.map,
           tiles: [
             SettingsTile.switchTile(
-              title: 'Show previous and next location',
-              leading: Icon(Icons.navigate_next_outlined),
+              title: texts.showPreviousAndNextLocation,
+              leading: Icon(Icons.switch_left),
               switchValue: widget.prefs.getBool('show_previous_and_next_location') ?? true,
               onToggle: (bool value) {
                 setState(() {
@@ -178,7 +178,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               subtitle: texts.withinIntervalDays(mark_measured_days),
               leading: Icon(Icons.verified_user),
               onPressed: (BuildContext context) async {
-                var interval = await chooseMeasuredInterval(context, widget.prefs, texts.choose_number_of_days);
+                var interval = await chooseMeasuredInterval(context, widget.prefs, texts);
                 if (interval != null) {
                   setState(() {
                     widget.prefs.setInt('mark_measured_days', interval);
@@ -188,7 +188,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               }
             ),
             if (mark_measured_days > 0) SettingsTile.switchTile(
-              title: 'Mark locations without measurements',
+              title: texts.markNotMeasured,
               leading: Icon(Icons.dangerous_outlined),
               switchValue: widget.prefs.getBool('mark_not_measured') ?? false,
               onToggle: (bool value) {
@@ -363,6 +363,7 @@ void parseSettings(Map<String, String> settings, SharedPreferences prefs) async{
       case 'use_standard_time':
       case 'automatic_synchronisation_on':
       case 'disable_adding_locations':
+      case 'hide_settings_button':
       case 'replace_locations':
       case 'only_upload_measurements':
       case 'settings_button_off':

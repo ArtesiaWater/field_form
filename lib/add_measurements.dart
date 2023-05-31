@@ -291,7 +291,6 @@ class _AddMeasurementsState extends State<AddMeasurements> {
         input = TextButton(
           onPressed: () async {
             final items = <MultiSelectDialogItem<String>>[];
-            final icon = Icon(Icons.check_box_outline_blank);
             for (var option in inputField.options ?? <String>[]) {
               items.add(MultiSelectDialogItem(option, option));
             }
@@ -309,13 +308,13 @@ class _AddMeasurementsState extends State<AddMeasurements> {
                 return MultiSelectDialog(
                   items: items,
                   initialSelectedValues: initialSelectedValues.toSet(),
-                  title: texts.selectGroups,
+                  title: inputField.hint ?? inputField.name ?? id,
                 );
               },
             );
 
             if (selectedItems != null) {
-              values[id] = selectedItems.toList().join("|");
+              values[id] = selectedItems.toList().join('|');
             }
           },
           onLongPress: () async {
