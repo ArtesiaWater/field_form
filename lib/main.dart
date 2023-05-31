@@ -36,6 +36,7 @@ void main() {
     MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
+      debugShowCheckedModeBanner: false,
       home: MyApp()
     )
   );
@@ -430,6 +431,12 @@ class _MyAppState extends State<MyApp> {
   }
 
   Drawer buildDrawer() {
+    bool showSettingsButton = true;
+    if (prefs != null) {
+      if (prefs!.getBool('hide_settings_button') ?? false) {
+        showSettingsButton = false;
+      }
+    }
     return Drawer(
       // Add a ListView to the drawer. This ensures the user can scroll
       // through the options in the drawer if there isn't enough vertical
@@ -542,7 +549,7 @@ class _MyAppState extends State<MyApp> {
             },
             leading: Icon(Icons.delete),
           ),
-          if (!(prefs!.getBool('hide_settings_button') ?? false)) ListTile(
+          if (showSettingsButton) ListTile(
             title: Text(texts.settings),
             onTap: () async {
               // Close the drawer
@@ -857,11 +864,11 @@ class _MyAppState extends State<MyApp> {
             markerId: MarkerId(id + '_v'),
             position: LatLng(location.lat!, location.lon!),
             icon: extraIcon,
-            consumeTapEvents: false,
             onTap: () {
               mapController.showMarkerInfoWindow(MarkerId(id));
               setState(() {activeMarker = id;});
-            }
+            },
+            zIndex: 1.0
         );
       }
     }

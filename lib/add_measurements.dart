@@ -313,8 +313,10 @@ class _AddMeasurementsState extends State<AddMeasurements> {
               },
             );
 
-            if (selectedItems != null) {
+            if (selectedItems != null && selectedItems.isNotEmpty) {
               values[id] = selectedItems.toList().join('|');
+            } else {
+              values.remove(id);
             }
           },
           onLongPress: () async {
