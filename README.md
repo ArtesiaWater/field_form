@@ -168,6 +168,7 @@ Possible keys for the settings are:
 * 'user' (string)
 * 'mark_measured_days' (integer)
 * 'mark_not_measured' (boolean)
+* 'hide_settings' (boolean)
 
 Boolean settings will be either true or false. To set a setting to true, use a string like 'yes', 'Yes', 'true' or 'True'. Otherwise the setting will be set to false.
 

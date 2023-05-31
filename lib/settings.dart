@@ -363,7 +363,7 @@ void parseSettings(Map<String, String> settings, SharedPreferences prefs) async{
       case 'use_standard_time':
       case 'automatic_synchronisation_on':
       case 'disable_adding_locations':
-      case 'hide_settings_button':
+      case 'hide_settings':
       case 'replace_locations':
       case 'only_upload_measurements':
       case 'settings_button_off':

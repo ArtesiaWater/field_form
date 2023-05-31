@@ -433,7 +433,7 @@ class _MyAppState extends State<MyApp> {
   Drawer buildDrawer() {
     bool showSettingsButton = true;
     if (prefs != null) {
-      if (prefs!.getBool('hide_settings_button') ?? false) {
+      if (prefs!.getBool('hide_settings') ?? false) {
         showSettingsButton = false;
       }
     }
@@ -986,7 +986,7 @@ class _MyAppState extends State<MyApp> {
     await prefs.remove('imported_measurement_files');
 
     await prefs.remove('disable_adding_locations');
-    await prefs.remove('hide_settings_button');
+    await prefs.remove('hide_settings');
     return true;
   }
 
