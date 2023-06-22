@@ -32,9 +32,14 @@ class PropertiesScreen extends StatelessWidget {
                   child: Text(key),
                 ),
                 Expanded(
-                  flex: 1,
-                  child: Text(value.toString()),
-                )
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Text(
+                      value.toString(),
+                      overflow: TextOverflow.visible,
+                    ),
+                  ),
+                ),
               ]
             ),
           );
