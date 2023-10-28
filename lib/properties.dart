@@ -23,7 +23,6 @@ class PropertiesScreen extends StatelessWidget {
           final key = location.properties!.keys.elementAt(index);
           final value = location.properties![key]!;
           return Container(
-            height: 30,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -32,14 +31,9 @@ class PropertiesScreen extends StatelessWidget {
                   child: Text(key),
                 ),
                 Expanded(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Text(
-                      value.toString(),
-                      overflow: TextOverflow.visible,
-                    ),
-                  ),
-                ),
+                  flex: 1,
+                  child: Text(value.toString()),
+                )
               ]
             ),
           );

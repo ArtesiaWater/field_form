@@ -55,7 +55,7 @@ where:
 * final String? photo: the file-name of a photo. This can be a jpg-, png- or pdf-file.
 * final Map<String, Location>? sublocations: sublocations, specified in a map with location-id's as keys.
 * String? group: the group-id that a location belongs to.
-* String? color: The color of the marker on the map. Can be 'red', 'orange', 'yellow', 'green', 'cyan', 'azure', 'blue', 'violet', 'margenta' or 'rose'. The color can also be a hex-string, like '#000000' or '#FFFFFF'.
+* String? color: The color of the marker on the map. Can be 'red', 'orange', 'yellow', 'green', 'cyan', 'azure', 'blue', 'violet', 'margenta' or 'rose'. The color can also be a hex-string, like '#0000FF' (blue) or '#FFFF00' (yellow). As these colors are converted to a hue-value to transform the original Google Maps marker, '#000000' (black) or '#FFFFFF' (white) do not give the expected result.
 
 An example of the contents of a location file without settings, but with inputfields, groups, locations and sublocations is:
 ```json

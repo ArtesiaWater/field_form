@@ -157,8 +157,8 @@ BitmapDescriptor? getIconFromString(String? color) {
   if (color[0] == '#') {
     // HEX color
     try {
-      var col = Color(int.parse(color.substring(1, 7), radix: 16) + 0xFF000000);
-      hue = HSLColor.fromColor(col).hue;
+      var col = getIconColor(color);
+      hue = HSLColor.fromColor(col!).hue;
     } catch (e) {
       return null;
     }

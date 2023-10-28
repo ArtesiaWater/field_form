@@ -431,7 +431,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   Drawer buildDrawer() {
-    bool showSettingsButton = true;
+    var showSettingsButton = true;
     if (prefs != null) {
       if (prefs!.getBool('hide_settings') ?? false) {
         showSettingsButton = false;

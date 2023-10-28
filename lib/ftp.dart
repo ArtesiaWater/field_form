@@ -10,7 +10,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import 'dialogs.dart';
 
-connectToFtp(BuildContext context, SharedPreferences prefs, {path: null, transferType: TransferType.binary}) async {
+connectToFtp(BuildContext context, SharedPreferences prefs, {path, transferType = TransferType.binary}) async {
   var host = prefs.getString('ftp_hostname') ?? '';
   var user = prefs.getString('ftp_username') ?? '';
   var pass = prefs.getString('ftp_password') ?? '';
@@ -92,6 +92,7 @@ Future<bool> uploadFileToFtp(connection, File file, SharedPreferences prefs) asy
       var ftpPath = getFtpPath(prefs) + '/' + basename(file.path);
       final sftpFile = await sftp.open(ftpPath, mode: SftpFileOpenMode.create | SftpFileOpenMode.write);
       await sftpFile.write(file.openRead().cast());
+      await sftpFile.close();
       success = true;
     } catch (e) {
       sftp.close();
