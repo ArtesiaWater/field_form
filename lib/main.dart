@@ -991,16 +991,11 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> switchFtpFolder(context) async{
-    setState(() {isLoading = true;});
-    // connect to ftp folder
     var prefs = await SharedPreferences.getInstance();
-    var root = getFtpRoot(prefs);
-    var ftp = await connectToFtp(context, prefs, path:root);
-    if (ftp == null) {
-      setState(() {isLoading = false;});
-      return;
-    }
     var use_sftp = prefs.getBool('use_sftp') ?? false;
+
+    var ftp = null;
+
     // First upload existing measurements
     if (await measurementProvider.areThereMessagesToBeSent(prefs)){
       // Check if user wants to send unsent measurements
@@ -1008,19 +1003,18 @@ class _MyAppState extends State<MyApp> {
           yesButton: texts.yes, noButton: texts.no, title: texts.unsentMeasurementsTitle);
       if (action == true){
         // connect to the current ftp folder and send the measurements
-        var path = prefs.getString('ftp_path') ?? '';
-        if (!use_sftp && path.isNotEmpty) {
-          var success = await changeDirectory(ftp, context, path);
-          if (!success){
-            setState(() {isLoading = false;});
-            return;
-          }
+        setState(() {isLoading = true;});
+        ftp = await connectToFtp(context, prefs);
+        if (ftp == null) {
+          setState(() {isLoading = false;});
+          return;
         }
         var success = await sendMeasurementsToFtp(ftp, prefs);
         if (!success) {
           setState(() {isLoading = false;});
           return;
         }
+        var path = prefs.getString('ftp_path') ?? '';
         if (!use_sftp && path.isNotEmpty) {
           // Go to root of ftp server again
           var success = await changeDirectory(ftp, context, '..');
@@ -1029,6 +1023,16 @@ class _MyAppState extends State<MyApp> {
             return;
           }
         }
+      }
+    }
+    if (ftp == null) {
+      // If not connected yet, connect to the ftp-root
+      var root = getFtpRoot(prefs);
+      setState(() {isLoading = true;});
+      ftp = await connectToFtp(context, prefs, path: root);
+      if (ftp == null) {
+        setState(() {isLoading = false;});
+        return;
       }
     }
 

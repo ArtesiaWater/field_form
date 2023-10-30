@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import 'constants.dart';
 import 'locations.dart';
@@ -9,11 +10,13 @@ class PropertiesScreen extends StatelessWidget {
   final Location location;
   final String locationId;
 
+
   @override
   Widget build(BuildContext context) {
+    var texts = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: Text('Properties ' + (location.name ?? locationId)),
+        title: Text(texts.properties + ' ' + (location.name ?? locationId)),
         backgroundColor: Constant.primaryColor,
         ),
       body:  ListView.separated(

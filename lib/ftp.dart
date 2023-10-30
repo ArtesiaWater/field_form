@@ -71,11 +71,22 @@ Future<bool> changeDirectory(FTPConnect ftpConnect, BuildContext context, String
   var success = true;
   for (var folder in path.split('/')){
     if (folder.isNotEmpty) {
-      var success = await ftpConnect.changeDirectory(folder);
+      var success;
+      var error_text;
+      try {
+        success = await ftpConnect.changeDirectory(folder);
+        if (!success) {
+          var texts = AppLocalizations.of(context)!;
+          error_text = texts.unableToFindPathOnFtp + folder;
+        }
+      } catch (e) {
+        success = false;
+        error_text = e.toString();
+      }
       if (!success) {
         await ftpConnect.disconnect();
-        var texts = AppLocalizations.of(context)!;
-        showErrorDialog(context, texts.unableToFindPathOnFtp + folder);
+
+        showErrorDialog(context, error_text);
         return success;
       }
     }
@@ -100,7 +111,12 @@ Future<bool> uploadFileToFtp(connection, File file, SharedPreferences prefs) asy
     }
   } else {
     FTPConnect ftp = connection;
-    success = await ftp.uploadFile(file);
+    try {
+      success = await ftp.uploadFile(file);
+    } catch (e) {
+      success = false;
+    }
+
     if (!success) {
       unawaited(ftp.disconnect());
     }

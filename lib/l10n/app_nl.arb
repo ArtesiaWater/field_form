@@ -12,7 +12,7 @@
     "selectGroups": "Selecteer groepen",
     "deleteAllData": "Verwijder alle data",
     "sureToDeleteData": "Weet u zeker dat u alle data wilt verwijderen?",
-    "unsentMeasurementsTitle": "Niet-verzonden metingen",
+    "unsentMeasurementsTitle": "Eerst metingen versturen?",
     "unsentMeasurements": "Er zijn nog niet-verzonden metingen. Weet u zeker dat u alle date wilt verwijderen?",
     "uploadUnsentMeasurements": "Er zijn nog niet-verzonden metingen. Wilt u deze eerst uploaden? Zo niet, dan gaan ze verloren.",
     "settings": "Instellingen",
@@ -132,5 +132,7 @@
     "isRequired": " is verplicht",
     "requiredInputField": "Dit is een verplicht veld",
     "required": "verplicht",
-    "showPreviousAndNextLocation": "Knoppen vorige/volgende locatie"
+    "showPreviousAndNextLocation": "Knoppen vorige/volgende locatie",
+
+    "properties": "Eigenschappen"
 }

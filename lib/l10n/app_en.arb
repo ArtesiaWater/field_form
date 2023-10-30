@@ -12,7 +12,7 @@
     "selectGroups": "Select groups",
     "deleteAllData": "Delete all data",
     "sureToDeleteData": "Are you sure you wish to delete all data?",
-    "unsentMeasurementsTitle": "Unsent measurements",
+    "unsentMeasurementsTitle": "First send measurements?",
     "unsentMeasurements": "There are still unsent measurements. Are you really sure you want to delete all data?",
     "uploadUnsentMeasurements": "There are unsent measurements. Do you want to upload these first? Otherwise they will be lost.",
     "settings": "Settings",
@@ -164,5 +164,7 @@
     "isRequired": " is required",
     "requiredInputField": "This is a required field",
     "required": "required",
-    "showPreviousAndNextLocation": "Buttons previous/next location"
+    "showPreviousAndNextLocation": "Buttons previous/next location",
+
+    "properties": "Properties"
 }
