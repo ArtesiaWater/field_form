@@ -1,5 +1,5 @@
 import pandas as pd
-from pyproj import Proj, transform
+from pyproj import Transformer
 import os
 import ftplib
 
@@ -98,7 +98,8 @@ def read_locations(fname, out=None):
 
 def rd2wgs(x, y):
     """Calculate longitude and latitude from x and y in rd-coordinates"""
-    lon, lat = transform(Proj(init="epsg:28992"), Proj(init="epsg:4326"), x, y)
+    transformer = Transformer.from_crs("epsg:28992", "epsg:4326")
+    lat, lon = transformer.transform(x, y)
     return lon, lat
 
 
