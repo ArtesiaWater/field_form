@@ -114,9 +114,11 @@ class _AddMeasurementsState extends State<AddMeasurements> {
           children: [
             Form(
               key: _formKey,
-              child: ListView(
+              child: SingleChildScrollView(
                 padding: EdgeInsets.all(Constant.padding),
-                children: buildRows(),
+                child: Column(
+                  children: buildRows(),
+                )
               ),
             ),
             if (isLoading) buildLoadingIndicator(text:texts.loading),
@@ -513,7 +515,9 @@ class _AddMeasurementsState extends State<AddMeasurements> {
     };
 
     // Add Done button
-    rows.add(ElevatedButton(
+    rows.add(SizedBox(
+      width: double.infinity, // <-- match_parent
+      child: ElevatedButton(
       onPressed: () async {
         if (_formKey.currentState!.validate()) {
           var added_measurements = false;
@@ -567,7 +571,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
         backgroundColor: Constant.primaryColor,
       ),
       child: Text(texts.done),
-    ));
+    )));
 
     // Add previous measurements
     for (var measurement in measurements){
