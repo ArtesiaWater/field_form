@@ -36,7 +36,8 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
     return Scaffold(
         appBar: AppBar(
           title: Text(texts.newLocation),
-          backgroundColor: Constant.primaryColor,
+          backgroundColor:Theme.of(context).primaryColor,
+          foregroundColor: Theme.of(context).secondaryHeaderColor,
         ),
         body: ListView(
           padding: EdgeInsets.all(Constant.padding),
@@ -145,7 +146,8 @@ class _NewLocationScreenState extends State<NewLocationScreen> {
                 Navigator.pop(context, location);
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Constant.primaryColor,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
               child: Text(texts.done),
             )

@@ -17,7 +17,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:map_launcher/map_launcher.dart' as map_launcher;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:share/share.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'add_measurements.dart';
@@ -37,6 +37,11 @@ void main() {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Constant.primaryColor,
+        )
+      ),
       home: MyApp()
     )
   );
@@ -404,7 +409,8 @@ class _MyAppState extends State<MyApp> {
 
     var esb = EasySearchBar(
       title: Text(texts.fieldForm),
-      backgroundColor: Constant.primaryColor,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
       actions: actions,
       onSearch: (String key) {
         selectLocation(key);
@@ -447,7 +453,7 @@ class _MyAppState extends State<MyApp> {
         children: <Widget>[
           DrawerHeader(
             decoration: BoxDecoration(
-              color: Colors.green,
+              color: Theme.of(context).colorScheme.primary,
             ),
             child: Text(texts.menu),
           ),
@@ -611,7 +617,7 @@ class _MyAppState extends State<MyApp> {
     final tileOverlays = <TileOverlay>{};
     if (maptype == 'OSM') {
       tileOverlays.add(TileOverlay(
-        tileOverlayId: TileOverlayId('OpenSTreetmap'),
+        tileOverlayId: TileOverlayId('OpenStreetmap'),
         tileProvider: OsmTileProvider(),
       ));
     }
@@ -994,7 +1000,7 @@ class _MyAppState extends State<MyApp> {
     var prefs = await SharedPreferences.getInstance();
     var use_sftp = prefs.getBool('use_sftp') ?? false;
 
-    var ftp = null;
+    var ftp;
 
     // First upload existing measurements
     if (await measurementProvider.areThereMessagesToBeSent(prefs)){
@@ -1237,10 +1243,10 @@ class _MyAppState extends State<MyApp> {
 
   Future share_data() async {
     final docsDir = await getApplicationDocumentsDirectory();
-    var files = <String>[];
+    var files = <XFile>[];
     var file = File(p.join(docsDir.path, 'locations.json'));
     if (await file.exists()){
-      files.add(file.path);
+      files.add(XFile(file.path));
     }
 
     final measurements = await measurementProvider.getMeasurements();
@@ -1249,7 +1255,7 @@ class _MyAppState extends State<MyApp> {
       final tempDir = await getTemporaryDirectory();
       file = File(p.join(tempDir.path, new_file_name));
       file = await measurementProvider.measurementsToCsv(measurements, file);
-      files.add(file.path);
+      files.add(XFile(file.path));
 
       // Combine photos in a zip-file
       final photos = <File>[];
@@ -1276,7 +1282,7 @@ class _MyAppState extends State<MyApp> {
         } catch (e) {
           showErrorDialog(context, e.toString());
         }
-        files.add(zipFile.path);
+        files.add(XFile(zipFile.path));
       }
     }
 
@@ -1284,7 +1290,7 @@ class _MyAppState extends State<MyApp> {
       showErrorDialog(context, texts.noDataToShare);
       return;
     }
-    await Share.shareFiles(files);
+    await Share.shareXFiles(files);
   }
 
   Future addNewLocation(BuildContext context, LatLng latlng) async {

@@ -17,7 +17,8 @@ class PropertiesScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(texts.properties + ' ' + (location.name ?? locationId)),
-        backgroundColor: Constant.primaryColor,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         ),
       body:  ListView.separated(
         padding: EdgeInsets.all(Constant.padding),

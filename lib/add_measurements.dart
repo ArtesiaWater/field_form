@@ -222,7 +222,8 @@ class _AddMeasurementsState extends State<AddMeasurements> {
     }
     return AppBar(
       title: Text(location.name ?? widget.locationId),
-      backgroundColor: Constant.primaryColor,
+      backgroundColor: Theme.of(context).colorScheme.primary,
+      foregroundColor: Theme.of(context).colorScheme.onPrimary,
       actions: actions,
     );
   }
@@ -568,7 +569,8 @@ class _AddMeasurementsState extends State<AddMeasurements> {
         }
       },
       style: ElevatedButton.styleFrom(
-        backgroundColor: Constant.primaryColor,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
       child: Text(texts.done),
     )));
@@ -610,7 +612,8 @@ class _AddMeasurementsState extends State<AddMeasurements> {
             ),
             Expanded(
                 flex: 1,
-                child: ElevatedButton(
+                child: IconButton(
+                  icon: const Icon(Icons.delete_outline),
                   onPressed: () async {
                     var action = await showContinueDialog(context,
                         texts.sureToDeleteMeasurement(measurement.value, measurement.type));
@@ -618,10 +621,9 @@ class _AddMeasurementsState extends State<AddMeasurements> {
                       deleteMeasurement(measurement);
                     }
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Constant.primaryColor,
-                  ),
-                  child: Text('x'),
+                  //style: ElevatedButton.styleFrom(
+                    //backgroundColor: Constant.primaryColor,
+                  //),
                 )
             ),
           ]

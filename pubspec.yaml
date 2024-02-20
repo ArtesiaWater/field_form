@@ -18,17 +18,17 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.1.4+16
 
 environment:
-  sdk: '>=2.15.0 <3.0.0'
+  sdk: '>=2.15.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
   google_maps_flutter: any # or the latest version on Pub
   json_serializable: ^6.0.0
-  flutter_settings_ui: ^2.0.1
+  flutter_settings_ui: ^3.0.0
   path_provider: ^2.0.1
-  share: ^2.0.1
-  file_picker: ^5.2.3
+  share_plus: ^7.2.2
+  file_picker: ^6.1.1
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -39,23 +39,22 @@ dependencies:
   path:
   ftpconnect: ^2.0.5
   csv: ^5.0.2
-  permission_handler: ^10.2.0
-  http: ^0.13.3
-  flutter_localizations:
-    sdk: flutter
+  permission_handler: ^11.3.0
+  http: ^1.2.1
+  flutter_localization: ^0.2.0
   camera:
   dartssh2: ^2.4.1
   flutter_datetime_picker_plus: ^2.0.1
   pdfx: ^2.3.0
   easy_search_bar: ^2.4.2
-  map_launcher: ^2.5.0
-  flutter_archive: ^5.0.0
+  map_launcher: ^3.1.0
+  flutter_archive: ^6.0.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   # Add the following two lines
-  pedantic: ^1.11.0
+  lints: ^3.0.0
   build_runner: ^2.1.4
   flutter_launcher_icons: ^0.13.1
 

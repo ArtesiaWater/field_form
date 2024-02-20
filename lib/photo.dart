@@ -37,7 +37,8 @@ class PhotoScreen extends StatelessWidget {
     return Scaffold(
         appBar: AppBar(
           title: Text(basename(file.path)),
-          backgroundColor: Constant.primaryColor,
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Theme.of(context).colorScheme.onPrimary,
         ),
         body: body,
     );

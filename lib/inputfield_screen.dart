@@ -47,7 +47,8 @@ class _InputFieldsScreenState extends State<InputFieldsScreen> {
     return Scaffold(
         appBar: AppBar(
           title: Text(texts.inputFields),
-          backgroundColor: Constant.primaryColor,
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Theme.of(context).colorScheme.onPrimary,
           actions: <Widget>[
             Padding(
                 padding: EdgeInsets.only(right: 20.0),
@@ -130,7 +131,8 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
     return Scaffold(
         appBar: AppBar(
           title: Text(widget.id),
-          backgroundColor: Constant.primaryColor,
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Theme.of(context).colorScheme.onPrimary,
           actions: <Widget>[
             if (existing) Padding(
                 padding: EdgeInsets.only(right: 20.0),
@@ -214,7 +216,7 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
               ),
               isExpanded: true,
               items: getDropdownMenuItems(inputField.options ?? <String>[], add_empty: true),
-              value: (inputField.options ?? <String>[]).contains(inputField.default_value) ? inputField.default_value : "",
+              value: (inputField.options ?? <String>[]).contains(inputField.default_value) ? inputField.default_value : '',
               onChanged: (String? text) {
                 if (text != null) {
                   setState((){
@@ -250,7 +252,8 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
                 Navigator.pop(context, inputField);
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Constant.primaryColor,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
               child: Text(texts.done),
             )
@@ -322,7 +325,8 @@ class _OptionsScreenState extends State<OptionsScreen> {
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Constant.primaryColor,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 ),
                 child: Text('x'),
               )
@@ -340,7 +344,8 @@ class _OptionsScreenState extends State<OptionsScreen> {
               Navigator.pop(context, options);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Constant.primaryColor,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
             ),
             child: Text(texts.done),
           )
@@ -351,7 +356,8 @@ class _OptionsScreenState extends State<OptionsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(texts.options),
-        backgroundColor: Constant.primaryColor,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: <Widget>[
           Padding(
             padding: EdgeInsets.only(right: 20.0),

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_settings_ui/flutter_settings_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'constants.dart';
 import 'dialogs.dart';
 import 'ftp.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -38,7 +37,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Scaffold(
           appBar: AppBar(
             title: Text(texts.settings),
-            backgroundColor: Constant.primaryColor,
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            foregroundColor: Theme.of(context).colorScheme.onPrimary,
         ),
 
         body:  Stack(
@@ -70,10 +70,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return SettingsList(
       sections: [
         SettingsSection(
-          title: texts.input,
+          title: Text(texts.input),
           tiles: [
             SettingsTile(
-                title: texts.editInputFields,
+                title: Text(texts.editInputFields),
                 leading: Icon(Icons.wysiwyg_rounded),
                 onPressed: (BuildContext context) async {
                   await Navigator.push(
@@ -85,9 +85,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 }
             ),
             SettingsTile.switchTile(
-              title: texts.addUserToMeasurements,
+              title: Text(texts.addUserToMeasurements),
               leading: Icon(Icons.account_circle_outlined),
-              switchValue: add_user_to_measurements,
+              initialValue: add_user_to_measurements,
               onToggle: (bool value) {
                 setState(() {
                   widget.prefs.setBool('add_user_to_measurements', value);
@@ -98,26 +98,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
             ),
             if (add_user_to_measurements) SettingsTile(
-              title: texts.user,
-              subtitle: widget.prefs.getString('user') ?? '',
+              title: Text(texts.user),
+              description: Text(widget.prefs.getString('user') ?? ''),
               leading: Icon(Icons.account_circle),
               onPressed: (BuildContext context) {
                 editStringSetting(context, 'user', texts.setUser);
               },
             ),
             if (add_user_to_measurements) SettingsTile(
-              title: texts.userInputfield,
-              subtitle: widget.prefs.getString('user_inputfield') ?? 'user',
+              title: Text(texts.userInputfield),
+              description: Text(widget.prefs.getString('user_inputfield') ?? 'user'),
               leading: Icon(Icons.manage_accounts_outlined),
               onPressed: (BuildContext context) {
                 editStringSetting(context, 'user_inputfield', texts.changeUserInputfield, default_value: 'user');
               },
             ),
             SettingsTile.switchTile(
-              title: texts.useStandardTime,
-              subtitle: texts.useStandardTimeSubtitle,
+              title: Text(texts.useStandardTime),
+              description: Text(texts.useStandardTimeSubtitle),
               leading: Icon(Icons.access_time),
-              switchValue: widget.prefs.getBool('use_standard_time') ?? false,
+              initialValue: widget.prefs.getBool('use_standard_time') ?? false,
               onToggle: (bool value) {
                 setState(() {
                   widget.prefs.setBool('use_standard_time', value);
@@ -127,12 +127,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ]
         ),
         SettingsSection(
-            title: texts.wms,
+            title: Text(texts.wms),
             tiles: [
             SettingsTile.switchTile(
-              title: texts.addWms,
+              title: Text(texts.addWms),
               leading: Icon(Icons.map),
-              switchValue: wmsOn,
+              initialValue: wmsOn,
               onToggle: (bool value) {
                 setState(() {
                   widget.prefs.setBool('wms_on', value);
@@ -141,8 +141,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
             ),
             if (wmsOn) SettingsTile(
-              title: texts.wmsUrl,
-              subtitle: widget.prefs.getString('wms_url'),
+              title: Text(texts.wmsUrl),
+              description: Text(widget.prefs.getString('wms_url') ?? ""),
               leading: Icon(Icons.computer),
               onPressed: (BuildContext context) {
                 editStringSetting(context, 'wms_url', texts.changeWmsUrl);
@@ -150,8 +150,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
             ),
             if (wmsOn) SettingsTile(
-              title: texts.wmsLayers,
-              subtitle: widget.prefs.getString('wms_layers'),
+              title: Text(texts.wmsLayers),
+              description: Text(widget.prefs.getString('wms_layers') ?? ""),
               leading: Icon(Icons.layers),
               onPressed: (BuildContext context) {
                 editStringSetting(context, 'wms_layers', texts.changeWmsLayers);
@@ -161,12 +161,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ]
         ),
         SettingsSection(
-          title: texts.map,
+          title: Text(texts.map),
           tiles: [
             SettingsTile.switchTile(
-              title: texts.showPreviousAndNextLocation,
+              title: Text(texts.showPreviousAndNextLocation),
               leading: Icon(Icons.switch_left),
-              switchValue: widget.prefs.getBool('show_previous_and_next_location') ?? true,
+              initialValue: widget.prefs.getBool('show_previous_and_next_location') ?? true,
               onToggle: (bool value) {
                 setState(() {
                   widget.prefs.setBool('show_previous_and_next_location', value);
@@ -174,8 +174,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
             ),
             SettingsTile(
-              title: texts.markMeasuredLocations,
-              subtitle: texts.withinIntervalDays(mark_measured_days),
+              title: Text(texts.markMeasuredLocations),
+              description: Text(texts.withinIntervalDays(mark_measured_days)),
               leading: Icon(Icons.verified_user),
               onPressed: (BuildContext context) async {
                 var interval = await chooseMeasuredInterval(context, widget.prefs, texts);
@@ -188,9 +188,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               }
             ),
             if (mark_measured_days > 0) SettingsTile.switchTile(
-              title: texts.markNotMeasured,
+              title: Text(texts.markNotMeasured),
               leading: Icon(Icons.dangerous_outlined),
-              switchValue: widget.prefs.getBool('mark_not_measured') ?? false,
+              initialValue: widget.prefs.getBool('mark_not_measured') ?? false,
               onToggle: (bool value) {
                 setState(() {
                   widget.prefs.setBool('mark_not_measured', value);
@@ -201,11 +201,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ]
         ),
         SettingsSection(
-          title: texts.photos,
+          title: Text(texts.photos),
           tiles: [
             SettingsTile(
-              title: texts.resolution,
-              subtitle: resolutions[widget.prefs.getString('photo_resolution') ?? 'medium'],
+              title: Text(texts.resolution),
+              description: Text(resolutions[widget.prefs.getString('photo_resolution') ?? 'medium'] ?? 'medium'),
               leading: Icon(Icons.apps),
               onPressed: (BuildContext context) async {
                 var options = <Widget>[];
@@ -237,36 +237,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ]
         ),
         SettingsSection(
-          title: texts.ftp,
+          title: Text(texts.ftp),
           tiles: [
             SettingsTile(
-              title: texts.hostname,
-              subtitle: widget.prefs.getString('ftp_hostname'),
+              title: Text(texts.hostname),
+              description: Text(widget.prefs.getString('ftp_hostname') ?? ""),
               leading: Icon(Icons.cloud),
               onPressed: (BuildContext context) {
                 editStringSetting(context, 'ftp_hostname', texts.changeFtpHostname);
               },
             ),
             SettingsTile(
-              title: texts.username,
-              subtitle: widget.prefs.getString('ftp_username'),
+              title: Text(texts.username),
+              description: Text(widget.prefs.getString('ftp_username') ?? ""),
               leading: Icon(Icons.person),
               onPressed: (BuildContext context) {
                 editStringSetting(context, 'ftp_username', texts.changeFtpUsername);
               },
             ),
             SettingsTile(
-              title: texts.password,
-              subtitle: '*' * password.length,
-              subtitleTextStyle: TextStyle(),
+              title: Text(texts.password),
+              description: Text('*' * password.length),
               leading: Icon(Icons.lock),
               onPressed: (BuildContext context) {
                 editStringSetting(context, 'ftp_password', texts.changeFtpPassword, password: true);
               },
             ),
             SettingsTile(
-              title: texts.path,
-              subtitle: widget.prefs.getString('ftp_path'),
+              title: Text(texts.path),
+              description: Text(widget.prefs.getString('ftp_path') ?? ""),
               leading: Icon(Icons.folder),
               onPressed: (BuildContext context) async {
                 setState(() {isLoading = true;});
@@ -289,9 +288,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
             ),
             if (true) SettingsTile.switchTile(
-              title: texts.useFtps,
+              title: Text(texts.useFtps),
               leading: Icon(Icons.security),
-              switchValue: widget.prefs.getBool('use_ftps') ?? false,
+              initialValue: widget.prefs.getBool('use_ftps') ?? false,
               onToggle: (bool value) {
                 setState(() {
                   widget.prefs.setBool('use_ftps', value);
@@ -302,9 +301,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
             ),
             SettingsTile.switchTile(
-              title: texts.useSftp,
+              title: Text(texts.useSftp),
               leading: Icon(Icons.security),
-              switchValue: widget.prefs.getBool('use_sftp') ?? false,
+              initialValue: widget.prefs.getBool('use_sftp') ?? false,
               onToggle: (bool value) {
                 setState(() {
                   widget.prefs.setBool('use_sftp', value);
@@ -315,9 +314,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
             ),
             SettingsTile.switchTile(
-              title: texts.onlyExportNewMeasurements,
+              title: Text(texts.onlyExportNewMeasurements),
               leading: Icon(Icons.fiber_new),
-              switchValue: widget.prefs.getBool('only_export_new_data') ?? true,
+              initialValue: widget.prefs.getBool('only_export_new_data') ?? true,
               onToggle: (bool value) {
                 setState(() {
                   widget.prefs.setBool('only_export_new_data', value);
