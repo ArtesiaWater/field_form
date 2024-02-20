@@ -21,7 +21,7 @@ class Measurement{
   });
 
   Measurement.fromMap(Map map)
-    : location= map['location'],
+    : location= map['location'].toString(),
       datetime = DateTime.fromMicrosecondsSinceEpoch(map['datetime']),
       type = map['type'],
       value = map['value'],
@@ -59,7 +59,7 @@ class MeasurementProvider {
           await db.execute('''
 create table measurements (
   id INTEGER primary key autoincrement, 
-  location String,
+  location TEXT,
   datetime INTEGER,
   type TEXT,
   value TEXT,
@@ -128,7 +128,7 @@ create table measurements (
     var lastMeas = <String, DateTime>{};
     for (var e in result) {
       if (e['MAX(datetime)'] != null) {
-        lastMeas[e['location'] as String] =
+        lastMeas[e['location'].toString()] =
             DateTime.fromMicrosecondsSinceEpoch(e['MAX(datetime)'] as int);
       }
     }
