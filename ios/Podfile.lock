@@ -41,12 +41,11 @@ PODS:
   - flutter_archive (0.0.1):
     - Flutter
     - ZIPFoundation (= 0.9.13)
-  - FMDB (2.7.5):
-    - FMDB/standard (= 2.7.5)
-  - FMDB/standard (2.7.5)
+  - flutter_localization (0.0.1):
+    - Flutter
   - google_maps_flutter_ios (0.0.1):
     - Flutter
-    - GoogleMaps (< 8.0)
+    - GoogleMaps (< 9.0)
   - GoogleMaps (5.2.0):
     - GoogleMaps/Maps (= 5.2.0)
   - GoogleMaps/Base (5.2.0)
@@ -59,19 +58,19 @@ PODS:
     - FlutterMacOS
   - pdfx (1.0.0):
     - Flutter
-  - permission_handler_apple (9.1.1):
+  - permission_handler_apple (9.3.0):
     - Flutter
   - SDWebImage (5.11.1):
     - SDWebImage/Core (= 5.11.1)
   - SDWebImage/Core (5.11.1)
-  - share (0.0.1):
+  - share_plus (0.0.1):
     - Flutter
   - shared_preferences_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
   - sqflite (0.0.3):
     - Flutter
-    - FMDB (>= 2.7.5)
+    - FlutterMacOS
   - SwiftyGif (5.4.0)
   - ZIPFoundation (0.9.13)
 
@@ -81,20 +80,20 @@ DEPENDENCIES:
   - file_picker (from `.symlinks/plugins/file_picker/ios`)
   - Flutter (from `Flutter`)
   - flutter_archive (from `.symlinks/plugins/flutter_archive/ios`)
+  - flutter_localization (from `.symlinks/plugins/flutter_localization/ios`)
   - google_maps_flutter_ios (from `.symlinks/plugins/google_maps_flutter_ios/ios`)
   - map_launcher (from `.symlinks/plugins/map_launcher/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - pdfx (from `.symlinks/plugins/pdfx/ios`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
-  - share (from `.symlinks/plugins/share/ios`)
+  - share_plus (from `.symlinks/plugins/share_plus/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
-  - sqflite (from `.symlinks/plugins/sqflite/ios`)
+  - sqflite (from `.symlinks/plugins/sqflite/darwin`)
 
 SPEC REPOS:
   trunk:
     - DKImagePickerController
     - DKPhotoGallery
-    - FMDB
     - GoogleMaps
     - SDWebImage
     - SwiftyGif
@@ -111,6 +110,8 @@ EXTERNAL SOURCES:
     :path: Flutter
   flutter_archive:
     :path: ".symlinks/plugins/flutter_archive/ios"
+  flutter_localization:
+    :path: ".symlinks/plugins/flutter_localization/ios"
   google_maps_flutter_ios:
     :path: ".symlinks/plugins/google_maps_flutter_ios/ios"
   map_launcher:
@@ -121,35 +122,35 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/pdfx/ios"
   permission_handler_apple:
     :path: ".symlinks/plugins/permission_handler_apple/ios"
-  share:
-    :path: ".symlinks/plugins/share/ios"
+  share_plus:
+    :path: ".symlinks/plugins/share_plus/ios"
   shared_preferences_foundation:
     :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
   sqflite:
-    :path: ".symlinks/plugins/sqflite/ios"
+    :path: ".symlinks/plugins/sqflite/darwin"
 
 SPEC CHECKSUMS:
-  camera_avfoundation: 3125e8cd1a4387f6f31c6c63abb8a55892a9eeeb
+  camera_avfoundation: 759172d1a77ae7be0de08fc104cfb79738b8a59e
   device_info_plus: c6fb39579d0f423935b0c9ce7ee2f44b71b9fce6
   DKImagePickerController: b5eb7f7a388e4643264105d648d01f727110fc3d
   DKPhotoGallery: fdfad5125a9fdda9cc57df834d49df790dbb4179
-  file_picker: ce3938a0df3cc1ef404671531facef740d03f920
-  Flutter: f04841e97a9d0b0a8025694d0796dd46242b2854
+  file_picker: 15fd9539e4eb735dc54bae8c0534a7a9511a03de
+  Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
   flutter_archive: 1805fdd3a695fd284b43edb53dc35ca843fb761c
-  FMDB: 2ce00b547f966261cd18927a3ddb07cb6f3db82a
-  google_maps_flutter_ios: abdac20d6ce8931f6ebc5f46616df241bfaa2cfd
+  flutter_localization: f43b18844a2b3d2c71fd64f04ffd6b1e64dd54d4
+  google_maps_flutter_ios: f135b968a67c05679e0a53538e900b5c174b0d99
   GoogleMaps: 025272d5876d3b32604e5c080dc25eaf68764693
   map_launcher: e325db1261d029ff33e08e03baccffe09593ffea
-  path_provider_foundation: 29f094ae23ebbca9d3d0cec13889cd9060c0e943
+  path_provider_foundation: 3784922295ac71e43754bd15e0653ccfd36a147c
   pdfx: 7b876b09de8b7a0bf444a4f82b439ffcff4ee1ec
-  permission_handler_apple: e76247795d700c14ea09e3a2d8855d41ee80a2e6
+  permission_handler_apple: 036b856153a2b1f61f21030ff725f3e6fece2b78
   SDWebImage: a7f831e1a65eb5e285e3fb046a23fcfbf08e696d
-  share: 0b2c3e82132f5888bccca3351c504d0003b3b410
-  shared_preferences_foundation: 5b919d13b803cadd15ed2dc053125c68730e5126
-  sqflite: 31f7eba61e3074736dff8807a9b41581e4f7f15a
+  share_plus: c3fef564749587fc939ef86ffb283ceac0baf9f5
+  shared_preferences_foundation: b4c3b4cddf1c21f02770737f147a3f5da9d39695
+  sqflite: 673a0e54cc04b7d6dba8d24fb8095b31c3a99eec
   SwiftyGif: 5d4af95df24caf1c570dbbcb32a3b8a0763bc6d7
   ZIPFoundation: ae5b4b813d216d3bf0a148773267fff14bd51d37
 
-PODFILE CHECKSUM: 9de0e83c3b495ba7ddd1f759f90a4b46b91ef602
+PODFILE CHECKSUM: 63a87ac69ffec1268c5c9d4140f0cda4c06f6201
 
-COCOAPODS: 1.11.2
+COCOAPODS: 1.15.2
