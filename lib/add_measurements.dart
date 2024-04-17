@@ -77,14 +77,17 @@ class _AddMeasurementsState extends State<AddMeasurements> {
     // Drop inputFields that are not defined
     // copy the inputfields, so we do not alter the original list
     inputFieldIds = List.from(inputFieldIds!);
-    inputFieldIds!.removeWhere((id) => !locData.inputFields.containsKey(id));
+    //inputFieldIds!.removeWhere((id) => !locData.inputFields.containsKey(id));
     // set Default values
     for (final id in inputFieldIds!) {
-      var inputField = locData.inputFields[id]!;
-      if (inputField.type == 'choice'){
-        if (inputField.default_value != null) {
-          if ((inputField.options ?? <String>[]).contains(inputField.default_value)) {
-            values[id] = inputField.default_value!;
+      if (locData.inputFields.containsKey(id)) {
+        var inputField = locData.inputFields[id]!;
+        if (inputField.type == 'choice') {
+          if (inputField.default_value != null) {
+            if ((inputField.options ?? <String>[]).contains(
+                inputField.default_value)) {
+              values[id] = inputField.default_value!;
+            }
           }
         }
       }
@@ -228,8 +231,281 @@ class _AddMeasurementsState extends State<AddMeasurements> {
     );
   }
 
+  Row getRowForInputfield(id){
+    var inputField = locData.inputFields[id]!;
+    var keyboardType = TextInputType.text;
+    var validator;
+    List<TextInputFormatter>? inputFormatters = [];
+    if (inputField.type == 'number'){
+      keyboardType = TextInputType.numberWithOptions(decimal: true, signed: true);
+      if (inputField.required){
+        validator = requiredNumberValidator;
+      } else {
+        validator = numberValidator;
+      }
+      inputFormatters.add(CommaTextInputFormatter());
+    } else {
+      inputFormatters.add(FilteringTextInputFormatter.deny(RegExp('[;]')));
+      if (inputField.required){
+        validator = requiredValidator;
+      }
+    }
+    var input;
+    if (inputField.type == 'choice') {
+      final hint;
+      if (inputField.hint == null) {
+        hint = null;
+      } else {
+        hint = Text(inputField.hint!);
+      }
+      input = DropdownButtonFormField(
+        isExpanded: true,
+        items: getDropdownMenuItems(
+            inputField.options ?? <String>[], add_empty: true),
+        onChanged: (String? text) {
+          setState(() {
+            values[id] = text!;
+          });
+        },
+        value: values[id],
+        onTap: () {
+          //  'steal' focuses off of the TextField that was previously focused on the dropdown tap
+          var node = FocusScope.of(context);
+          node.requestFocus(FocusNode());
+        },
+        validator: validator,
+        hint: hint,
+      );
+    } else if (inputField.type == 'multichoice') {
+      input = TextButton(
+        onPressed: () async {
+          final items = <MultiSelectDialogItem<String>>[];
+          for (var option in inputField.options ?? <String>[]) {
+            items.add(MultiSelectDialogItem(option, option));
+          }
+
+          List<String> initialSelectedValues;
+          if (values[id] == null) {
+            initialSelectedValues = <String>[];
+          } else {
+            initialSelectedValues = values[id]!.split('|');
+          }
+
+          final selectedItems = await showDialog<Set<String>>(
+            context: context,
+            builder: (BuildContext context) {
+              return MultiSelectDialog(
+                items: items,
+                initialSelectedValues: initialSelectedValues.toSet(),
+                title: inputField.hint ?? inputField.name ?? id,
+              );
+            },
+          );
+
+          if (selectedItems != null && selectedItems.isNotEmpty) {
+            values[id] = selectedItems.toList().join('|');
+          } else {
+            values.remove(id);
+          }
+        },
+        onLongPress: () async {
+          if (values[id] != null) {
+            var action = await showContinueDialog(context,
+                texts.removeValueFromId(values[id]!, id),
+                yesButton: texts.yes,
+                noButton: texts.no);
+            if (action == true) {
+              setState(() {
+                values.remove(id);
+              });
+            }
+          }
+        },
+        child: Text(values[id] ?? inputField.hint ?? ''),
+      );
+    } else if (inputField.type == 'photo') {
+      input = TextButton(
+        onPressed: () async {
+          if (values[id] == null) {
+            // take a new photo
+            // Obtain a list of the available cameras on the device.
+            final cameras = await availableCameras();
+            if (cameras.isEmpty){
+              return;
+            }
+            // Get a specific camera from the list of available cameras.
+            final firstCamera = cameras.first;
+            // Open the camera screen
+            final image = await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) {
+                var resolution = widget.prefs.getString('photo_resolution');
+                return TakePictureScreen(camera: firstCamera, resolution: resolution);
+              }),
+            );
+            if (image != null) {
+              // copy the image to the documents-directory
+              var name = id + '_' + widget.locationId + '_' +
+                  Constant.file_datetime_format.format(now) + '.jpg';
+              setState(() {
+                // Set the filename as the measurement
+                values[id] = name;
+              });
+              var docsDir = getApplicationDocumentsDirectory();
+              var dir = Directory(p.join((await docsDir).path, 'photos'));
+              if (!dir.existsSync()){
+                await dir.create();
+              }
+              await File(image.path).copy(p.join(dir.path, name));
+            }
+          } else {
+            // Show the current photo
+            await displayPhoto(values[id]!);
+          }
+        },
+        onLongPress: () async {
+          if (values[id] != null) {
+            var action = await showContinueDialog(context,
+                texts.removeValueFromId(values[id]!, id),
+                yesButton: texts.yes,
+                noButton: texts.no,
+                title: texts.removePhotoTitle);
+            if (action == true) {
+              // remove photo from disk and remove filename from values
+              var docsDir = getApplicationDocumentsDirectory();
+              var file = File(p.join((await docsDir).path, 'photos', values[id]));
+              if (await file.exists()) {
+                unawaited(file.delete());
+              }
+              setState(() {
+                values.remove(id);
+              });
+
+            }
+          }
+        },
+        child: Text(values[id] ?? inputField.hint ?? ''),
+      );
+    } else if (inputField.type == 'check') {
+      var value = (values[id] ?? 'false') == 'true';
+      input = CheckboxListTile(
+        value: value,
+        onChanged: (bool? value) {
+          setState(() {
+            if (value!) {
+              values[id] = 'true';
+            } else {
+              values.remove(id);
+              // values[id] = 'false';
+            }
+          });
+        },
+        title: Text(inputField.hint ?? ''),
+      );
+    } else if ((inputField.type == 'date') |  (inputField.type == 'time') | (inputField.type == 'datetime')) {
+      var date_format;
+      if (inputField.type == 'date') {
+        date_format = Constant.date_format;
+      } else if (inputField.type == 'time'){
+        date_format = Constant.time_format;
+      } else {
+        date_format = Constant.datetime_format;
+      }
+      input = TextButton(
+        onPressed: () async {
+          var currentTime;
+          if (values[id] == null) {
+            // start date is now
+            currentTime = DateTime.now();
+          } else {
+            // start date is previous value
+            currentTime = date_format.parse(values[id]!);
+          }
+          if (inputField.type == 'date') {
+            await DatePicker.showDatePicker(context,
+                showTitleActions: true,
+                onChanged: (date) {
+                  print('change $date');
+                },
+                onConfirm: (date) {
+                  print('confirm $date');
+                  values[id] = date_format.format(date);
+                },
+                currentTime: currentTime);
+          } else if (inputField.type == 'time'){
+            await DatePicker.showTimePicker(context,
+                showTitleActions: true,
+                onChanged: (date) {
+                  print('change $date');
+                },
+                onConfirm: (date) {
+                  print('confirm $date');
+                  values[id] = date_format.format(date);
+                },
+                currentTime: currentTime);
+          } else {
+            await DatePicker.showDateTimePicker(context,
+                showTitleActions: true,
+                onChanged: (date) {
+                  print('change $date');
+                },
+                onConfirm: (date) {
+                  print('confirm $date');
+                  values[id] = date_format.format(date);
+                },
+                currentTime: currentTime);
+          }
+        },
+        onLongPress: () async {
+          if (values[id] != null) {
+            var action = await showContinueDialog(context,
+                texts.removeValueFromId(values[id]!, id),
+                yesButton: texts.yes,
+                noButton: texts.no,
+                title: texts.removeDateTitle);
+            if (action == true) {
+              setState(() {
+                values.remove(id);
+              });
+            }
+          }
+        },
+        child: Text(values[id] ?? inputField.hint ?? ''),
+      );
+    } else {
+      final node = FocusScope.of(context);
+      input = TextFormField(
+        autofocus: (id == inputFieldIds![0]),
+        decoration: InputDecoration(
+            hintText: inputField.hint
+        ),
+        keyboardType: keyboardType,
+        onChanged: (text) {
+          values[id] = text;
+        },
+        validator: validator,
+        inputFormatters: inputFormatters,
+        textInputAction: id == inputFieldIds!.last ? null: TextInputAction.next,
+        onEditingComplete: () => node.nextFocus(), // Move focus to next
+      );
+    }
+    var row = Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          Expanded(
+            flex: 1,
+            child: Text(inputField.name ?? id),
+          ),
+          Expanded(
+            flex: 2,
+            child: input,
+          )
+        ]
+    );
+    return row;
+  }
+
   List<Widget> buildRows(){
-    var docsDir = getApplicationDocumentsDirectory();
     var date = Constant.date_format.format(now);
     var time = Constant.time_format.format(now);
     final rows = <Widget>[];
@@ -245,274 +521,26 @@ class _AddMeasurementsState extends State<AddMeasurements> {
     ));
 
     // Add a row for each inputField
-    final node = FocusScope.of(context);
     for (final id in inputFieldIds!) {
-      var inputField = locData.inputFields[id]!;
-      var keyboardType = TextInputType.text;
-      var validator;
-      List<TextInputFormatter>? inputFormatters = [];
-      if (inputField.type == 'number'){
-        keyboardType = TextInputType.numberWithOptions(decimal: true, signed: true);
-        if (inputField.required){
-          validator = requiredNumberValidator;
-        } else {
-          validator = numberValidator;
+      if (locData.inputFieldGroups.containsKey(id)){
+        var inputFieldGroup = locData.inputFieldGroups[id]!;
+        rows.add(Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(inputFieldGroup.name ?? id),
+            ]
+        ));
+        for (var inputfield_id in inputFieldGroup.inputfields){
+          if (locData.inputFields.containsKey(inputfield_id)){
+            rows.add(getRowForInputfield(inputfield_id));
+          }
         }
-        inputFormatters.add(CommaTextInputFormatter());
+        continue;
       } else {
-        inputFormatters.add(FilteringTextInputFormatter.deny(RegExp('[;]')));
-        if (inputField.required){
-          validator = requiredValidator;
+        if (locData.inputFields.containsKey(id)) {
+          rows.add(getRowForInputfield(id));
         }
       }
-      var input;
-      if (inputField.type == 'choice') {
-        final hint;
-        if (inputField.hint == null) {
-          hint = null;
-        } else {
-          hint = Text(inputField.hint!);
-        }
-        input = DropdownButtonFormField(
-          isExpanded: true,
-          items: getDropdownMenuItems(
-              inputField.options ?? <String>[], add_empty: true),
-          onChanged: (String? text) {
-            setState(() {
-              values[id] = text!;
-            });
-          },
-          value: values[id],
-          onTap: () {
-            //  'steal' focuses off of the TextField that was previously focused on the dropdown tap
-            node.requestFocus(FocusNode());
-          },
-          validator: validator,
-          hint: hint,
-        );
-      } else if (inputField.type == 'multichoice') {
-        input = TextButton(
-          onPressed: () async {
-            final items = <MultiSelectDialogItem<String>>[];
-            for (var option in inputField.options ?? <String>[]) {
-              items.add(MultiSelectDialogItem(option, option));
-            }
-
-            List<String> initialSelectedValues;
-            if (values[id] == null) {
-              initialSelectedValues = <String>[];
-            } else {
-              initialSelectedValues = values[id]!.split('|');
-            }
-
-            final selectedItems = await showDialog<Set<String>>(
-              context: context,
-              builder: (BuildContext context) {
-                return MultiSelectDialog(
-                  items: items,
-                  initialSelectedValues: initialSelectedValues.toSet(),
-                  title: inputField.hint ?? inputField.name ?? id,
-                );
-              },
-            );
-
-            if (selectedItems != null && selectedItems.isNotEmpty) {
-              values[id] = selectedItems.toList().join('|');
-            } else {
-              values.remove(id);
-            }
-          },
-          onLongPress: () async {
-            if (values[id] != null) {
-              var action = await showContinueDialog(context,
-                  texts.removeValueFromId(values[id]!, id),
-                  yesButton: texts.yes,
-                  noButton: texts.no);
-              if (action == true) {
-                setState(() {
-                  values.remove(id);
-                });
-              }
-            }
-          },
-          child: Text(values[id] ?? inputField.hint ?? ''),
-        );
-      } else if (inputField.type == 'photo') {
-        input = TextButton(
-          onPressed: () async {
-            if (values[id] == null) {
-              // take a new photo
-              // Obtain a list of the available cameras on the device.
-              final cameras = await availableCameras();
-              if (cameras.isEmpty){
-                return;
-              }
-              // Get a specific camera from the list of available cameras.
-              final firstCamera = cameras.first;
-              // Open the camera screen
-              final image = await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) {
-                  var resolution = widget.prefs.getString('photo_resolution');
-                  return TakePictureScreen(camera: firstCamera, resolution: resolution);
-                }),
-              );
-              if (image != null) {
-                // copy the image to the documents-directory
-                var name = id + '_' + widget.locationId + '_' +
-                    Constant.file_datetime_format.format(now) + '.jpg';
-                setState(() {
-                  // Set the filename as the measurement
-                  values[id] = name;
-                });
-                var dir = Directory(p.join((await docsDir).path, 'photos'));
-                if (!dir.existsSync()){
-                  await dir.create();
-                }
-                await File(image.path).copy(p.join(dir.path, name));
-              }
-            } else {
-              // Show the current photo
-              await displayPhoto(values[id]!);
-            }
-          },
-          onLongPress: () async {
-            if (values[id] != null) {
-              var action = await showContinueDialog(context,
-                  texts.removeValueFromId(values[id]!, id),
-                  yesButton: texts.yes,
-                  noButton: texts.no,
-                  title: texts.removePhotoTitle);
-              if (action == true) {
-                // remove photo from disk and remove filename from values
-                var file = File(p.join((await docsDir).path, 'photos', values[id]));
-                if (await file.exists()) {
-                  unawaited(file.delete());
-                }
-                setState(() {
-                  values.remove(id);
-                });
-
-              }
-            }
-          },
-          child: Text(values[id] ?? inputField.hint ?? ''),
-        );
-      } else if (inputField.type == 'check') {
-        var value = (values[id] ?? 'false') == 'true';
-        input = CheckboxListTile(
-          value: value,
-          onChanged: (bool? value) {
-            setState(() {
-              if (value!) {
-                values[id] = 'true';
-              } else {
-                values.remove(id);
-                // values[id] = 'false';
-              }
-            });
-          },
-          title: Text(inputField.hint ?? ''),
-        );
-      } else if ((inputField.type == 'date') |  (inputField.type == 'time') | (inputField.type == 'datetime')) {
-        var date_format;
-        if (inputField.type == 'date') {
-          date_format = Constant.date_format;
-        } else if (inputField.type == 'time'){
-          date_format = Constant.time_format;
-        } else {
-          date_format = Constant.datetime_format;
-        }
-        input = TextButton(
-          onPressed: () async {
-            var currentTime;
-            if (values[id] == null) {
-              // start date is now
-              currentTime = DateTime.now();
-            } else {
-              // start date is previous value
-              currentTime = date_format.parse(values[id]!);
-            }
-            if (inputField.type == 'date') {
-              await DatePicker.showDatePicker(context,
-                  showTitleActions: true,
-                  onChanged: (date) {
-                    print('change $date');
-                  },
-                  onConfirm: (date) {
-                    print('confirm $date');
-                    values[id] = date_format.format(date);
-                  },
-                  currentTime: currentTime);
-            } else if (inputField.type == 'time'){
-              await DatePicker.showTimePicker(context,
-                  showTitleActions: true,
-                  onChanged: (date) {
-                    print('change $date');
-                  },
-                  onConfirm: (date) {
-                    print('confirm $date');
-                    values[id] = date_format.format(date);
-                  },
-                  currentTime: currentTime);
-            } else {
-              await DatePicker.showDateTimePicker(context,
-                  showTitleActions: true,
-                  onChanged: (date) {
-                    print('change $date');
-                  },
-                  onConfirm: (date) {
-                    print('confirm $date');
-                    values[id] = date_format.format(date);
-                  },
-                  currentTime: currentTime);
-            }
-          },
-          onLongPress: () async {
-            if (values[id] != null) {
-              var action = await showContinueDialog(context,
-                  texts.removeValueFromId(values[id]!, id),
-                  yesButton: texts.yes,
-                  noButton: texts.no,
-                  title: texts.removeDateTitle);
-              if (action == true) {
-                setState(() {
-                  values.remove(id);
-                });
-              }
-            }
-          },
-          child: Text(values[id] ?? inputField.hint ?? ''),
-        );
-      } else {
-        input = TextFormField(
-          autofocus: (id == inputFieldIds![0]),
-          decoration: InputDecoration(
-              hintText: inputField.hint
-          ),
-          keyboardType: keyboardType,
-          onChanged: (text) {
-            values[id] = text;
-          },
-          validator: validator,
-          inputFormatters: inputFormatters,
-          textInputAction: id == inputFieldIds!.last ? null: TextInputAction.next,
-          onEditingComplete: () => node.nextFocus(), // Move focus to next
-        );
-      }
-      rows.add(Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Expanded(
-              flex: 1,
-              child: Text(inputField.name ?? id),
-            ),
-            Expanded(
-              flex: 2,
-              child: input,
-            )
-          ]
-      ));
     };
 
     // Add Done button
@@ -523,14 +551,51 @@ class _AddMeasurementsState extends State<AddMeasurements> {
         if (_formKey.currentState!.validate()) {
           var added_measurements = false;
           for (var id in inputFieldIds!) {
+            if (locData.inputFieldGroups.containsKey(id)) {
+              var inputFieldGroup = locData.inputFieldGroups[id]!;
+              for (var inputfield_id in inputFieldGroup.inputfields){
+                if (locData.inputFields.containsKey(inputfield_id)){
+
+                }
+              }
+            }
             var inputField = locData.inputFields[id]!;
             if (values.containsKey(id)) {
               if (values[id]!.isEmpty) {
                 if (inputField.required) {
-
                   return;
                 }
                 continue;
+              }
+              if (inputField.type == "number") {
+                // test if value does not exceed maximum value or minimum value
+                if ((location.min_values != null) && location.min_values.containsKey(id)) {
+                  var value = double.parse(values[id]!);
+                  if (value < location.min_values[id]) {
+                    var action = await showContinueDialog(
+                        context,texts.value_is_lower_than_min(id, value, location.min_values[id]),
+                        title:texts.value_is_lower_than_min_title,
+                        yesButton: texts.yes, noButton: texts.no
+                    );
+                    if (action != true) {
+                      return;
+                    }
+                  }
+                }
+
+                if ((location.max_values != null) && location.max_values.containsKey(id)) {
+                  var value = double.parse(values[id]!);
+                  if (value > location.max_values[id]) {
+                    var action = await showContinueDialog(
+                        context,texts.value_is_higher_than_max(id, value, location.max_values[id]),
+                        title:texts.value_is_higher_than_max_title,
+                        yesButton: texts.yes, noButton: texts.no
+                      );
+                    if (action != true) {
+                      return;
+                    }
+                  }
+                }
               }
               var measurement = Measurement(
                   location: widget.locationId,
@@ -616,7 +681,8 @@ class _AddMeasurementsState extends State<AddMeasurements> {
                   icon: const Icon(Icons.delete_outline),
                   onPressed: () async {
                     var action = await showContinueDialog(context,
-                        texts.sureToDeleteMeasurement(measurement.value, measurement.type));
+                        texts.sureToDeleteMeasurement(measurement.value, measurement.type),
+                        yesButton:texts.yes, noButton: texts.no, title: texts.sureToDeleteMeasurementTitle);
                     if (action == true) {
                       deleteMeasurement(measurement);
                     }
