@@ -20,8 +20,8 @@ class Location {
     this.sublocations,
     this.group,
     this.color,
-    this.min,
-    this.max
+    this.min_values,
+    this.max_values
   });
 
   factory Location.fromJson(Map<String, dynamic> json) => _$LocationFromJson(json);
@@ -36,8 +36,8 @@ class Location {
   final Map<String, Location>? sublocations;
   String? group;
   final String? color;
-  final Map<String, double>? min;
-  final Map<String, double>? max;
+  final Map<String, double>? min_values;
+  final Map<String, double>? max_values;
 }
 
 @JsonSerializable()
@@ -45,6 +45,7 @@ class LocationFile {
   LocationFile({
     this.settings,
     this.inputfields,
+    this.inputfield_groups,
     this.groups,
     this.locations,
   });
@@ -55,6 +56,7 @@ class LocationFile {
 
   final Map<String, String>? settings;
   final Map<String, InputField>? inputfields;
+  final Map<String, InputFieldGroup>? inputfield_groups;
   final Map<String, Group>? groups;
   final Map<String, Location>? locations;
 }
@@ -83,6 +85,18 @@ class InputField {
   List<String>? options;
   String? default_value;
   bool required;
+}
+
+@JsonSerializable()
+class InputFieldGroup {
+  InputFieldGroup({
+      required this.inputfields,
+      this.name,
+  });
+  factory InputFieldGroup.fromJson(Map<String, dynamic> json) => _$InputFieldGroupFromJson(json);
+  Map<String, dynamic> toJson() => _$InputFieldGroupToJson(this);
+  List<String> inputfields;
+  String? name;
 }
 
 Map<String, InputField> getDefaultInputFields(){
@@ -117,6 +131,7 @@ class LocationData {
 
   Map<String, Location> locations = <String, Location>{};
   var inputFields = <String, InputField>{};
+  var inputFieldGroups = <String, InputFieldGroup>{};
   var groups = <String, Group>{};
 
   // A static class to hold all data of FieldForm
@@ -127,6 +142,7 @@ class LocationData {
     var file = File(p.join(docsDir.path, 'locations.json'));
     var location_file = LocationFile(locations: locations,
         inputfields: inputFields,
+        inputfield_groups: inputFieldGroups,
         groups: groups);
     var encoder = JsonEncoder.withIndent('  ');
     await file.writeAsString(encoder.convert(location_file.toJson()));

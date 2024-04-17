@@ -44,6 +44,7 @@
 
     "done": "Gereed",
     "sureToDeleteMeasurement": "Weet u zeker dat u de meting {value} van het type {id} wilt verwijderen?",
+    "sureToDeleteMeasurementTitle": "Verwijder meting?",
     "isNotValidNumber": " is geen geldig getal",
     "ignoreFilledValues": "Alle ingevulde waarden worden verwijderd wanneer u deze locatie verlaat. Wilt u nog steeds weggaan?",
     "ignoreFilledValuesTitle": "Weggaan zonder op te slaan?",
@@ -134,5 +135,11 @@
     "required": "verplicht",
     "showPreviousAndNextLocation": "Knoppen vorige/volgende locatie",
 
-    "properties": "Eigenschappen"
+    "properties": "Eigenschappen",
+
+    "value_is_lower_than_min": "De waarde van {inputfield} ({value}) is lager dan {min_value}. Wilt u toch doorgaan?",
+    "value_is_lower_than_min_title": "Waarde te laag",
+
+    "value_is_higher_than_max": "De waarde van {inputfield} ({value}) is hoger dan {max_value}. Wilt u toch doorgaan?",
+    "value_is_higher_than_max_title": "Waarde te hoog"
 }

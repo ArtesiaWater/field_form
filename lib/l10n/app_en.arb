@@ -61,6 +61,7 @@
                     }
                 }
             },
+    "sureToDeleteMeasurementTitle": "Delete measurement?",
     "isNotValidNumber": " is not a valid number",
     "ignoreFilledValues": "All entered values will be deleted when leaving this location. Do you still want to leave?",
     "ignoreFilledValuesTitle": "Leave without saving?",
@@ -166,5 +167,37 @@
     "required": "required",
     "showPreviousAndNextLocation": "Buttons previous/next location",
 
-    "properties": "Properties"
+    "properties": "Properties",
+
+    "value_is_lower_than_min": "The value of {inputfield} ({value}) is lower than {min_value}. Do you want to continue anyway?",
+    "@value_is_lower_than_min": {
+        "placeholders": {
+            "inputfield": {
+                "type": "String"
+            },
+            "value": {
+                "type": "num"
+            },
+            "min_value": {
+                "type": "num"
+            }
+        }
+    },
+    "value_is_lower_than_min_title": "Value too low",
+
+    "value_is_higher_than_max": "The value of {inputfield} ({value}) is higher than {max_value}. Do you want to continue anyway?",
+    "@value_is_higher_than_max": {
+        "placeholders": {
+            "inputfield": {
+                "type": "String"
+            },
+            "value": {
+                "type": "num"
+            },
+            "max_value": {
+                "type": "num"
+            }
+        }
+    },
+    "value_is_higher_than_max_title": "Value too high"
 }

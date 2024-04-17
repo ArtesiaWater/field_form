@@ -80,19 +80,30 @@ class _AddMeasurementsState extends State<AddMeasurements> {
     //inputFieldIds!.removeWhere((id) => !locData.inputFields.containsKey(id));
     // set Default values
     for (final id in inputFieldIds!) {
-      if (locData.inputFields.containsKey(id)) {
-        var inputField = locData.inputFields[id]!;
-        if (inputField.type == 'choice') {
-          if (inputField.default_value != null) {
-            if ((inputField.options ?? <String>[]).contains(
-                inputField.default_value)) {
-              values[id] = inputField.default_value!;
-            }
+      if (locData.inputFieldGroups.containsKey(id)){
+        var inputFieldGroup = locData.inputFieldGroups[id]!;
+        for (var inputfield_id in inputFieldGroup.inputfields) {
+          addDefaultValue(inputfield_id);
+        }
+      } else {
+        addDefaultValue(id);
+      }
+    }
+    getPreviousMeasurements();
+  }
+
+  void addDefaultValue(id){
+    if (locData.inputFields.containsKey(id)) {
+      var inputField = locData.inputFields[id]!;
+      if (inputField.type == 'choice') {
+        if (inputField.default_value != null) {
+          if ((inputField.options ?? <String>[]).contains(
+              inputField.default_value)) {
+            values[id] = inputField.default_value!;
           }
         }
       }
     }
-    getPreviousMeasurements();
   }
 
   void getPreviousMeasurements() async{
@@ -523,6 +534,11 @@ class _AddMeasurementsState extends State<AddMeasurements> {
     // Add a row for each inputField
     for (final id in inputFieldIds!) {
       if (locData.inputFieldGroups.containsKey(id)){
+        rows.add(const Divider(
+          height: 10,
+          thickness: 4,
+          color: Colors.black,
+        ));
         var inputFieldGroup = locData.inputFieldGroups[id]!;
         rows.add(Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -535,11 +551,13 @@ class _AddMeasurementsState extends State<AddMeasurements> {
             rows.add(getRowForInputfield(inputfield_id));
           }
         }
-        continue;
-      } else {
-        if (locData.inputFields.containsKey(id)) {
-          rows.add(getRowForInputfield(id));
-        }
+        rows.add(const Divider(
+          height: 10,
+          thickness: 4,
+          color: Colors.black,
+        ));
+      } else if (locData.inputFields.containsKey(id)){
+        rows.add(getRowForInputfield(id));
       }
     };
 
@@ -555,60 +573,22 @@ class _AddMeasurementsState extends State<AddMeasurements> {
               var inputFieldGroup = locData.inputFieldGroups[id]!;
               for (var inputfield_id in inputFieldGroup.inputfields){
                 if (locData.inputFields.containsKey(inputfield_id)){
-
-                }
-              }
-            }
-            var inputField = locData.inputFields[id]!;
-            if (values.containsKey(id)) {
-              if (values[id]!.isEmpty) {
-                if (inputField.required) {
-                  return;
-                }
-                continue;
-              }
-              if (inputField.type == "number") {
-                // test if value does not exceed maximum value or minimum value
-                if ((location.min_values != null) && location.min_values.containsKey(id)) {
-                  var value = double.parse(values[id]!);
-                  if (value < location.min_values[id]) {
-                    var action = await showContinueDialog(
-                        context,texts.value_is_lower_than_min(id, value, location.min_values[id]),
-                        title:texts.value_is_lower_than_min_title,
-                        yesButton: texts.yes, noButton: texts.no
-                    );
-                    if (action != true) {
-                      return;
-                    }
-                  }
-                }
-
-                if ((location.max_values != null) && location.max_values.containsKey(id)) {
-                  var value = double.parse(values[id]!);
-                  if (value > location.max_values[id]) {
-                    var action = await showContinueDialog(
-                        context,texts.value_is_higher_than_max(id, value, location.max_values[id]),
-                        title:texts.value_is_higher_than_max_title,
-                        yesButton: texts.yes, noButton: texts.no
-                      );
-                    if (action != true) {
-                      return;
-                    }
+                  var code = await storeMeasurement(inputfield_id);
+                  if (code == 0) {
+                    return;
+                  } else if (code == 2){
+                    added_measurements = true;
                   }
                 }
               }
-              var measurement = Measurement(
-                  location: widget.locationId,
-                  datetime: now,
-                  type: id,
-                  value: values[id]!);
-              await widget.measurementProvider.insert(measurement);
-              added_measurements = true;
-            } else if (inputField.required) {
-              showErrorDialog(context, inputField.name ?? id + texts.isRequired);
-              return;
+            } else {
+              var code = await storeMeasurement(id);
+              if (code == 0) {
+                return;
+              } else if (code == 2){
+                added_measurements = true;
+              }
             }
-
           }
           if (added_measurements) {
             if (widget.prefs.getBool('add_user_to_measurements')?? false){
@@ -696,6 +676,60 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       ));
     }
     return rows;
+  }
+
+  Future<int> storeMeasurement(id) async {
+    var inputField = locData.inputFields[id]!;
+    if (values.containsKey(id)) {
+      if (values[id]!.isEmpty) {
+        if (inputField.required) {
+          showErrorDialog(context, inputField.name ?? id + texts.isRequired);
+          return 0;
+        }
+        return 1;
+      }
+      if (inputField.type == "number") {
+        // test if value does not exceed maximum value or minimum value
+        if ((location.min_values != null) && location.min_values.containsKey(id)) {
+          var value = double.parse(values[id]!);
+          if (value < location.min_values[id]) {
+            var action = await showContinueDialog(
+                context,texts.value_is_lower_than_min(id, value, location.min_values[id]),
+                title:texts.value_is_lower_than_min_title,
+                yesButton: texts.yes, noButton: texts.no
+            );
+            if (action != true) {
+              return 0;
+            }
+          }
+        }
+
+        if ((location.max_values != null) && location.max_values.containsKey(id)) {
+          var value = double.parse(values[id]!);
+          if (value > location.max_values[id]) {
+            var action = await showContinueDialog(
+                context,texts.value_is_higher_than_max(id, value, location.max_values[id]),
+                title:texts.value_is_higher_than_max_title,
+                yesButton: texts.yes, noButton: texts.no
+            );
+            if (action != true) {
+              return 0;
+            }
+          }
+        }
+      }
+      var measurement = Measurement(
+          location: widget.locationId,
+          datetime: now,
+          type: id,
+          value: values[id]!);
+      await widget.measurementProvider.insert(measurement);
+      return 2;
+    } else if (inputField.required) {
+      showErrorDialog(context, inputField.name ?? id + texts.isRequired);
+      return 0;
+    }
+    return 1;
   }
 
   String? numberValidator(String? value) {

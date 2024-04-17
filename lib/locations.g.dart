@@ -20,10 +20,10 @@ Location _$LocationFromJson(Map<String, dynamic> json) => Location(
       ),
       group: json['group'] as String?,
       color: json['color'] as String?,
-      min: (json['min'] as Map<String, dynamic>?)?.map(
+      min_values: (json['min_values'] as Map<String, dynamic>?)?.map(
         (k, e) => MapEntry(k, (e as num).toDouble()),
       ),
-      max: (json['max'] as Map<String, dynamic>?)?.map(
+      max_values: (json['max_values'] as Map<String, dynamic>?)?.map(
         (k, e) => MapEntry(k, (e as num).toDouble()),
       ),
     );
@@ -38,8 +38,8 @@ Map<String, dynamic> _$LocationToJson(Location instance) => <String, dynamic>{
       'sublocations': instance.sublocations,
       'group': instance.group,
       'color': instance.color,
-      'min': instance.min,
-      'max': instance.max,
+      'min_values': instance.min_values,
+      'max_values': instance.max_values,
     };
 
 LocationFile _$LocationFileFromJson(Map<String, dynamic> json) => LocationFile(
@@ -48,6 +48,11 @@ LocationFile _$LocationFileFromJson(Map<String, dynamic> json) => LocationFile(
       ),
       inputfields: (json['inputfields'] as Map<String, dynamic>?)?.map(
         (k, e) => MapEntry(k, InputField.fromJson(e as Map<String, dynamic>)),
+      ),
+      inputfield_groups:
+          (json['inputfield_groups'] as Map<String, dynamic>?)?.map(
+        (k, e) =>
+            MapEntry(k, InputFieldGroup.fromJson(e as Map<String, dynamic>)),
       ),
       groups: (json['groups'] as Map<String, dynamic>?)?.map(
         (k, e) => MapEntry(k, Group.fromJson(e as Map<String, dynamic>)),
@@ -61,6 +66,7 @@ Map<String, dynamic> _$LocationFileToJson(LocationFile instance) =>
     <String, dynamic>{
       'settings': instance.settings,
       'inputfields': instance.inputfields,
+      'inputfield_groups': instance.inputfield_groups,
       'groups': instance.groups,
       'locations': instance.locations,
     };
@@ -83,6 +89,20 @@ Map<String, dynamic> _$InputFieldToJson(InputField instance) =>
       'options': instance.options,
       'default_value': instance.default_value,
       'required': instance.required,
+    };
+
+InputFieldGroup _$InputFieldGroupFromJson(Map<String, dynamic> json) =>
+    InputFieldGroup(
+      inputfields: (json['inputfields'] as List<dynamic>)
+          .map((e) => e as String)
+          .toList(),
+      name: json['name'] as String?,
+    );
+
+Map<String, dynamic> _$InputFieldGroupToJson(InputFieldGroup instance) =>
+    <String, dynamic>{
+      'inputfields': instance.inputfields,
+      'name': instance.name,
     };
 
 Group _$GroupFromJson(Map<String, dynamic> json) => Group(

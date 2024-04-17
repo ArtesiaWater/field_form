@@ -726,6 +726,11 @@ class _MyAppState extends State<MyApp> {
     } else {
       locData.inputFields = location_file.inputfields!;
     }
+    if (location_file.inputfield_groups == null) {
+      locData.inputFieldGroups = <String, InputFieldGroup>{};
+    } else {
+      locData.inputFieldGroups = location_file.inputfield_groups!;
+    }
     if (location_file.groups == null) {
       locData.groups = <String, Group>{};
     } else {
