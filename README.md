@@ -29,6 +29,7 @@ Currenly FieldForm uses two types of files: location- and measurement-files. Mea
 A location file contains the data of the locations, locations-groups, inputfields and settings. The location file is a json-file, of which the structure is described below, in simplified Dart-Code. Each field is preceded by the variable-type. When a variable is optional, which is the case for most variables, this type is followed by a question-mark. A short description follows the colon after the variable-name.
 * Map<String, String>? settings: settings can be specified by key-value pairs.
 * Map<String, InputField>? inputfields: specified in a map with inputfield-id's as keys.
+* Map<String, InputFieldGroup>? inputfield_groups: specified in a map with inputfield-id's as keys (form version 1.1.5).
 * Map<String, Group>? groups: specified in a map with group-id's as keys.
 * Map<String, Location>? locations: specified in a map with location-id's as keys.
 
@@ -40,6 +41,10 @@ where:
 * String? name: the name to display, use inputfield-id when null.
 * List<String>? options: the options between which the user can choose when type='choice' or type='multichoice'.
 * String? default_value: the default value for an inputfield, only supported for type='choice'.
+
+**InputFieldGroup**:
+* List<String> inputfields: a list of inputfield-ids that belong to this group.
+* String? name: the name to display, use inputfield_group-id when null.
 
 **Group**:
 * String? name: the name to display, use group-id when null.
@@ -57,7 +62,7 @@ where:
 * String? group: the group-id that a location belongs to.
 * String? color: The color of the marker on the map. Can be 'red', 'orange', 'yellow', 'green', 'cyan', 'azure', 'blue', 'violet', 'margenta' or 'rose'. The color can also be a hex-string, like '#0000FF' (blue) or '#FFFF00' (yellow). As these colors are converted to a hue-value to transform the original Google Maps marker, '#000000' (black) or '#FFFFFF' (white) do not give the expected result.
 
-An example of the contents of a location file without settings, but with inputfields, groups, locations and sublocations is:
+An example of the contents of a location file without settings or inputfield-groups, but with inputfields, groups, locations and sublocations is:
 ```json
 {
   "settings": {
@@ -173,7 +178,7 @@ Possible keys for the settings are:
 Boolean settings will be either true or false. To set a setting to true, use a string like 'yes', 'Yes', 'true' or 'True'. Otherwise the setting will be set to false.
 
 ### Measurement File
-A measurement-file contains measurements performed by the user or other users. The measurement-file is a ';'-delimited csv-file with the headers LOCATION, DATE, TIME, TYPE, VALUE.
+A measurement-file contains measurements performed by the user or other users. The measurement-file is a ';'-delimited csv-file with the header LOCATION;DATE;TIME;TYPE;VALUE.
 * LOCATION: The location- or sublocation-id
 * DATE: the date in yyyy-mm-dd notation
 * TIME: the time in HH:MM:SS notation
