@@ -35,6 +35,15 @@ class TakePictureScreenAwesome extends StatelessWidget {
                 // },
                 exifPreferences: ExifPreferences(saveGPSLocation: true),
             ),
+            previewFit: CameraPreviewFit.contain,
+            topActionsBuilder: (state) {
+              return AwesomeTopActions(
+                state: state,
+                children: [AwesomeFlashButton(
+                  state: state,
+                ),],
+              );
+            },
             onMediaTap: (mediaCapture) {
               resizeImage(mediaCapture.captureRequest.path, filePath, resolution);
               Navigator.pop(context, true);
