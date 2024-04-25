@@ -6,6 +6,7 @@ import 'package:field_form/photo.dart';
 import 'package:field_form/properties.dart';
 import 'package:field_form/locations.dart';
 import 'package:field_form/measurements.dart';
+import 'package:field_form/take_picture_screen_awesome.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart';
@@ -16,8 +17,6 @@ import 'package:path/path.dart' as p;
 import 'constants.dart';
 import 'ftp.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:camera/camera.dart';
-import 'take_picture_screen.dart';
 
 class AddMeasurements extends StatefulWidget {
   AddMeasurements({key, required this.locationId, this.parentId,
@@ -42,6 +41,8 @@ class _AddMeasurementsState extends State<AddMeasurements> {
   List<Measurement> measurements = <Measurement>[];
   var isLoading = false;
   List<String>? inputFieldIds;
+  String? firstInputField;
+  String? lastInputField;
   final _formKey = GlobalKey<FormState>();
   late AppLocalizations texts;
   var changedMeasurements;
@@ -83,9 +84,17 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       if (locData.inputFieldGroups.containsKey(id)){
         var inputFieldGroup = locData.inputFieldGroups[id]!;
         for (var inputfield_id in inputFieldGroup.inputfields) {
+          if (firstInputField == null){
+            firstInputField = inputfield_id;
+          }
+          lastInputField = inputfield_id;
           addDefaultValue(inputfield_id);
         }
       } else {
+        if (firstInputField == null){
+          firstInputField = id;
+        }
+        lastInputField = id;
         addDefaultValue(id);
       }
     }
@@ -194,20 +203,6 @@ class _AddMeasurementsState extends State<AddMeasurements> {
           padding: EdgeInsets.only(right: 20.0),
           child: GestureDetector(
             onTap: () async {
-              // Obtain a list of the available cameras on the device.
-              final cameras = await availableCameras();
-              if (cameras.isEmpty){
-                return;
-              }
-              // Get a specific camera from the list of available cameras.
-              final firstCamera = cameras.first;
-              // Open the camera screen
-              await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) {
-                  return TakePictureScreen(camera: firstCamera);
-                }),
-              );
             },
             child: Icon(
               Icons.camera_alt,
@@ -338,36 +333,26 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       input = TextButton(
         onPressed: () async {
           if (values[id] == null) {
-            // take a new photo
-            // Obtain a list of the available cameras on the device.
-            final cameras = await availableCameras();
-            if (cameras.isEmpty){
-              return;
+            var docsDir = getApplicationDocumentsDirectory();
+            var dir = Directory(p.join((await docsDir).path, 'photos'));
+            if (!dir.existsSync()){
+              await dir.create();
             }
-            // Get a specific camera from the list of available cameras.
-            final firstCamera = cameras.first;
-            // Open the camera screen
-            final image = await Navigator.push(
+            var name = id + '_' + widget.locationId + '_' +
+                Constant.file_datetime_format.format(now) + '.jpg';
+            var filePath = p.join(dir.path, name);
+            final picture_taken = await Navigator.push(
               context,
               MaterialPageRoute(builder: (context) {
                 var resolution = widget.prefs.getString('photo_resolution');
-                return TakePictureScreen(camera: firstCamera, resolution: resolution);
+                return TakePictureScreenAwesome(filePath: filePath, resolution: resolution, title:name);
               }),
             );
-            if (image != null) {
-              // copy the image to the documents-directory
-              var name = id + '_' + widget.locationId + '_' +
-                  Constant.file_datetime_format.format(now) + '.jpg';
+            if (picture_taken){
               setState(() {
                 // Set the filename as the measurement
                 values[id] = name;
               });
-              var docsDir = getApplicationDocumentsDirectory();
-              var dir = Directory(p.join((await docsDir).path, 'photos'));
-              if (!dir.existsSync()){
-                await dir.create();
-              }
-              await File(image.path).copy(p.join(dir.path, name));
             }
           } else {
             // Show the current photo
@@ -387,6 +372,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
               var file = File(p.join((await docsDir).path, 'photos', values[id]));
               if (await file.exists()) {
                 unawaited(file.delete());
+                imageCache.clear();
               }
               setState(() {
                 values.remove(id);
@@ -435,33 +421,21 @@ class _AddMeasurementsState extends State<AddMeasurements> {
           if (inputField.type == 'date') {
             await DatePicker.showDatePicker(context,
                 showTitleActions: true,
-                onChanged: (date) {
-                  print('change $date');
-                },
                 onConfirm: (date) {
-                  print('confirm $date');
                   values[id] = date_format.format(date);
                 },
                 currentTime: currentTime);
           } else if (inputField.type == 'time'){
             await DatePicker.showTimePicker(context,
                 showTitleActions: true,
-                onChanged: (date) {
-                  print('change $date');
-                },
                 onConfirm: (date) {
-                  print('confirm $date');
                   values[id] = date_format.format(date);
                 },
                 currentTime: currentTime);
           } else {
             await DatePicker.showDateTimePicker(context,
                 showTitleActions: true,
-                onChanged: (date) {
-                  print('change $date');
-                },
                 onConfirm: (date) {
-                  print('confirm $date');
                   values[id] = date_format.format(date);
                 },
                 currentTime: currentTime);
@@ -486,7 +460,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
     } else {
       final node = FocusScope.of(context);
       input = TextFormField(
-        autofocus: (id == inputFieldIds![0]),
+        autofocus: (id == firstInputField),
         decoration: InputDecoration(
             hintText: inputField.hint
         ),
@@ -496,7 +470,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
         },
         validator: validator,
         inputFormatters: inputFormatters,
-        textInputAction: id == inputFieldIds!.last ? null: TextInputAction.next,
+        textInputAction: id == lastInputField ? null: TextInputAction.next,
         onEditingComplete: () => node.nextFocus(), // Move focus to next
       );
     }

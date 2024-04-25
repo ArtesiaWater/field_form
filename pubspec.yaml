@@ -43,6 +43,9 @@ dependencies:
   http: ^1.2.1
   flutter_localization: ^0.2.0
   camera:
+  camerawesome:
+    git:
+      url: https://github.com/Apparence-io/CamerAwesome
   dartssh2: ^2.4.1
   flutter_datetime_picker_plus: ^2.0.1
   pdfx: ^2.3.0
