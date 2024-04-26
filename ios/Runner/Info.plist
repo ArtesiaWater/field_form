@@ -39,6 +39,8 @@
 	<string>FieldForm needs access to the photo library to look for location or measurement-data.</string>
 	<key>NSCameraUsageDescription</key>
     <string>FieldForm needs access to the camera to take photos at measurement-locations.</string>
+	<key>NSMicrophoneUsageDescription</key>
+    <string>To enable microphone access when recording video</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

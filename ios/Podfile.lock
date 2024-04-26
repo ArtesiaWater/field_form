@@ -1,6 +1,9 @@
 PODS:
   - camera_avfoundation (0.0.1):
     - Flutter
+  - camerawesome (0.0.1):
+    - Flutter
+    - JPSVolumeButtonHandler
   - device_info_plus (0.0.1):
     - Flutter
   - DKImagePickerController/Core (4.3.2):
@@ -51,6 +54,7 @@ PODS:
   - GoogleMaps/Base (5.2.0)
   - GoogleMaps/Maps (5.2.0):
     - GoogleMaps/Base
+  - JPSVolumeButtonHandler (1.0.5)
   - map_launcher (0.0.1):
     - Flutter
   - path_provider_foundation (0.0.1):
@@ -76,6 +80,7 @@ PODS:
 
 DEPENDENCIES:
   - camera_avfoundation (from `.symlinks/plugins/camera_avfoundation/ios`)
+  - camerawesome (from `.symlinks/plugins/camerawesome/ios`)
   - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
   - file_picker (from `.symlinks/plugins/file_picker/ios`)
   - Flutter (from `Flutter`)
@@ -95,6 +100,7 @@ SPEC REPOS:
     - DKImagePickerController
     - DKPhotoGallery
     - GoogleMaps
+    - JPSVolumeButtonHandler
     - SDWebImage
     - SwiftyGif
     - ZIPFoundation
@@ -102,6 +108,8 @@ SPEC REPOS:
 EXTERNAL SOURCES:
   camera_avfoundation:
     :path: ".symlinks/plugins/camera_avfoundation/ios"
+  camerawesome:
+    :path: ".symlinks/plugins/camerawesome/ios"
   device_info_plus:
     :path: ".symlinks/plugins/device_info_plus/ios"
   file_picker:
@@ -131,6 +139,7 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   camera_avfoundation: 759172d1a77ae7be0de08fc104cfb79738b8a59e
+  camerawesome: 1e06540f60158809bc70f398ed1ac2cf93fe4188
   device_info_plus: c6fb39579d0f423935b0c9ce7ee2f44b71b9fce6
   DKImagePickerController: b5eb7f7a388e4643264105d648d01f727110fc3d
   DKPhotoGallery: fdfad5125a9fdda9cc57df834d49df790dbb4179
@@ -140,6 +149,7 @@ SPEC CHECKSUMS:
   flutter_localization: f43b18844a2b3d2c71fd64f04ffd6b1e64dd54d4
   google_maps_flutter_ios: f135b968a67c05679e0a53538e900b5c174b0d99
   GoogleMaps: 025272d5876d3b32604e5c080dc25eaf68764693
+  JPSVolumeButtonHandler: 53110330c9168ed325def93eabff39f0fe3e8082
   map_launcher: e325db1261d029ff33e08e03baccffe09593ffea
   path_provider_foundation: 3784922295ac71e43754bd15e0653ccfd36a147c
   pdfx: 7b876b09de8b7a0bf444a4f82b439ffcff4ee1ec
