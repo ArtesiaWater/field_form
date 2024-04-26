@@ -39,9 +39,23 @@ class TakePictureScreenAwesome extends StatelessWidget {
             topActionsBuilder: (state) {
               return AwesomeTopActions(
                 state: state,
-                children: [AwesomeFlashButton(
-                  state: state,
-                ),],
+                children: [],
+              );
+            },
+            bottomActionsBuilder: (state) => AwesomeBottomActions(
+              state: state,
+              left: AwesomeCameraSwitchButton(
+                state: state,
+              ),
+              right: AwesomeFlashButton(
+                state: state,
+              ),
+            ),
+            middleContentBuilder: (state) {
+              return Column(
+                  children: [AwesomeZoomSelector(
+                    state: state,
+                  ),]
               );
             },
             onMediaTap: (mediaCapture) {
@@ -91,8 +105,8 @@ void resizeImage (filePathOriginal, filePathNew, resolution) async {
     final image = img.decodeJpg(File(filePathOriginal).readAsBytesSync());
     if (image != null){
       final resizedImage = img.copyResize(image, width: width);
-      File(filePathNew).writeAsBytesSync(await img.encodeJpg(resizedImage));
-      //img.encodeJpgFile(filePath, resizedImage);
+      //File(filePathNew).writeAsBytesSync(await img.encodeJpg(resizedImage));
+      img.encodeJpgFile(filePathNew, resizedImage);
     }
   } else {
     await File(filePathOriginal).copy(filePathNew);
