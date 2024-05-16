@@ -43,9 +43,7 @@ Map<String, dynamic> _$LocationToJson(Location instance) => <String, dynamic>{
     };
 
 LocationFile _$LocationFileFromJson(Map<String, dynamic> json) => LocationFile(
-      settings: (json['settings'] as Map<String, dynamic>?)?.map(
-        (k, e) => MapEntry(k, e as String),
-      ),
+      settings: json['settings'] as Map<String, dynamic>?,
       inputfields: (json['inputfields'] as Map<String, dynamic>?)?.map(
         (k, e) => MapEntry(k, InputField.fromJson(e as Map<String, dynamic>)),
       ),

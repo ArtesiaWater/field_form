@@ -54,7 +54,7 @@ class LocationFile {
       _$LocationFileFromJson(json);
   Map<String, dynamic> toJson() => _$LocationFileToJson(this);
 
-  final Map<String, String>? settings;
+  final Map<String, dynamic>? settings;
   final Map<String, InputField>? inputfields;
   final Map<String, InputFieldGroup>? inputfield_groups;
   final Map<String, Group>? groups;

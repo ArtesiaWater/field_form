@@ -339,7 +339,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 }
 
-void parseSettings(Map<String, String> settings, SharedPreferences prefs) async{
+void parseSettings(Map<String, dynamic> settings, SharedPreferences prefs) async{
   for (var key in settings.keys) {
     switch (key) {
       case 'email_address':
@@ -352,9 +352,16 @@ void parseSettings(Map<String, String> settings, SharedPreferences prefs) async{
       case 'wms_layers':
       case 'user_inputfield':
       case 'user':
-      case 'mark_measured_days':
-      // string setting
+        // string setting
         await prefs.setString(key, settings[key]!);
+        break;
+      case 'mark_measured_days':
+        // integer setting
+        var value = settings[key]!;
+        if (value is String) {
+          value = int.parse(value);
+        }
+        await prefs.setInt(key, value);
         break;
       case 'use_ftps':
       case 'use_sftp':
@@ -371,9 +378,12 @@ void parseSettings(Map<String, String> settings, SharedPreferences prefs) async{
       case 'request_user':
       case 'add_user_to_measurements':
       case 'mark_not_measured':
-      // boolean setting
-        var stringValue = settings[key]!.toLowerCase();
-        var value = (stringValue == 'yes') || (stringValue == 'true');
+        // boolean setting
+        var value = settings[key]!;
+        if (value is String) {
+          var stringValue = value.toLowerCase();
+          value = (stringValue == 'yes') || (stringValue == 'true');
+        }
         if (key == 'use_ftps' && value){
           await prefs.setBool('use_sftp', false);
         }
