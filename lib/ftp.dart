@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:ftpconnect/ftpconnect.dart';
 import 'package:path/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,9 +12,10 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'dialogs.dart';
 
 connectToFtp(BuildContext context, SharedPreferences prefs, {path, transferType = TransferType.binary}) async {
+  final secure_storage = FlutterSecureStorage();
   var host = prefs.getString('ftp_hostname') ?? '';
-  var user = prefs.getString('ftp_username') ?? '';
-  var pass = prefs.getString('ftp_password') ?? '';
+  var user = await secure_storage.read(key: 'ftp_username') ?? '';
+  var pass = await secure_storage.read(key: 'ftp_password') ?? '';
   var use_ftps = prefs.getBool('use_ftps') ?? false;
   var use_sftp = prefs.getBool('use_sftp') ?? false;
   var texts = AppLocalizations.of(context)!;

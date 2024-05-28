@@ -1,5 +1,6 @@
 import 'package:field_form/inputfield_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_settings_ui/flutter_settings_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -20,10 +21,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   var isLoading = false;
   var redrawMap = false;
   late AppLocalizations texts;
+  var ftp_username;
+  var ftp_password;
 
   @override
   void initState() {
     super.initState();
+    final secure_storage = new FlutterSecureStorage();
+    ftp_username = secure_storage.read(key: 'ftp_username');
+    ftp_password = secure_storage.read(key: 'ftp_password');
   }
 
   @override
@@ -59,10 +65,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       'veryHigh': texts.photoResolutionVeryHigh,
       'ultraHigh': texts.photoResolutionUltraHigh,
       'max': texts.photoResolutionMax,
-    };
-    var password = '';
-    if (widget.prefs.containsKey('ftp_password')) {
-      password = widget.prefs.getString('ftp_password')!;
     };
     final wmsOn = widget.prefs.getBool('wms_on') ?? false;
     final mark_measured_days = widget.prefs.getInt('mark_measured_days') ?? 0;
@@ -249,7 +251,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             SettingsTile(
               title: Text(texts.username),
-              description: Text(widget.prefs.getString('ftp_username') ?? ""),
+              description: FutureBuilder<String?>(
+                future: ftp_username,
+                builder: (BuildContext context, AsyncSnapshot<String?> snapshot) {
+                  if (snapshot.hasData) {
+                    return Text(snapshot.data ?? "");
+                  } else {
+                    return Text('');
+                  }
+                }
+                ),
               leading: Icon(Icons.person),
               onPressed: (BuildContext context) {
                 editStringSetting(context, 'ftp_username', texts.changeFtpUsername);
@@ -257,7 +268,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             SettingsTile(
               title: Text(texts.password),
-              description: Text('*' * password.length),
+              description: FutureBuilder<String?>(
+                  future: ftp_password,
+                  builder: (BuildContext context, AsyncSnapshot<String?> snapshot) {
+                    if (snapshot.hasData) {
+                      return Text('*' * (snapshot.data ?? "").length);
+                    } else {
+                      return Text('');
+                    }
+                  }
+              ),
               leading: Icon(Icons.lock),
               onPressed: (BuildContext context) {
                 editStringSetting(context, 'ftp_password', texts.changeFtpPassword, password: true);
@@ -333,7 +353,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final new_setting = await editStringSettingDialog(context, key, title, widget.prefs, texts, password:password, default_value:default_value);
     if (new_setting != null){
       setState(() {
-        widget.prefs.setString(key, new_setting);
+        if (key == "ftp_username" || key == "ftp_password") {
+          // Save to SecureStorage
+          final secure_storage = new FlutterSecureStorage();
+          secure_storage.write(key: key, value: new_setting);
+          if (key == "ftp_username"){
+            ftp_username = secure_storage.read(key: 'ftp_username');
+          } else if (key == "ftp_password"){
+            ftp_password = secure_storage.read(key: 'ftp_password');
+          }
+        } else {
+          // save to SharedPreferences
+          widget.prefs.setString(key, new_setting);
+        }
       });
     }
   }
@@ -342,11 +374,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
 void parseSettings(Map<String, dynamic> settings, SharedPreferences prefs) async{
   for (var key in settings.keys) {
     switch (key) {
+      case 'ftp_username':
+      case 'ftp_password':
+        // string setting, to be stores securely
+        final secure_storage = new FlutterSecureStorage();
+        secure_storage.write(key: key, value: settings[key]!);
       case 'email_address':
       case 'photo_resolution':
       case 'ftp_hostname':
-      case 'ftp_username':
-      case 'ftp_password':
       case 'ftp_path':
       case 'wms_url':
       case 'wms_layers':

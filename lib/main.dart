@@ -4,7 +4,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
-import 'package:easy_search_bar/easy_search_bar.dart';
+import 'package:flutter_easy_search_bar/flutter_easy_search_bar.dart';
 import 'package:field_form/constants.dart';
 import 'package:field_form/new_location_screen.dart';
 import 'package:field_form/settings.dart';
@@ -13,6 +13,7 @@ import 'package:field_form/wms.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_archive/flutter_archive.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:map_launcher/map_launcher.dart' as map_launcher;
 import 'package:path_provider/path_provider.dart';
@@ -141,6 +142,20 @@ class _MyAppState extends State<MyApp> {
     setState(() {
       maptype = prefs!.getString('map_type') ?? 'normal';
     });
+    var ftp_username = prefs!.getString('ftp_username');
+    var ftp_password = prefs!.getString('ftp_password');
+    if (ftp_username != null || ftp_password != null){
+      // Store username and/or password in secure storage
+      final storage = new FlutterSecureStorage();
+      if (ftp_username != null){
+        storage.write(key: 'ftp_username', value: ftp_username);
+        prefs!.remove('ftp_username');
+      }
+      if (ftp_password != null){
+        storage.write(key: 'ftp_password', value: ftp_password);
+        prefs!.remove('ftp_password');
+      }
+    }
   }
 
   @override
