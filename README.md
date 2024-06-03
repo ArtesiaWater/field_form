@@ -166,6 +166,7 @@ Possible keys for the settings are:
 * 'ftp_password' (string)
 * 'ftp_path' (string)
 * 'use_ftps' (boolean)
+* 'use_implicit_ftps' (boolean)
 * 'use_sftp' (boolean)
 * 'only_export_new_data' (boolean)
 * 'show_previous_and_next_location' (boolean)

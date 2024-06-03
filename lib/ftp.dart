@@ -18,6 +18,7 @@ connectToFtp(BuildContext context, SharedPreferences prefs, {path, transferType 
   var pass = await secure_storage.read(key: 'ftp_password') ?? '';
   var use_ftps = prefs.getBool('use_ftps') ?? false;
   var use_sftp = prefs.getBool('use_sftp') ?? false;
+  var use_implicit_ftps = prefs.getBool('use_implicit_ftps') ?? false;
   var texts = AppLocalizations.of(context)!;
 
   if (host == '') {
@@ -30,7 +31,6 @@ connectToFtp(BuildContext context, SharedPreferences prefs, {path, transferType 
     var idx = host.indexOf('/');
     host = host.substring(0, idx);
   }
-
   if (use_sftp) {
     try {
       final client = SSHClient(
@@ -41,12 +41,18 @@ connectToFtp(BuildContext context, SharedPreferences prefs, {path, transferType 
       final sftp = await client.sftp();
       return sftp;
     } catch (e) {
-      showErrorDialog(
-          context, e.toString(), title: texts.connectToFtpFailed);
+      showErrorDialog(context, e.toString(), title: texts.connectToFtpFailed);
       return null;
     }
   }
-  var securityType = use_ftps ? SecurityType.FTPS : SecurityType.FTP;
+  var securityType;
+  if (use_implicit_ftps){
+    securityType = SecurityType.FTPS;
+  } else if (use_ftps) {
+    securityType = SecurityType.FTPES;
+  } else {
+    securityType = SecurityType.FTP;
+  }
   var ftpConnect = FTPConnect(host, user: user, pass: pass, timeout: 5, securityType: securityType);
   try {
     await ftpConnect.connect();
@@ -62,21 +68,21 @@ connectToFtp(BuildContext context, SharedPreferences prefs, {path, transferType 
     return ftpConnect;
   }
   // we do need to change path
-  var success = await changeDirectory(ftpConnect, context, path);
+  var success = await changeDirectory(ftpConnect, context, path, prefs);
   if (!success){
     return null;
   }
   return ftpConnect;
 }
 
-Future<bool> changeDirectory(FTPConnect ftpConnect, BuildContext context, String path) async {
+Future<bool> changeDirectory(FTPConnect connection, BuildContext context, String path, SharedPreferences prefs) async {
   var success = true;
   for (var folder in path.split('/')){
     if (folder.isNotEmpty) {
       var success;
       var error_text;
       try {
-        success = await ftpConnect.changeDirectory(folder);
+        success = await connection.changeDirectory(folder);
         if (!success) {
           var texts = AppLocalizations.of(context)!;
           error_text = texts.unableToFindPathOnFtp + folder;
@@ -86,8 +92,7 @@ Future<bool> changeDirectory(FTPConnect ftpConnect, BuildContext context, String
         error_text = e.toString();
       }
       if (!success) {
-        await ftpConnect.disconnect();
-
+        await connection.disconnect();
         showErrorDialog(context, error_text);
         return success;
       }
@@ -206,6 +211,7 @@ Future<String?> chooseFtpPath(connection, BuildContext context, SharedPreference
   if (names == null) {
     return null;
   }
+  names.insert(0, "");
   var options = <Widget>[];
   for (var name in names){
     options.add(SimpleDialogOption(

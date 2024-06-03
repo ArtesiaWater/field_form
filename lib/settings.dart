@@ -304,8 +304,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 } else {
                   setState(() {isLoading = false;});
                 }
-                //editStringSetting(context, 'ftp_path', 'Change ftp path');
               },
+
             ),
             if (true) SettingsTile.switchTile(
               title: Text(texts.useFtps),
@@ -316,6 +316,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   widget.prefs.setBool('use_ftps', value);
                   if (value){
                     widget.prefs.setBool('use_sftp', false);
+                    widget.prefs.setBool('use_implicit_ftps', false);
+                  }
+                });
+              },
+            ),
+            SettingsTile.switchTile(
+              title: Text(texts.useImplicitFtps),
+              leading: Icon(Icons.security),
+              initialValue: widget.prefs.getBool('use_implicit_ftps') ?? false,
+              onToggle: (bool value) {
+                setState(() {
+                  widget.prefs.setBool('use_implicit_ftps', value);
+                  if (value){
+                    widget.prefs.setBool('use_sftp', false);
+                    widget.prefs.setBool('use_ftps', false);
                   }
                 });
               },
@@ -329,6 +344,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   widget.prefs.setBool('use_sftp', value);
                   if (value){
                     widget.prefs.setBool('use_ftps', false);
+                    widget.prefs.setBool('use_implicit_ftps', false);
                   }
                 });
               },
@@ -421,8 +437,14 @@ void parseSettings(Map<String, dynamic> settings, SharedPreferences prefs) async
         }
         if (key == 'use_ftps' && value){
           await prefs.setBool('use_sftp', false);
+          await prefs.setBool('use_implicit_ftps', false);
         }
         if (key == 'use_sftp' && value){
+          await prefs.setBool('use_ftps', false);
+          await prefs.setBool('use_implicit_ftps', false);
+        }
+        if (key == 'use_implicit_ftps' && value){
+          await prefs.setBool('use_sftp', false);
           await prefs.setBool('use_ftps', false);
         }
         await prefs.setBool(key, value);

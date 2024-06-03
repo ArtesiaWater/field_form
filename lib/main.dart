@@ -1043,7 +1043,7 @@ class _MyAppState extends State<MyApp> {
         var path = prefs.getString('ftp_path') ?? '';
         if (!use_sftp && path.isNotEmpty) {
           // Go to root of ftp server again
-          var success = await changeDirectory(ftp, context, '..');
+          var success = await changeDirectory(ftp, context, '..', prefs);
           if (!success){
             setState(() {isLoading = false;});
             return;
@@ -1071,7 +1071,7 @@ class _MyAppState extends State<MyApp> {
 
       if (!use_sftp){
         // Go to the specified folder
-        var success = await changeDirectory(ftp, context, path);
+        var success = await changeDirectory(ftp, context, path, prefs);
         if (!success) {
           setState(() {isLoading = false;});
           return;

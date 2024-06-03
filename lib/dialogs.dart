@@ -1,6 +1,7 @@
 
 
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void showLoaderDialog(BuildContext context, {String text='Loading...'}) {
@@ -272,7 +273,14 @@ Future<int?> chooseMeasuredInterval(BuildContext context, SharedPreferences pref
 }
 
 Future<String?> editStringSettingDialog(BuildContext context, String key, String title, prefs, texts, {bool password=false, String default_value=''}) async {
-  var settingValue = prefs.getString(key) ?? default_value;
+  var settingValue;
+  if (key == "ftp_username" || key == "ftp_password") {
+    final secure_storage = new FlutterSecureStorage();
+    settingValue = await secure_storage.read(key: key) ?? default_value;
+  } else {
+    settingValue = prefs.getString(key) ?? default_value;
+  }
+
   return showDialog(
       context: context,
       builder: (context) {
