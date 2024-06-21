@@ -43,9 +43,8 @@ dependencies:
   http: ^1.2.1
   flutter_localization: ^0.2.0
   camera:
-  camerawesome:
-    git:
-      url: https://github.com/Apparence-io/CamerAwesome
+  native_exif: ^0.6.0
+  pure_ftp: ^0.7.5
   dartssh2: ^2.4.1
   flutter_datetime_picker_plus: ^2.0.1
   pdfx: ^2.3.0
@@ -53,6 +52,10 @@ dependencies:
   map_launcher: ^3.1.0
   flutter_archive: ^6.0.0
   flutter_secure_storage: ^9.2.1
+  geolocator: ^12.0.0
+
+dependency_overrides:
+  meta: ^1.15.0
 
 dev_dependencies:
   flutter_test:

@@ -8,10 +8,11 @@ import 'package:path/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:pure_ftp/pure_ftp.dart' as pure_ftp;
 
 import 'dialogs.dart';
 
-connectToFtp(BuildContext context, SharedPreferences prefs, {path, transferType = TransferType.binary}) async {
+connectToFtp(BuildContext context, SharedPreferences prefs, {path}) async {
   final secure_storage = FlutterSecureStorage();
   var host = prefs.getString('ftp_hostname') ?? '';
   var user = await secure_storage.read(key: 'ftp_username') ?? '';
@@ -44,6 +45,26 @@ connectToFtp(BuildContext context, SharedPreferences prefs, {path, transferType 
       showErrorDialog(context, e.toString(), title: texts.connectToFtpFailed);
       return null;
     }
+  } else if (use_implicit_ftps) {
+    try {
+      final client = pure_ftp.FtpClient(
+        socketInitOptions: pure_ftp.FtpSocketInitOptions(
+          host: host,
+          timeout: const Duration(seconds: 30),
+          securityType: pure_ftp.SecurityType.FTPS,
+          transferType: pure_ftp.FtpTransferType.binary,
+        ),
+        authOptions: pure_ftp.FtpAuthOptions(
+          username: user,
+          password: pass,
+        ),
+      );
+      await client.connect();
+      return client;
+    } catch (e) {
+      showErrorDialog(context, e.toString(), title: texts.connectToFtpFailed);
+      return null;
+    }
   }
   var securityType;
   if (use_implicit_ftps){
@@ -60,7 +81,7 @@ connectToFtp(BuildContext context, SharedPreferences prefs, {path, transferType 
     showErrorDialog(context, e.toString(), title:texts.connectToFtpFailed);
     return null;
   }
-  await ftpConnect.setTransferType(transferType);
+  await ftpConnect.setTransferType(TransferType.binary);
   displayInformation(context, texts.connected);
   path ??= getFtpPath(prefs);
   if (path.isEmpty) {
@@ -175,6 +196,7 @@ void closeFtp(connection, prefs){
 Future<List<String>?> listFilesOnFtp(connection, SharedPreferences prefs, BuildContext context, {String? ftpPath}) async {
   var names;
   var use_sftp = prefs.getBool('use_sftp') ?? false;
+  var use_implicit_ftps = prefs.getBool('use_implicit_ftps') ?? false;
   if (use_sftp){
     SftpClient sftp = connection;
     try {
@@ -183,6 +205,15 @@ Future<List<String>?> listFilesOnFtp(connection, SharedPreferences prefs, BuildC
       names = items.map((f) => f.filename).whereType<String>().toList();
     } catch (e) {
       sftp.close();
+      showErrorDialog(context, e.toString());
+      return null;
+    }
+  } else if (use_implicit_ftps) {
+    pure_ftp.FtpClient ftps = connection;
+    try {
+      names = await ftps.currentDirectory.listNames();
+    } catch (e) {
+      await ftps.disconnect();
       showErrorDialog(context, e.toString());
       return null;
     }
