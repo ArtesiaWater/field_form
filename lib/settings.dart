@@ -296,9 +296,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   return;
                 }
                 var ftp_path = await chooseFtpPath(ftp, context, widget.prefs);
+                // if (ftp_path == null) {
+                //   var current_path = widget.prefs.getString('ftp_path') ?? "";
+                //   if (current_path != ""){
+                //     final remove_path = await showContinueDialog(context, "remove ftp path?", title: "remove ftp_path", yesButton: "yes", noButton: "no");
+                //     if (remove_path ?? false) {
+                //       ftp_path = "";
+                //     }
+                //   }
+                // }
                 if (ftp_path != null) {
                   setState(() {
-                    widget.prefs.setString('ftp_path', ftp_path);
+                    widget.prefs.setString('ftp_path', ftp_path!);
                     isLoading = false;
                   });
                 } else {

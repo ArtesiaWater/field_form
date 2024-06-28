@@ -12,6 +12,8 @@ import 'package:pure_ftp/pure_ftp.dart' as pure_ftp;
 
 import 'dialogs.dart';
 
+bool use_pure_ftp = false;
+
 connectToFtp(BuildContext context, SharedPreferences prefs, {path}) async {
   final secure_storage = FlutterSecureStorage();
   var host = prefs.getString('ftp_hostname') ?? '';
@@ -45,12 +47,12 @@ connectToFtp(BuildContext context, SharedPreferences prefs, {path}) async {
       showErrorDialog(context, e.toString(), title: texts.connectToFtpFailed);
       return null;
     }
-  } else if (use_implicit_ftps) {
+  } else if (use_implicit_ftps & use_pure_ftp) {
     try {
       final client = pure_ftp.FtpClient(
         socketInitOptions: pure_ftp.FtpSocketInitOptions(
           host: host,
-          timeout: const Duration(seconds: 30),
+          timeout: const Duration(seconds: 5),
           securityType: pure_ftp.SecurityType.FTPS,
           transferType: pure_ftp.FtpTransferType.binary,
         ),
@@ -58,6 +60,7 @@ connectToFtp(BuildContext context, SharedPreferences prefs, {path}) async {
           username: user,
           password: pass,
         ),
+        logCallback: print,
       );
       await client.connect();
       return client;
@@ -74,7 +77,10 @@ connectToFtp(BuildContext context, SharedPreferences prefs, {path}) async {
   } else {
     securityType = SecurityType.FTP;
   }
-  var ftpConnect = FTPConnect(host, user: user, pass: pass, timeout: 5, securityType: securityType);
+  var ftpConnect = FTPConnect(host, user: user, pass: pass, timeout: 5, securityType: securityType, logger: Logger(isEnabled: true));
+  if (use_implicit_ftps){
+    ftpConnect.listCommand = ListCommand.NLST;
+  }
   try {
     await ftpConnect.connect();
   } catch (e) {
@@ -208,7 +214,7 @@ Future<List<String>?> listFilesOnFtp(connection, SharedPreferences prefs, BuildC
       showErrorDialog(context, e.toString());
       return null;
     }
-  } else if (use_implicit_ftps) {
+  } else if (use_implicit_ftps & use_pure_ftp) {
     pure_ftp.FtpClient ftps = connection;
     try {
       names = await ftps.currentDirectory.listNames();
