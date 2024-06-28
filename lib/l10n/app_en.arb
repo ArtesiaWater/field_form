@@ -141,6 +141,7 @@
     "photoResolutionVeryHigh": "Very high (1080p)",
     "photoResolutionUltraHigh": "Ultra high (2160p)",
     "photoResolutionMax": "Maximum",
+    "tapToTakePhoto": "Tik hier om een foto te maken",
 
     "n_sublocations": "{count, plural, =1{1 sublocation} other{{count} sublocations}}",
     "@n_sublocations": {

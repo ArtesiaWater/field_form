@@ -392,7 +392,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
             }
           }
         },
-        child: Text(values[id] ?? inputField.hint ?? ''),
+        child: Text(values[id] ?? inputField.hint ?? texts.tapToTakePhoto),
       );
     } else if (inputField.type == 'check') {
       var value = (values[id] ?? 'false') == 'true';
