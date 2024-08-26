@@ -64,7 +64,7 @@ where:
 * Map<String, double> min_values: a map with minimum values for inputfields of type 'number', with inputfield-id's as keys.
 * Map<String, double> max_values: a map with maximum values for inputfields of type 'number', with inputfield-id's as keys.
 
-An example of the contents of a location file without settings or inputfield-groups, but with inputfields, groups, locations and sublocations is:
+An example of the contents of a location file without inputfield-groups, but with inputfields, groups, locations and sublocations is:
 ```json
 {
   "settings": {
