@@ -41,7 +41,7 @@ where:
 * String? name: the name to display, use inputfield-id when null.
 * List<String>? options: the options between which the user can choose when type='choice' or type='multichoice'.
 * String? default_value: the default value for an inputfield, only supported for type='choice'.
-* bool required: Whether an inputfield is required or not. The default value is false.
+* bool required: determines whether hether an inputfield is required or not. The default value is false.
 
 **InputFieldGroup**:
 * List<String> inputfields: a list of inputfield-ids that belong to this group.
