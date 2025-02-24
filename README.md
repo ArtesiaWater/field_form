@@ -41,6 +41,7 @@ where:
 * String? name: the name to display, use inputfield-id when null.
 * List<String>? options: the options between which the user can choose when type='choice' or type='multichoice'.
 * String? default_value: the default value for an inputfield, only supported for type='choice'.
+* bool required: Whether an inputfield is required or not. The default value is false.
 
 **InputFieldGroup**:
 * List<String> inputfields: a list of inputfield-ids that belong to this group.
@@ -177,6 +178,7 @@ Possible keys for the settings are:
 * 'mark_measured_days' (integer)
 * 'mark_not_measured' (boolean)
 * 'hide_settings' (boolean)
+* 'disable_adding_locations' (boolean)
 
 Boolean settings will be either true or false. To set a setting to true, use a string like 'yes', 'Yes', 'true' or 'True'. Otherwise the setting will be set to false.
 
