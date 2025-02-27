@@ -1,9 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
-
 import 'package:flutter_easy_search_bar/flutter_easy_search_bar.dart';
 import 'package:field_form/constants.dart';
 import 'package:field_form/new_location_screen.dart';
@@ -28,24 +26,16 @@ import 'locations.dart';
 import 'package:path/path.dart' as p;
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-// TODO: Make a manual
-// TODO: Minimal and maximal values (HHNK)
-// TODO: Improve localisation
-
 void main() {
-  runApp(
-    MaterialApp(
+  runApp(MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
-            seedColor: Constant.primaryColor,
-        )
-      ),
-      home: MyApp()
-    )
-  );
+        seedColor: Constant.primaryColor,
+      )),
+      home: MyApp()));
 }
 
 class MyApp extends StatefulWidget {
@@ -84,48 +74,51 @@ class _MyAppState extends State<MyApp> {
     measurementProvider.open();
     requestPermission();
     setMeasuredIcons();
-
   }
 
   Future<void> setMeasuredIcons() async {
-    var bytes;
-
-    bytes = await getBytesFromCanvas('⦻', color:Colors.red);
-    notMeasuredIcon = BitmapDescriptor.fromBytes(bytes);
-
-    bytes = await getBytesFromCanvas('✓', color:Colors.yellow, offset_x: 10);
-    halfMeasuredIcon = BitmapDescriptor.fromBytes(bytes);
-
-    bytes = await getBytesFromCanvas('✓', color: Colors.green, offset_x: 10);
-    fullMeasuredIcon = BitmapDescriptor.fromBytes(bytes);
+    notMeasuredIcon = await getMarkerIconFromText('⦻', color: Colors.red);
+    halfMeasuredIcon =
+        await getMarkerIconFromText('✓', color: Colors.yellow, offset_x: 10);
+    fullMeasuredIcon =
+        await getMarkerIconFromText('✓', color: Colors.green, offset_x: 10);
   }
 
-  Future<Uint8List> getBytesFromCanvas(String text, {color = Colors.green, size = 100, offset_x=0, offset_y=30}) async {
+  Future<BytesMapBitmap> getMarkerIconFromText(String text,
+      {width = 40,
+      height = 50,
+      fontSize = 50.0,
+      color = Colors.green,
+      offset_x = 0,
+      offset_y = 0}) async {
+    // Generate a Google Maps marker icon for the sequence number
+    // bij drawing a number on a canvas
     final pictureRecorder = ui.PictureRecorder();
     final canvas = Canvas(pictureRecorder);
     final painter = TextPainter(textDirection: TextDirection.ltr);
     painter.text = TextSpan(
       text: text,
       style: TextStyle(
-        fontSize: size.toDouble(),
+        fontSize: fontSize,
         color: color,
       ),
     );
     painter.layout();
     painter.paint(
       canvas,
-      Offset(size / 2 - painter.width / 2 + offset_x, size / 2 - painter.height / 2 - offset_y),
+      Offset(width * 0.5 - painter.width * 0.5 + offset_x,
+          height * 0.5 - painter.height * 0.5 - offset_y),
     );
-    final img = await pictureRecorder.endRecording().toImage(size, size);
+    final img = await pictureRecorder.endRecording().toImage(width, height);
     final data = await img.toByteData(format: ui.ImageByteFormat.png);
-    return data!.buffer.asUint8List();
+    return BitmapDescriptor.bytes(data!.buffer.asUint8List());
   }
 
   Future<void> requestPermission() async {
     // request location-permission programatically
     // https://github.com/flutter/flutter/issues/30171
     final status = await Permission.location.status;
-    if (status == PermissionStatus.granted){
+    if (status == PermissionStatus.granted) {
       myLocationEnabled = true;
     } else {
       final permissionStatus = await Permission.location.request();
@@ -137,21 +130,21 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  void getprefs() async{
+  void getprefs() async {
     prefs = await SharedPreferences.getInstance();
     setState(() {
       maptype = prefs!.getString('map_type') ?? 'normal';
     });
     var ftp_username = prefs!.getString('ftp_username');
     var ftp_password = prefs!.getString('ftp_password');
-    if (ftp_username != null || ftp_password != null){
+    if (ftp_username != null || ftp_password != null) {
       // Store username and/or password in secure storage
       final storage = new FlutterSecureStorage();
-      if (ftp_username != null){
+      if (ftp_username != null) {
         storage.write(key: 'ftp_username', value: ftp_username);
         prefs!.remove('ftp_username');
       }
-      if (ftp_password != null){
+      if (ftp_password != null) {
         storage.write(key: 'ftp_password', value: ftp_password);
         prefs!.remove('ftp_password');
       }
@@ -165,16 +158,14 @@ class _MyAppState extends State<MyApp> {
       resizeToAvoidBottomInset: false,
       appBar: buildAppBar(),
       drawer: buildDrawer(),
-      body: Stack(
-        children: [
-          buildMap(),
-          buildShowAllMarkerButton(),
-          buildChangeMapTypeButton(),
-          if (checkPreviuosButton()) buildPreviousButton(),
-          if (checkNextButton()) buildNextButton(),
-          if (isLoading) buildLoadingIndicator(text:texts.loading),
-        ]
-      ),
+      body: Stack(children: [
+        buildMap(),
+        buildShowAllMarkerButton(),
+        buildChangeMapTypeButton(),
+        if (checkPreviuosButton()) buildPreviousButton(),
+        if (checkNextButton()) buildNextButton(),
+        if (isLoading) buildLoadingIndicator(text: texts.loading),
+      ]),
     );
   }
 
@@ -183,71 +174,65 @@ class _MyAppState extends State<MyApp> {
       padding: EdgeInsets.all(0),
       foregroundColor: Colors.black54,
       backgroundColor: Color.fromRGBO(255, 255, 255, 0.7),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2),
-      side: BorderSide(width: 0.2, color: Colors.grey),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(2),
+        side: BorderSide(width: 0.2, color: Colors.grey),
       ),
     );
   }
 
-  Align buildChangeMapTypeButton(){
+  Align buildChangeMapTypeButton() {
     return Align(
-      alignment: Alignment.topCenter,
-      child: Container(
-        margin: EdgeInsets.all(12),
-        width: 100,
-        height: 38,
-        child: TextButton(
-          onPressed: () async {
-            // choose maptype
-            var options = <Widget>[];
-            for (var key in maptypes.keys){
-              options.add(SimpleDialogOption(
-                onPressed: () {
-                  Navigator.of(context).pop(key);
-                },
-                child: Row(
-                  children:[
-                    getMapIcon(key),
-                    SizedBox(width: 10),
-                    Text(key),
-                  ]
-                )
-              ));
-            }
+        alignment: Alignment.topCenter,
+        child: Container(
+            margin: EdgeInsets.all(12),
+            width: 100,
+            height: 38,
+            child: TextButton(
+                onPressed: () async {
+                  // choose maptype
+                  var options = <Widget>[];
+                  for (var key in maptypes.keys) {
+                    options.add(SimpleDialogOption(
+                        onPressed: () {
+                          Navigator.of(context).pop(key);
+                        },
+                        child: Row(children: [
+                          getMapIcon(key),
+                          SizedBox(width: 10),
+                          Text(key),
+                        ])));
+                  }
 
-            var action = await showDialog(
-                context: context,
-                builder: (context) {
-                  return SimpleDialog(
-                    title: Text(texts.chooseMaptype),
-                    children: options,
-                  );
-                }
-            );
-            if (action != null) {
-              setState(() {
-                prefs!.setString('map_type', action);
-                setState(() {
-                  maptype = action;
-                });
-              });
-            }
-          },
-          style: getMapButtonStyle(),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              getMapIcon(maptype),
-              SizedBox(width: 10),
-              Text(maptype),
-            ],
-          )
-        )
-      )
-    );
+                  var action = await showDialog(
+                      context: context,
+                      builder: (context) {
+                        return SimpleDialog(
+                          title: Text(texts.chooseMaptype),
+                          children: options,
+                        );
+                      });
+                  if (action != null) {
+                    setState(() {
+                      prefs!.setString('map_type', action);
+                      setState(() {
+                        maptype = action;
+                      });
+                    });
+                  }
+                },
+                style: getMapButtonStyle(),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    getMapIcon(maptype),
+                    SizedBox(width: 10),
+                    Text(maptype),
+                  ],
+                ))));
   }
 
-  Icon getMapIcon(String key){
+  Icon getMapIcon(String key) {
     if ((key == 'satellite') | (key == 'hybrid')) {
       return Icon(Icons.satellite);
     } else if (key == 'terrain') {
@@ -257,40 +242,39 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  Align buildShowAllMarkerButton(){
+  Align buildShowAllMarkerButton() {
     return Align(
-      alignment: Alignment.topLeft,
-      child: Container(
-        margin: EdgeInsets.all(12),
-        width: 38,
-        height: 38,
-        child: TextButton(
-          onPressed: () {
-            ZoomToAllLocations();
-          },
-          style: getMapButtonStyle(),
-          child: const Icon(Icons.zoom_out_map),
-        )
-      )
-    );
+        alignment: Alignment.topLeft,
+        child: Container(
+            margin: EdgeInsets.all(12),
+            width: 38,
+            height: 38,
+            child: TextButton(
+              onPressed: () {
+                ZoomToAllLocations();
+              },
+              style: getMapButtonStyle(),
+              child: const Icon(Icons.zoom_out_map, size: 25),
+            )));
   }
 
   void ZoomToAllLocations() {
     // Zoom out to all locations
-    if (markers.length > 1){
+    if (markers.length > 1) {
       double x0, x1, y0, y1;
       x0 = x1 = markers.values.first.position.latitude;
       y0 = y1 = markers.values.first.position.longitude;
 
-      markers.values.forEach((marker){
+      markers.values.forEach((marker) {
         var latLng = marker.position;
         if (latLng.latitude > x1) x1 = latLng.latitude;
         if (latLng.latitude < x0) x0 = latLng.latitude;
         if (latLng.longitude > y1) y1 = latLng.longitude;
         if (latLng.longitude < y0) y0 = latLng.longitude;
       });
-      var bounds = LatLngBounds(northeast: LatLng(x1, y1), southwest: LatLng(x0, y0));
-      mapController.animateCamera(CameraUpdate.newLatLngBounds(bounds, 20));
+      var bounds =
+          LatLngBounds(northeast: LatLng(x1, y1), southwest: LatLng(x0, y0));
+      mapController.animateCamera(CameraUpdate.newLatLngBounds(bounds, 50));
     } else if (markers.length == 1) {
       final position = markers.values.first.position;
       var latLng = LatLng(position.latitude, position.longitude);
@@ -298,15 +282,15 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  bool checkPreviuosButton(){
-    if (prefs == null){
+  bool checkPreviuosButton() {
+    if (prefs == null) {
       return false;
     }
-    if (prefs!.getBool('show_previous_and_next_location') ?? true){
-      if (activeMarker == null){
+    if (prefs!.getBool('show_previous_and_next_location') ?? true) {
+      if (activeMarker == null) {
         return false;
       }
-      if (activeMarker == locData.locations.keys.first){
+      if (activeMarker == locData.locations.keys.first) {
         return false;
       }
       return true;
@@ -314,15 +298,15 @@ class _MyAppState extends State<MyApp> {
     return false;
   }
 
-  bool checkNextButton(){
-    if (prefs == null){
+  bool checkNextButton() {
+    if (prefs == null) {
       return false;
     }
-    if (prefs!.getBool('show_previous_and_next_location') ?? true){
-      if (activeMarker == null){
+    if (prefs!.getBool('show_previous_and_next_location') ?? true) {
+      if (activeMarker == null) {
         return false;
       }
-      if (activeMarker == locData.locations.keys.last){
+      if (activeMarker == locData.locations.keys.last) {
         return false;
       }
       return true;
@@ -330,7 +314,7 @@ class _MyAppState extends State<MyApp> {
     return false;
   }
 
-  Align buildPreviousButton(){
+  Align buildPreviousButton() {
     return Align(
         alignment: Alignment.centerLeft,
         child: Container(
@@ -343,12 +327,10 @@ class _MyAppState extends State<MyApp> {
               },
               style: getMapButtonStyle(),
               child: const Icon(Icons.navigate_before),
-            )
-        )
-    );
+            )));
   }
 
-  Align buildNextButton(){
+  Align buildNextButton() {
     return Align(
         alignment: Alignment.centerRight,
         child: Container(
@@ -361,19 +343,17 @@ class _MyAppState extends State<MyApp> {
               },
               style: getMapButtonStyle(),
               child: const Icon(Icons.navigate_next),
-            )
-        )
-    );
+            )));
   }
 
   void selectPreviousLocation() {
     var keys = locData.locations.keys.toList();
-    selectLocation(keys[keys.indexOf(activeMarker)-1]);
+    selectLocation(keys[keys.indexOf(activeMarker) - 1]);
   }
 
   void selectNextLocation() {
     var keys = locData.locations.keys.toList();
-    selectLocation(keys[keys.indexOf(activeMarker)+1]);
+    selectLocation(keys[keys.indexOf(activeMarker) + 1]);
   }
 
   @override
@@ -383,13 +363,13 @@ class _MyAppState extends State<MyApp> {
     super.dispose();
   }
 
-  Widget buildLoadingScreen(){
+  Widget buildLoadingScreen() {
     return Container(
       child: Center(
         child: Text(
           texts.loadingMap,
           style:
-          TextStyle(fontFamily: 'Avenir-Medium', color: Colors.grey[400]),
+              TextStyle(fontFamily: 'Avenir-Medium', color: Colors.grey[400]),
         ),
       ),
     );
@@ -407,8 +387,7 @@ class _MyAppState extends State<MyApp> {
             child: Icon(
               Icons.navigation,
             ),
-          )
-      ));
+          )));
     }
     actions.add(Padding(
         padding: EdgeInsets.only(right: 20.0),
@@ -419,13 +398,16 @@ class _MyAppState extends State<MyApp> {
           child: Icon(
             Icons.sync,
           ),
-        )
-    ));
+        )));
 
+    var title = prefs == null ? '' : prefs!.getString('ftp_path') ?? '';
+    if (title.isEmpty) {
+      title = texts.fieldForm;
+    }
     var esb = EasySearchBar(
-      title: Text(texts.fieldForm),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+      title: Text(title),
+      backgroundColor: Theme.of(context).colorScheme.primary,
+      foregroundColor: Theme.of(context).colorScheme.onPrimary,
       actions: actions,
       onSearch: (String key) {
         selectLocation(key);
@@ -437,14 +419,17 @@ class _MyAppState extends State<MyApp> {
   }
 
   void selectLocation(String key) {
-    if (locData.locations.containsKey(key)){
+    if (locData.locations.containsKey(key)) {
       var location = locData.locations[key]!;
       // first move the camera to the marker
-      if ((location.lat != null) & (location.lon != null)){
-        mapController.animateCamera(CameraUpdate.newLatLng(LatLng(location.lat!, location.lon!)));
+      if ((location.lat != null) & (location.lon != null)) {
+        mapController.animateCamera(
+            CameraUpdate.newLatLng(LatLng(location.lat!, location.lon!)));
         // then show the infowindow
         mapController.showMarkerInfoWindow(MarkerId(key));
-        setState(() {activeMarker = key;});
+        setState(() {
+          activeMarker = key;
+        });
         // close the search overlay, so the user can select other actions (navigation, synchronisation) again
         // closeOverlay();
       }
@@ -499,64 +484,70 @@ class _MyAppState extends State<MyApp> {
             },
             leading: Icon(Icons.reset_tv),
           ),
-          if (locData.groups.isNotEmpty) ListTile(
-            title: Text(texts.chooseGroups),
-            onTap: () async {
-              // Close the drawer
-              Navigator.pop(context);
-              final items = <MultiSelectDialogItem<String>>[];
-              locData.groups.forEach((id, group){
-                var label = group.name ?? id;
-                var color = getIconColor(group.color);
-                var icon = Icon(Icons.location_pin, color:color);
-                items.add(MultiSelectDialogItem(id, label, icon));
-              });
-              final initialSelectedValues = prefs!.getStringList('selected_groups') ?? locData.groups.keys.toList();
-              final selectedGroups = await showDialog<Set<String>>(
-                context: context,
-                builder: (BuildContext context) {
-                  return MultiSelectDialog(
-                    items: items,
-                    initialSelectedValues: initialSelectedValues.toSet(),
-                    title: texts.selectGroups,
+          if (locData.groups.isNotEmpty)
+            ListTile(
+                title: Text(texts.chooseGroups),
+                onTap: () async {
+                  // Close the drawer
+                  Navigator.pop(context);
+                  final items = <MultiSelectDialogItem<String>>[];
+                  locData.groups.forEach((id, group) {
+                    var label = group.name ?? id;
+                    var color = getIconColor(group.color);
+                    var icon = Icon(Icons.location_pin, color: color);
+                    items.add(MultiSelectDialogItem(id, label, icon));
+                  });
+                  final initialSelectedValues =
+                      prefs!.getStringList('selected_groups') ??
+                          locData.groups.keys.toList();
+                  final selectedGroups = await showDialog<Set<String>>(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return MultiSelectDialog(
+                        items: items,
+                        initialSelectedValues: initialSelectedValues.toSet(),
+                        title: texts.selectGroups,
+                      );
+                    },
                   );
-                },
-              );
 
-              if (selectedGroups != null) {
-                await prefs!.setStringList('selected_groups', selectedGroups.toList());
-                await setMarkers();
-                setState(() {});
-              }
-            },
-            leading: Icon(Icons.group_work)
-          ),
+                  if (selectedGroups != null) {
+                    await prefs!.setStringList(
+                        'selected_groups', selectedGroups.toList());
+                    await setMarkers();
+                    setState(() {});
+                  }
+                },
+                leading: Icon(Icons.group_work)),
           ListTile(
               title: Text(texts.markMeasuredLocations),
               onTap: () async {
                 // Close the drawer
                 Navigator.pop(context);
-                var interval = await chooseMeasuredInterval(context, prefs!, texts);
+                var interval =
+                    await chooseMeasuredInterval(context, prefs!, texts);
                 if (interval != null) {
                   await prefs!.setInt('mark_measured_days', interval);
                   await setMarkers();
                   setState(() {});
                 }
               },
-              leading: Icon(Icons.verified_user)
-          ),
+              leading: Icon(Icons.verified_user)),
           ListTile(
             title: Text(texts.deleteAllData),
             onTap: () async {
               // Close the drawer
               Navigator.pop(context);
-              final action = await showContinueDialog(context, texts.sureToDeleteData,
-                  title: texts.deleteAllData, yesButton: texts.yes, noButton: texts.no);
+              final action = await showContinueDialog(
+                  context, texts.sureToDeleteData,
+                  title: texts.deleteAllData,
+                  yesButton: texts.yes,
+                  noButton: texts.no);
               if (action == true) {
                 var prefs = await SharedPreferences.getInstance();
                 if (await measurementProvider.areThereMessagesToBeSent(prefs)) {
-                  final action = await showContinueDialog(context,
-                      texts.unsentMeasurements,
+                  final action = await showContinueDialog(
+                      context, texts.unsentMeasurements,
                       title: texts.deleteAllData,
                       yesButton: texts.yes,
                       noButton: texts.no);
@@ -570,26 +561,27 @@ class _MyAppState extends State<MyApp> {
             },
             leading: Icon(Icons.delete),
           ),
-          if (showSettingsButton) ListTile(
-            title: Text(texts.settings),
-            onTap: () async {
-              // Close the drawer
-              Navigator.pop(context);
-              // Open the settings screen
-              final redrawMap = await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) {
-                  return SettingsScreen(prefs: prefs!);
-                }),
-              );
-              if (redrawMap) {
-                setState(() {
-                  setMarkers();
-                });
-              }
-            },
-            leading: Icon(Icons.settings),
-          ),
+          if (showSettingsButton)
+            ListTile(
+              title: Text(texts.settings),
+              onTap: () async {
+                // Close the drawer
+                Navigator.pop(context);
+                // Open the settings screen
+                final redrawMap = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) {
+                    return SettingsScreen(prefs: prefs!);
+                  }),
+                );
+                if (redrawMap) {
+                  setState(() {
+                    setMarkers();
+                  });
+                }
+              },
+              leading: Icon(Icons.settings),
+            ),
         ],
       ),
     );
@@ -604,7 +596,7 @@ class _MyAppState extends State<MyApp> {
       return;
     }
     var location = locData.locations[activeMarker]!;
-    if ((location.lat == null) | (location.lon==null)) {
+    if ((location.lat == null) | (location.lon == null)) {
       return;
     }
     var lat = location.lat!;
@@ -612,8 +604,8 @@ class _MyAppState extends State<MyApp> {
 
     final availableMaps = await map_launcher.MapLauncher.installedMaps;
     await availableMaps.first.showDirections(
-        destination: map_launcher.Coords(lat, lon),
-      );
+      destination: map_launcher.Coords(lat, lon),
+    );
   }
 
   Widget buildMap() {
@@ -636,17 +628,14 @@ class _MyAppState extends State<MyApp> {
         tileProvider: OsmTileProvider(),
       ));
     }
-    if (prefs!.getBool('wms_on') ?? false){
+    if (prefs!.getBool('wms_on') ?? false) {
       final wms_url = prefs!.getString('wms_url') ?? '';
       final wms_layers = prefs!.getString('wms_layers') ?? '';
       if (wms_url.isNotEmpty & wms_layers.isNotEmpty) {
         tileOverlays.add(TileOverlay(
           tileOverlayId: TileOverlayId('WMS'),
           tileProvider: WmsTileProvider(
-              url: wms_url,
-              layers: wms_layers.split(','),
-              transparent: true
-          ),
+              url: wms_url, layers: wms_layers.split(','), transparent: true),
         ));
       }
     }
@@ -676,8 +665,8 @@ class _MyAppState extends State<MyApp> {
                 addNewLocation(context, latlng);
               },
             ),
-            icon: BitmapDescriptor.defaultMarkerWithHue(
-                BitmapDescriptor.hueBlue),
+            icon:
+                BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
           );
           markers[id] = marker;
           mapController.showMarkerInfoWindow(MarkerId(id));
@@ -686,11 +675,10 @@ class _MyAppState extends State<MyApp> {
       onTap: (latlng) async {
         await checkActiveMarker();
         final id = 'new_marker';
-        if (markers.containsKey(id)){
+        if (markers.containsKey(id)) {
           setState(() {
             markers.remove(id);
-          }
-          );
+          });
         }
       },
       onCameraMove: (CameraPosition position) async {
@@ -707,7 +695,7 @@ class _MyAppState extends State<MyApp> {
     //final location_file = await getLocationFile(context);
     var docsDir = await getApplicationDocumentsDirectory();
     var file = File(p.join(docsDir.path, 'locations.json'));
-    if (! await file.exists()) {
+    if (!await file.exists()) {
       return;
     }
     try {
@@ -717,24 +705,65 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  Future <void> checkActiveMarker() async {
-    if (activeMarker != null){
-      final markerIsActive = await mapController.isMarkerInfoWindowShown(MarkerId(activeMarker));
+  Future<void> checkActiveMarker() async {
+    if (activeMarker != null) {
+      final markerIsActive =
+          await mapController.isMarkerInfoWindowShown(MarkerId(activeMarker));
       if (!markerIsActive) {
-        setState(() {activeMarker = null;});
+        setState(() {
+          activeMarker = null;
+        });
       }
     }
   }
 
-  Future <void> read_location_file(File file, {zoom=true}) async {
-    var location_file = LocationFile.fromJson(
-        json.decode(await file.readAsString()));
+  Future<void> read_location_file(File file, {zoom = true}) async {
+    var location_file =
+        LocationFile.fromJson(json.decode(await file.readAsString()));
 
     if (location_file.settings != null) {
       parseSettings(location_file.settings!, prefs!);
     }
     if (location_file.locations != null) {
       locData.locations = location_file.locations!;
+      // order locations based on the sequence number
+      var keys = locData.locations.keys.toList();
+      // set locations without a sequence number at the end of the sequence
+      // get the maximum sequence_number of all locations in locData
+      var last_sequence_number = 0;
+      for (var key in keys) {
+        if (locData.locations[key]!.sequence_number != null) {
+          if (locData.locations[key]!.sequence_number! > last_sequence_number) {
+            last_sequence_number = locData.locations[key]!.sequence_number!;
+          }
+        }
+      }
+      last_sequence_number = last_sequence_number + 1;
+      keys.sort((a, b) =>
+          (locData.locations[a]!.sequence_number ?? last_sequence_number) -
+          (locData.locations[b]!.sequence_number ?? last_sequence_number));
+      locData.locations = Map.fromEntries(
+          keys.map((key) => MapEntry(key, locData.locations[key]!)));
+
+      // import measurements for each location
+      // for (var key in locData.locations.keys) {
+      //   var location = locData.locations[key]!;
+      //   if (location.sublocations != null) {
+      //     for (var subkey in location.sublocations!.keys) {
+      //       var sublocation = location.sublocations![subkey]!;
+      //       if (sublocation.measurements != null) {
+      //         for (var meas in sublocation.measurements!) {
+      //           await measurementProvider.update_or_insert(meas);
+      //         }
+      //       }
+      //     }
+      //   }
+      //   if (location.measurements != null) {
+      //     for (var meas in location.measurements!) {
+      //       await measurementProvider.update_or_insert(meas);
+      //     }
+      //   }
+      // }
     }
     if (location_file.inputfields == null) {
       locData.inputFields = getDefaultInputFields();
@@ -758,9 +787,11 @@ class _MyAppState extends State<MyApp> {
         ZoomToAllLocations();
       }
     }
-    if (prefs!.getBool('request_user') ?? false){
-      final user = await editStringSettingDialog(context, 'user', texts.setUser, prefs, texts) ?? '';
-      if (user != ''){
+    if (prefs!.getBool('request_user') ?? false) {
+      final user = await editStringSettingDialog(
+              context, 'user', texts.setUser, prefs, texts) ??
+          '';
+      if (user != '') {
         await prefs!.setString('user', user);
         await prefs!.setBool('request_user', false);
       }
@@ -770,26 +801,27 @@ class _MyAppState extends State<MyApp> {
   Future<void> setMarkers() async {
     var mark_measured_days = prefs!.getInt('mark_measured_days') ?? 0;
     final now = DateTime.now();
-    final reftime = DateTime(now.year, now.month, now.day - mark_measured_days + 1);
+    final reftime =
+        DateTime(now.year, now.month, now.day - mark_measured_days + 1);
     final lastMeasPerLoc;
     if (mark_measured_days > 0) {
       // get the last measured time for each location
-      lastMeasPerLoc = await measurementProvider.getLastMeasurementPerLocation();
+      lastMeasPerLoc =
+          await measurementProvider.getLastMeasurementPerLocation();
     } else {
       lastMeasPerLoc = <String, DateTime>{};
     }
     markers.clear();
-    final selectedGroups = prefs!.getStringList('selected_groups') ?? locData.groups.keys.toList();
+    final selectedGroups =
+        prefs!.getStringList('selected_groups') ?? locData.groups.keys.toList();
     final markNotMeasured = prefs!.getBool('mark_not_measured') ?? false;
-    if (markNotMeasured){
-
-    }
+    if (markNotMeasured) {}
     for (var id in locData.locations.keys) {
       var location = locData.locations[id]!;
-      if ((location.lat == null) | (location.lon==null)){
+      if ((location.lat == null) | (location.lon == null)) {
         continue;
       }
-      if (location.group != null){
+      if (location.group != null) {
         if (!selectedGroups.contains(location.group)) {
           continue;
         }
@@ -820,13 +852,13 @@ class _MyAppState extends State<MyApp> {
           onTap: () async {
             if (location.sublocations == null) {
               open_add_measurements(id, null);
-            } else{
-              if (location.sublocations!.length == 1){
+            } else {
+              if (location.sublocations!.length == 1) {
                 open_add_measurements(location.sublocations!.keys.first, id);
               } else {
                 // choose a sublocation
                 var options = <Widget>[];
-                location.sublocations!.forEach((var subid, var sublocation){
+                location.sublocations!.forEach((var subid, var sublocation) {
                   var name = sublocation.name ?? subid;
                   options.add(SimpleDialogOption(
                     onPressed: () {
@@ -843,8 +875,7 @@ class _MyAppState extends State<MyApp> {
                         title: Text(texts.chooseSublocation),
                         children: options,
                       );
-                    }
-                );
+                    });
                 if (result == null) {
                   return;
                 }
@@ -858,24 +889,26 @@ class _MyAppState extends State<MyApp> {
 
       // Add extra icon for non-measured locations
       var extraIcon;
-      if (markNotMeasured){
+      if (markNotMeasured) {
         extraIcon = notMeasuredIcon;
       }
 
       if (location.sublocations == null) {
-        if (lastMeasPerLoc.containsKey(id) && lastMeasPerLoc[id].isAfter(reftime)) {
+        if (lastMeasPerLoc.containsKey(id) &&
+            lastMeasPerLoc[id].isAfter(reftime)) {
           extraIcon = fullMeasuredIcon;
         }
       } else {
         var halfMeasured = false;
         var fullMeasured = true;
-        for (var key in location.sublocations!.keys){
-          if (lastMeasPerLoc.containsKey(key) && lastMeasPerLoc[key].isAfter(reftime)) {
-              halfMeasured = true;
-            } else {
-              fullMeasured = false;
-            }
+        for (var key in location.sublocations!.keys) {
+          if (lastMeasPerLoc.containsKey(key) &&
+              lastMeasPerLoc[key].isAfter(reftime)) {
+            halfMeasured = true;
+          } else {
+            fullMeasured = false;
           }
+        }
 
         if (fullMeasured) {
           extraIcon = fullMeasuredIcon;
@@ -884,7 +917,7 @@ class _MyAppState extends State<MyApp> {
         }
       }
 
-      if (extraIcon != null){
+      if (extraIcon != null) {
         // add a secondary marker with added information
         markers[id + '_v'] = Marker(
             markerId: MarkerId(id + '_v'),
@@ -892,11 +925,34 @@ class _MyAppState extends State<MyApp> {
             icon: extraIcon,
             onTap: () {
               mapController.showMarkerInfoWindow(MarkerId(id));
-              setState(() {activeMarker = id;});
+              setState(() {
+                activeMarker = id;
+              });
             },
-            zIndex: 1.0
+            zIndex: 1.0);
+      }
+      if (location.sequence_number != null &&
+          (prefs!.getBool('show_sequence_number') ?? true)) {
+        // generate a sequence number icon
+        var sequence_number = location.sequence_number ?? 0;
+        var sequenceNumberIcon = await getMarkerIconFromText(
+            sequence_number.toString(),
+            fontSize: 20.0,
+            color: Colors.black);
+        markers[id + '_s'] = Marker(
+          markerId: MarkerId(id + '_s'),
+          position: LatLng(location.lat!, location.lon!),
+          icon: sequenceNumberIcon,
+          onTap: () {
+            mapController.showMarkerInfoWindow(MarkerId(id));
+            setState(() {
+              activeMarker = id;
+            });
+          },
+          zIndex: 2.0,
         );
       }
+      ;
     }
     activeMarker = null;
   }
@@ -913,6 +969,19 @@ class _MyAppState extends State<MyApp> {
       }),
     );
     if (result != null) {
+      if (prefs!.getBool("upload_data_instantly") ?? false) {
+        // send measurements
+        if (await measurementProvider.areThereMessagesToBeSent(prefs)) {
+          var ftp = await connectToFtp(context, prefs!);
+          if (ftp != null) {
+            var success = await sendMeasurementsToFtp(ftp, prefs!);
+            if (success) {
+              displayInformation(context, texts.syncCompleted);
+            }
+          }
+        }
+      }
+
       if ((prefs!.getInt('mark_measured_days') ?? 0) > 0) {
         await setMarkers();
         setState(() {});
@@ -927,15 +996,18 @@ class _MyAppState extends State<MyApp> {
       var is_location_file;
       if (file.path.startsWith('locations') || (file.path.endsWith('.json'))) {
         is_location_file = true;
-      } else if (file.path.startsWith('measurements') || (file.path.endsWith('.csv'))) {
+      } else if (file.path.startsWith('measurements') ||
+          (file.path.endsWith('.csv'))) {
         is_location_file = false;
       } else {
         // Ask whether the file contains locations or measurements
         var action = await showContinueDialog(context, texts.locsOrMeas,
-            yesButton: texts.locations, noButton: texts.measurements, title: texts.locsOrMeasTitle);
-        if (action == true){
+            yesButton: texts.locations,
+            noButton: texts.measurements,
+            title: texts.locsOrMeasTitle);
+        if (action == true) {
           is_location_file = true;
-        } else if (action == false){
+        } else if (action == false) {
           is_location_file = false;
         } else {
           // the dialog was cancelled
@@ -949,8 +1021,8 @@ class _MyAppState extends State<MyApp> {
               await read_location_file(file);
               locData.save_locations();
             } else {
-              var action = await showContinueDialog(context,
-                  texts.removeExistingLocations,
+              var action = await showContinueDialog(
+                  context, texts.removeExistingLocations,
                   yesButton: texts.yes,
                   noButton: texts.no,
                   title: texts.removeExistingLocationsTitle);
@@ -960,7 +1032,7 @@ class _MyAppState extends State<MyApp> {
               }
             }
           } catch (e) {
-            showErrorDialog(context, e.toString(), title:texts.importFailed);
+            showErrorDialog(context, e.toString(), title: texts.importFailed);
           }
         } else if (file.path.endsWith('.csv')) {
           showErrorDialog(context, texts.csvNotImplemented);
@@ -971,7 +1043,7 @@ class _MyAppState extends State<MyApp> {
         try {
           await measurementProvider.importFromCsv(file);
         } catch (e) {
-          showErrorDialog(context, e.toString(), title:texts.importFailed);
+          showErrorDialog(context, e.toString(), title: texts.importFailed);
         }
       }
     }
@@ -988,15 +1060,15 @@ class _MyAppState extends State<MyApp> {
 
     //delete all data in the documents-directory (location-data and photos)
     var docsDir = await getApplicationDocumentsDirectory();
-    if (docsDir.existsSync()){
+    if (docsDir.existsSync()) {
       // Delete location file
       var file = File(p.join(docsDir.path, 'locations.json'));
-      if (await file.exists()){
+      if (await file.exists()) {
         unawaited(file.delete());
       }
       // Delete photos
       var dir = Directory(p.join(docsDir.path, 'photos'));
-      if (dir.existsSync()){
+      if (dir.existsSync()) {
         for (var file in dir.listSync()) {
           unawaited(file.delete());
         }
@@ -1016,36 +1088,47 @@ class _MyAppState extends State<MyApp> {
     return true;
   }
 
-  Future<void> switchFtpFolder(context) async{
+  Future<void> switchFtpFolder(context) async {
     var prefs = await SharedPreferences.getInstance();
     var use_sftp = prefs.getBool('use_sftp') ?? false;
 
     var ftp;
 
     // First upload existing measurements
-    if (await measurementProvider.areThereMessagesToBeSent(prefs)){
+    if (await measurementProvider.areThereMessagesToBeSent(prefs)) {
       // Check if user wants to send unsent measurements
-      var action = await showContinueDialog(context, texts.uploadUnsentMeasurements,
-          yesButton: texts.yes, noButton: texts.no, title: texts.unsentMeasurementsTitle);
-      if (action == true){
+      var action = await showContinueDialog(
+          context, texts.uploadUnsentMeasurements,
+          yesButton: texts.yes,
+          noButton: texts.no,
+          title: texts.unsentMeasurementsTitle);
+      if (action == true) {
         // connect to the current ftp folder and send the measurements
-        setState(() {isLoading = true;});
+        setState(() {
+          isLoading = true;
+        });
         ftp = await connectToFtp(context, prefs);
         if (ftp == null) {
-          setState(() {isLoading = false;});
+          setState(() {
+            isLoading = false;
+          });
           return;
         }
         var success = await sendMeasurementsToFtp(ftp, prefs);
         if (!success) {
-          setState(() {isLoading = false;});
+          setState(() {
+            isLoading = false;
+          });
           return;
         }
         var path = prefs.getString('ftp_path') ?? '';
         if (!use_sftp && path.isNotEmpty) {
           // Go to root of ftp server again
           var success = await changeDirectory(ftp, context, '..', prefs);
-          if (!success){
-            setState(() {isLoading = false;});
+          if (!success) {
+            setState(() {
+              isLoading = false;
+            });
             return;
           }
         }
@@ -1054,10 +1137,14 @@ class _MyAppState extends State<MyApp> {
     if (ftp == null) {
       // If not connected yet, connect to the ftp-root
       var root = getFtpRoot(prefs);
-      setState(() {isLoading = true;});
+      setState(() {
+        isLoading = true;
+      });
       ftp = await connectToFtp(context, prefs, path: root);
       if (ftp == null) {
-        setState(() {isLoading = false;});
+        setState(() {
+          isLoading = false;
+        });
         return;
       }
     }
@@ -1069,11 +1156,13 @@ class _MyAppState extends State<MyApp> {
       // Delete all data
       await deleteAllData();
 
-      if (!use_sftp){
+      if (!use_sftp) {
         // Go to the specified folder
         var success = await changeDirectory(ftp, context, path, prefs);
         if (!success) {
-          setState(() {isLoading = false;});
+          setState(() {
+            isLoading = false;
+          });
           return;
         }
       }
@@ -1081,7 +1170,9 @@ class _MyAppState extends State<MyApp> {
       // sync with the new ftp folder
       var success = await downloadDataFromFtp(ftp, context, prefs);
       if (!success) {
-        setState(() {isLoading = false;});
+        setState(() {
+          isLoading = false;
+        });
         return;
       }
 
@@ -1089,10 +1180,13 @@ class _MyAppState extends State<MyApp> {
     }
     // finish up
     closeFtp(ftp, prefs);
-    setState(() {isLoading = false;});
+    setState(() {
+      isLoading = false;
+    });
   }
 
-  Future<bool> sendMeasurementsToFtp(connection, SharedPreferences prefs) async {
+  Future<bool> sendMeasurementsToFtp(
+      connection, SharedPreferences prefs) async {
     var only_export_new_data = prefs.getBool('only_export_new_data') ?? true;
     var new_file_name = getMeasurementFileName();
     final tempDir = await getTemporaryDirectory();
@@ -1102,7 +1196,8 @@ class _MyAppState extends State<MyApp> {
     // get measurements
     List<Measurement> measurements;
     if (only_export_new_data) {
-      measurements = await measurementProvider.getMeasurements(where: 'exported = ?', whereArgs: [0]);
+      measurements = await measurementProvider
+          .getMeasurements(where: 'exported = ?', whereArgs: [0]);
     } else {
       measurements = await measurementProvider.getMeasurements();
     }
@@ -1118,7 +1213,7 @@ class _MyAppState extends State<MyApp> {
       return false;
     }
     // Send photos
-    for (var measurement in measurements){
+    for (var measurement in measurements) {
       if (!locData.inputFields.containsKey(measurement.type)) {
         continue;
       }
@@ -1126,14 +1221,16 @@ class _MyAppState extends State<MyApp> {
         var file = File(p.join(docsDir.path, 'photos', measurement.value));
         if (await file.exists()) {
           var success = await uploadFileToFtp(connection, file, prefs);
-          if (!success){
-            showErrorDialog(context, texts.uploadPhotoFailed + measurement.value);
+          if (!success) {
+            showErrorDialog(
+                context, texts.uploadPhotoFailed + measurement.value);
             return false;
           }
         }
       }
     }
-    var importedMeasurementFiles = prefs.getStringList('imported_measurement_files') ?? <String>[];
+    var importedMeasurementFiles =
+        prefs.getStringList('imported_measurement_files') ?? <String>[];
     importedMeasurementFiles.add(new_file_name);
     await prefs.setStringList(
         'imported_measurement_files', importedMeasurementFiles);
@@ -1144,12 +1241,16 @@ class _MyAppState extends State<MyApp> {
 
   void synchroniseWithFtp(BuildContext context) async {
     var success;
-    setState(() {isLoading = true;});
+    setState(() {
+      isLoading = true;
+    });
     //showLoaderDialog(context, text: 'Synchronising with FTP server');
     var prefs = await SharedPreferences.getInstance();
     var ftp = await connectToFtp(context, prefs);
-    if (ftp==null){
-      setState(() {isLoading = false;});
+    if (ftp == null) {
+      setState(() {
+        isLoading = false;
+      });
       return;
     }
 
@@ -1157,7 +1258,9 @@ class _MyAppState extends State<MyApp> {
     if (await measurementProvider.areThereMessagesToBeSent(prefs)) {
       success = await sendMeasurementsToFtp(ftp, prefs);
       if (!success) {
-        setState(() {isLoading = false;});
+        setState(() {
+          isLoading = false;
+        });
         return;
       }
     }
@@ -1165,23 +1268,30 @@ class _MyAppState extends State<MyApp> {
     // download (new) locations and measurements
     success = await downloadDataFromFtp(ftp, context, prefs);
     if (!success) {
-      setState(() {isLoading = false;});
+      setState(() {
+        isLoading = false;
+      });
       return;
     }
 
     // finish up
     closeFtp(ftp, prefs);
-    setState(() {isLoading = false;});
+    setState(() {
+      isLoading = false;
+    });
     displayInformation(context, texts.syncCompleted);
   }
 
-  Future <bool> downloadDataFromFtp(connection, BuildContext context, SharedPreferences prefs) async {
-    var importedMeasurementFiles = prefs.getStringList('imported_measurement_files') ?? <String>[];
-    var importedLocationFiles = prefs.getStringList('imported_location_files') ?? <String>[];
+  Future<bool> downloadDataFromFtp(
+      connection, BuildContext context, SharedPreferences prefs) async {
+    var importedMeasurementFiles =
+        prefs.getStringList('imported_measurement_files') ?? <String>[];
+    var importedLocationFiles =
+        prefs.getStringList('imported_location_files') ?? <String>[];
     var tempDir = await getTemporaryDirectory();
 
     displayInformation(context, texts.retreivingFiles);
-    final names  = await listFilesOnFtp(connection, prefs, context);
+    final names = await listFilesOnFtp(connection, prefs, context);
     if (names == null) {
       return false;
     }
@@ -1190,7 +1300,7 @@ class _MyAppState extends State<MyApp> {
     // Read last locations-file
     var name;
     for (var iname in names) {
-      if (iname.startsWith('locations') & iname.endsWith('.json')){
+      if (iname.startsWith('locations') & iname.endsWith('.json')) {
         name = iname;
       }
     }
@@ -1199,7 +1309,7 @@ class _MyAppState extends State<MyApp> {
       // download locations
       var file = File(p.join(tempDir.path, name));
       var success = await downloadFileFromFtp(connection, file, prefs);
-      if (!success){
+      if (!success) {
         showErrorDialog(context, texts.downloadFailed + name);
         return false;
       }
@@ -1215,14 +1325,15 @@ class _MyAppState extends State<MyApp> {
       // save locations
       locData.save_locations();
       importedLocationFiles.add(name);
-      unawaited(prefs.setStringList('imported_location_files', importedLocationFiles));
+      unawaited(prefs.setStringList(
+          'imported_location_files', importedLocationFiles));
     }
 
     // TODO: first collect all measurements, then add to database
     var importedMeasurements = false;
     for (var name in names) {
       if (name.startsWith('measurements')) {
-        if (importedMeasurementFiles.contains(name)){
+        if (importedMeasurementFiles.contains(name)) {
           continue;
         }
         displayInformation(context, texts.downloading + name);
@@ -1249,7 +1360,8 @@ class _MyAppState extends State<MyApp> {
           return false;
         }
         importedMeasurementFiles.add(name);
-        await prefs.setStringList('imported_measurement_files', importedMeasurementFiles);
+        await prefs.setStringList(
+            'imported_measurement_files', importedMeasurementFiles);
       }
     }
     // update markers
@@ -1265,7 +1377,7 @@ class _MyAppState extends State<MyApp> {
     final docsDir = await getApplicationDocumentsDirectory();
     var files = <XFile>[];
     var file = File(p.join(docsDir.path, 'locations.json'));
-    if (await file.exists()){
+    if (await file.exists()) {
       files.add(XFile(file.path));
     }
 
@@ -1280,7 +1392,7 @@ class _MyAppState extends State<MyApp> {
       // Combine photos in a zip-file
       final photos = <File>[];
       final photosDir = p.join(docsDir.path, 'photos');
-      for (var measurement in measurements){
+      for (var measurement in measurements) {
         if (!locData.inputFields.containsKey(measurement.type)) {
           continue;
         }
@@ -1292,9 +1404,11 @@ class _MyAppState extends State<MyApp> {
           }
         }
       }
-      if (photos.isNotEmpty){
+      if (photos.isNotEmpty) {
         // zip photos and add zip-file to files
-        final zipname = new_file_name.replaceAll('measurements', 'photos').replaceAll('.csv', '.zip');
+        final zipname = new_file_name
+            .replaceAll('measurements', 'photos')
+            .replaceAll('.csv', '.zip');
         final zipFile = File(p.join(tempDir.path, zipname));
         try {
           await ZipFile.createFromFiles(
@@ -1306,7 +1420,7 @@ class _MyAppState extends State<MyApp> {
       }
     }
 
-    if (files.isEmpty){
+    if (files.isEmpty) {
       showErrorDialog(context, texts.noDataToShare);
       return;
     }

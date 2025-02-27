@@ -1,4 +1,3 @@
-
 import 'dart:io';
 
 import 'package:csv/csv.dart';
@@ -10,23 +9,22 @@ import 'package:sqflite/utils/utils.dart';
 
 import 'constants.dart';
 
-class Measurement{
-  Measurement({
-    required this.location,
-    required this.datetime,
-    required this.type,
-    required this.value,
-    this.id,
-    this.exported = false
-  });
+class Measurement {
+  Measurement(
+      {required this.location,
+      required this.datetime,
+      required this.type,
+      required this.value,
+      this.id,
+      this.exported = false});
 
   Measurement.fromMap(Map map)
-    : location= map['location'].toString(),
-      datetime = DateTime.fromMicrosecondsSinceEpoch(map['datetime']),
-      type = map['type'],
-      value = map['value'],
-      id = map['id'],
-      exported = map['exported'] == 1;
+      : location = map['location'].toString(),
+        datetime = DateTime.fromMicrosecondsSinceEpoch(map['datetime']),
+        type = map['type'],
+        value = map['value'],
+        id = map['id'],
+        exported = map['exported'] == 1;
 
   String location;
   DateTime datetime;
@@ -56,7 +54,7 @@ class MeasurementProvider {
     var path = join(await getDatabasesPath(), 'measurements.db');
     db = await openDatabase(path, version: 1,
         onCreate: (Database db, int version) async {
-          await db.execute('''
+      await db.execute('''
 create table measurements (
   id INTEGER primary key autoincrement, 
   location TEXT,
@@ -65,7 +63,7 @@ create table measurements (
   value TEXT,
   exported INTEGER)
 ''');
-        });
+    });
   }
 
   Future<Measurement> insert(Measurement measurement) async {
@@ -79,11 +77,13 @@ create table measurements (
 
   Future<List<Measurement>> getMeasurements(
       {String? where, List<Object?>? whereArgs}) async {
-    List<Map> maps = await db.query(table,
-        columns: ['id', 'location', 'datetime', 'type', 'value', 'exported'],
-        where: where,
-        whereArgs: whereArgs,
-        orderBy: 'datetime DESC');
+    List<Map> maps = await db.query(
+      table,
+      columns: ['id', 'location', 'datetime', 'type', 'value', 'exported'],
+      where: where,
+      whereArgs: whereArgs,
+      orderBy: 'datetime DESC',
+    );
     var measurements = <Measurement>[];
     if (maps.isNotEmpty) {
       for (var map in maps) {
@@ -94,8 +94,7 @@ create table measurements (
   }
 
   Future<int> delete(Measurement measurement) async {
-    return await db.delete(
-        table, where: 'id = ?', whereArgs: [measurement.id]);
+    return await db.delete(table, where: 'id = ?', whereArgs: [measurement.id]);
   }
 
   Future<int> update(Measurement measurement) async {
@@ -111,7 +110,7 @@ create table measurements (
     return await db.delete(table);
   }
 
-  Future <bool> areThereMessagesToBeSent(prefs) async {
+  Future<bool> areThereMessagesToBeSent(prefs) async {
     var only_export_new_data = prefs.getBool('only_export_new_data') ?? true;
     var result;
     if (only_export_new_data) {
@@ -121,9 +120,10 @@ create table measurements (
     }
     return firstIntValue(await result)! > 0;
   }
-  
+
   Future<Map<dynamic, DateTime>> getLastMeasurementPerLocation() async {
-    var result = await db.rawQuery('select location, MAX(datetime) from $table group by location having value!="";');
+    var result = await db.rawQuery(
+        'select location, MAX(datetime) from $table group by location having value!="";');
 
     var lastMeas = <String, DateTime>{};
     for (var e in result) {
@@ -173,19 +173,19 @@ create table measurements (
     List<Measurement> measurements;
     if (only_export_new_data) {
       measurements =
-      await getMeasurements(where: 'exported = ?', whereArgs: [0]);
+          await getMeasurements(where: 'exported = ?', whereArgs: [0]);
     } else {
       measurements = await getMeasurements();
     }
-    if (measurements.isEmpty){
+    if (measurements.isEmpty) {
       return null;
     }
     return measurementsToCsv(measurements, file);
   }
 
-  Future <void> importFromCsv(File file, {exported = true}) async {
-    var converter = const CsvToListConverter(fieldDelimiter: ';',
-        shouldParseNumbers: false);
+  Future<void> importFromCsv(File file, {exported = true}) async {
+    var converter = const CsvToListConverter(
+        fieldDelimiter: ';', shouldParseNumbers: false);
     var text = await file.readAsString();
     var rows = converter.convert(text);
     var row = rows[0];
@@ -202,7 +202,8 @@ create table measurements (
         row.last = row.last.substring(0, row.last.length - 1);
       }
       var date = Constant.datetime_format.parse(row[DATE] + ' ' + row[TIME]);
-      var meas = Measurement(location: row[LOCATION],
+      var meas = Measurement(
+          location: row[LOCATION],
           datetime: date,
           value: row[VALUE],
           type: row[TYPE],
@@ -230,6 +231,8 @@ create table measurements (
   }
 }
 
-String getMeasurementFileName(){
-  return 'measurements-' + Constant.file_datetime_format.format(DateTime.now()) + '.csv';
+String getMeasurementFileName() {
+  return 'measurements-' +
+      Constant.file_datetime_format.format(DateTime.now()) +
+      '.csv';
 }

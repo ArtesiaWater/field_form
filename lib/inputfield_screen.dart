@@ -19,30 +19,29 @@ class _InputFieldsScreenState extends State<InputFieldsScreen> {
   @override
   Widget build(BuildContext context) {
     texts = AppLocalizations.of(context)!;
-    final children = <Widget> [];
-    for (final id in locData.inputFields.keys){
+    final children = <Widget>[];
+    for (final id in locData.inputFields.keys) {
       final inputField = locData.inputFields[id]!;
       children.add(ListTile(
-        title: Text(inputField.name ?? id),
-        onTap: () async {
-          final new_inputField = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) {
-              return InputFieldScreen(id: id);
-            }),
-          );
-          if (new_inputField == null){
-            return;
-          }
-          if (new_inputField == false) {
-            locData.inputFields.remove(id);
-          } else {
-            locData.inputFields[id] = new_inputField;
-          }
-          locData.save_locations();
-          setState(() {});
-        }
-      ));
+          title: Text(inputField.name ?? id),
+          onTap: () async {
+            final new_inputField = await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) {
+                return InputFieldScreen(id: id);
+              }),
+            );
+            if (new_inputField == null) {
+              return;
+            }
+            if (new_inputField == false) {
+              locData.inputFields.remove(id);
+            } else {
+              locData.inputFields[id] = new_inputField;
+            }
+            locData.save_locations();
+            setState(() {});
+          }));
     }
     return Scaffold(
         appBar: AppBar(
@@ -59,26 +58,25 @@ class _InputFieldsScreenState extends State<InputFieldsScreen> {
                   child: Icon(
                     Icons.add,
                   ),
-                )
-            ),
+                )),
           ],
         ),
-        body:  ListView(
+        body: ListView(
           children: children,
-        )
-    );
+        ));
   }
 
   void addInputField(BuildContext context) async {
-
-    var id = await showInputDialog(context, texts.supplyInputFieldId,
-        title: texts.chooseId);
+    var id = await showInputDialog(context,
+        title: texts.chooseId, text: texts.supplyInputFieldId);
     while (locData.inputFields.containsKey(id)) {
-      id = await showInputDialog(context, id! + texts.inputFieldIdExists,
-          title: texts.chooseId, initialValue:id);
+      id = await showInputDialog(context,
+          title: texts.chooseId,
+          text: id! + texts.inputFieldIdExists,
+          initialValue: id);
     }
 
-    if (id == null){
+    if (id == null) {
       return;
     }
 
@@ -97,7 +95,6 @@ class _InputFieldsScreenState extends State<InputFieldsScreen> {
 }
 
 class InputFieldScreen extends StatefulWidget {
-
   InputFieldScreen({Key? key, required this.id}) : super(key: key);
 
   final String id;
@@ -134,74 +131,86 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
           backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Theme.of(context).colorScheme.onPrimary,
           actions: <Widget>[
-            if (existing) Padding(
-                padding: EdgeInsets.only(right: 20.0),
-                child: GestureDetector(
-                  onTap: () {
-                    deleteInputField(context);
-                  },
-                  child: Icon(
-                    Icons.delete,
-                  ),
-                )
-            ),
+            if (existing)
+              Padding(
+                  padding: EdgeInsets.only(right: 20.0),
+                  child: GestureDetector(
+                    onTap: () {
+                      deleteInputField(context);
+                    },
+                    child: Icon(
+                      Icons.delete,
+                    ),
+                  )),
           ],
         ),
-        body:  ListView(
-          padding: EdgeInsets.all(Constant.padding),
-          children: [
+        body: ListView(padding: EdgeInsets.all(Constant.padding), children: [
+          TextFormField(
+            decoration: InputDecoration(
+              labelText: texts.name,
+              hintText: texts.anOptionalName,
+            ),
+            initialValue: inputField.name,
+            onChanged: (String text) {
+              if (text.isNotEmpty) {
+                inputField.name = text;
+              }
+            },
+            textInputAction: TextInputAction.next,
+            onEditingComplete: () => node.nextFocus(),
+          ),
+          DropdownButtonFormField(
+            decoration: InputDecoration(
+              labelText: texts.type,
+            ),
+            isExpanded: true,
+            items: getDropdownMenuItems([
+              'number',
+              'text',
+              'choice',
+              'multichoice',
+              'photo',
+              'check',
+              'date',
+              'time',
+              'datetime'
+            ]),
+            value: inputField.type,
+            onChanged: (String? text) {
+              if (text != null) {
+                setState(() {
+                  inputField.type = text;
+                });
+              }
+            },
+          ),
+          if (inputField.type == 'choice' || inputField.type == 'multichoice')
             TextFormField(
-              decoration: InputDecoration(
-                labelText: texts.name,
-                hintText: texts.anOptionalName,
-              ),
-              initialValue: inputField.name,
-              onChanged: (String text) {
-                if (text.isNotEmpty) {
-                  inputField.name = text;
-                }
-              },
-              textInputAction: TextInputAction.next,
-              onEditingComplete: () => node.nextFocus(),
-            ),
-            DropdownButtonFormField(
-              decoration: InputDecoration(
-                labelText: texts.type,
-              ),
-              isExpanded: true,
-              items: getDropdownMenuItems(['number', 'text', 'choice', 'multichoice', 'photo', 'check', 'date', 'time', 'datetime']),
-              value: inputField.type,
-              onChanged: (String? text) {
-                if (text != null) {
-                  setState((){
-                    inputField.type = text;
-                  });
-                }
-              },
-            ),
-            if (inputField.type == 'choice' || inputField.type == 'multichoice') TextFormField(
               readOnly: true,
               decoration: InputDecoration(
                 labelText: texts.options,
                 hintText: texts.tapToAddOptions,
               ),
-              controller: TextEditingController(text: (inputField.options ?? '').toString()),
+              controller: TextEditingController(
+                  text: (inputField.options ?? '').toString()),
               onTap: () async {
                 // make sure the text-field is not focussed
                 final new_options = await Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) {
-                    return OptionsScreen(options: inputField.options ?? <String>[]);
+                    return OptionsScreen(
+                        options: inputField.options ?? <String>[]);
                   }),
                 );
                 if (new_options != null) {
                   setState(() {
-                    if (new_options.isEmpty){
+                    if (new_options.isEmpty) {
                       inputField.options = null;
                       inputField.default_value = null;
                     } else {
                       inputField.options = new_options;
-                      if (!inputField.options!.contains(inputField.default_value)){
+                      if (!inputField.options!
+                          .contains(inputField.default_value)) {
                         // the default option was removed, make it null
                         inputField.default_value = null;
                       }
@@ -210,56 +219,59 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
                 }
               },
             ),
-            if (inputField.type == 'choice') DropdownButtonFormField(
+          if (inputField.type == 'choice')
+            DropdownButtonFormField(
               decoration: InputDecoration(
                 labelText: texts.default_value,
               ),
               isExpanded: true,
-              items: getDropdownMenuItems(inputField.options ?? <String>[], add_empty: true),
-              value: (inputField.options ?? <String>[]).contains(inputField.default_value) ? inputField.default_value : '',
+              items: getDropdownMenuItems(inputField.options ?? <String>[],
+                  add_empty: true),
+              value: (inputField.options ?? <String>[])
+                      .contains(inputField.default_value)
+                  ? inputField.default_value
+                  : '',
               onChanged: (String? text) {
                 if (text != null) {
-                  setState((){
+                  setState(() {
                     inputField.default_value = text;
                   });
                 }
               },
             ),
-            TextFormField(
-              decoration: InputDecoration(
-                labelText: texts.hint,
-                hintText: texts.anOptionalHint,
-              ),
-              controller: TextEditingController(text: inputField.hint),
-              onChanged: (String text) {
-                inputField.hint = text;
-              },
+          TextFormField(
+            decoration: InputDecoration(
+              labelText: texts.hint,
+              hintText: texts.anOptionalHint,
             ),
-            CheckboxListTile(
-                value: inputField.required,
-                onChanged: (bool? value) {
-                  setState(() {
-                    if (value != null) {
-                      inputField.required = value;
-                    }
-                  });
-                },
-                title: Text(texts.required),
+            controller: TextEditingController(text: inputField.hint),
+            onChanged: (String text) {
+              inputField.hint = text;
+            },
+          ),
+          CheckboxListTile(
+            value: inputField.required,
+            onChanged: (bool? value) {
+              setState(() {
+                if (value != null) {
+                  inputField.required = value;
+                }
+              });
+            },
+            title: Text(texts.required),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              // Navigate back to the map when tapped.
+              Navigator.pop(context, inputField);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
             ),
-            ElevatedButton(
-              onPressed: () async {
-                // Navigate back to the map when tapped.
-                Navigator.pop(context, inputField);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
-              ),
-              child: Text(texts.done),
-            )
-          ]
-        )
-    );
+            child: Text(texts.done),
+          )
+        ]));
   }
 
   void deleteInputField(BuildContext context) async {
@@ -273,9 +285,7 @@ class _InputFieldScreenState extends State<InputFieldScreen> {
   }
 }
 
-
 class OptionsScreen extends StatefulWidget {
-
   OptionsScreen({Key? key, required this.options}) : super(key: key);
 
   final List<String> options;
@@ -299,85 +309,75 @@ class _OptionsScreenState extends State<OptionsScreen> {
   Widget build(BuildContext context) {
     texts = AppLocalizations.of(context)!;
 
-    final children = <Widget> [];
-    options.asMap().forEach((index, option){
-      children.add(Row(
-        children: [
-          Expanded(
+    final children = <Widget>[];
+    options.asMap().forEach((index, option) {
+      children.add(Row(children: [
+        Expanded(
             flex: 3,
-            child:TextFormField(
-              initialValue: option,
-              onChanged: (String text) {
-                options[index] = text;
-              }
-            )
-          ),
-          Expanded(
-              flex: 1,
-              child: ElevatedButton(
-                onPressed: () async {
-                  var text = texts.deleteOption;
-                  var action = await showContinueDialog(context, text);
-                  if (action == true) {
-                    setState(() {
-                      options.removeAt(index);
-                    });
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                ),
-                child: Text('x'),
-              )
-          ),
-        ]
-      ));
+            child: TextFormField(
+                initialValue: option,
+                onChanged: (String text) {
+                  options[index] = text;
+                })),
+        Expanded(
+            flex: 1,
+            child: ElevatedButton(
+              onPressed: () async {
+                var text = texts.deleteOption;
+                var action = await showContinueDialog(context, text);
+                if (action == true) {
+                  setState(() {
+                    options.removeAt(index);
+                  });
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              ),
+              child: Text('x'),
+            )),
+      ]));
     });
 
-    children.add(Row(
-      children: [
-        Expanded(
+    children.add(Row(children: [
+      Expanded(
           child: ElevatedButton(
-            onPressed: () async {
-              // Navigate back to the map when tapped.
-              Navigator.pop(context, options);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Theme.of(context).colorScheme.onPrimary,
-            ),
-            child: Text(texts.done),
-          )
+        onPressed: () async {
+          // Navigate back to the map when tapped.
+          Navigator.pop(context, options);
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Theme.of(context).colorScheme.onPrimary,
         ),
-      ]
-    ));
+        child: Text(texts.done),
+      )),
+    ]));
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(texts.options),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
-        actions: <Widget>[
-          Padding(
-            padding: EdgeInsets.only(right: 20.0),
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  options.add('');
-                });
-              },
-              child: Icon(
-                Icons.add,
-              ),
-            )
-          ),
-        ],
-      ),
-      body: ListView(
-        padding: EdgeInsets.all(Constant.padding),
-        children: children,
-      )
-    );
+        appBar: AppBar(
+          title: Text(texts.options),
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Theme.of(context).colorScheme.onPrimary,
+          actions: <Widget>[
+            Padding(
+                padding: EdgeInsets.only(right: 20.0),
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      options.add('');
+                    });
+                  },
+                  child: Icon(
+                    Icons.add,
+                  ),
+                )),
+          ],
+        ),
+        body: ListView(
+          padding: EdgeInsets.all(Constant.padding),
+          children: children,
+        ));
   }
 }

@@ -14,7 +14,7 @@ import 'dialogs.dart';
 
 bool use_pure_ftp = false;
 
-connectToFtp(BuildContext context, SharedPreferences prefs, {path}) async {
+Future<Object?>? connectToFtp(BuildContext context, SharedPreferences prefs, {path}) async {
   final secure_storage = FlutterSecureStorage();
   var host = prefs.getString('ftp_hostname') ?? '';
   var user = await secure_storage.read(key: 'ftp_username') ?? '';
@@ -237,8 +237,8 @@ Future<List<String>?> listFilesOnFtp(connection, SharedPreferences prefs, BuildC
   }
   names.remove('.');
   names.remove('..');
-  // sort the files alphabetcally
-  names.sort((a, b) => a.toString().compareTo(b.toString()));
+  // sort the files alphabetcally, but igore the extension
+  names.sort((a, b) => basenameWithoutExtension(a).compareTo(basenameWithoutExtension(b)));
   return names;
 }
 

@@ -25,7 +25,7 @@ class PropertiesScreen extends StatelessWidget {
         itemCount: location.properties!.length,
         itemBuilder: (BuildContext context, int index) {
           final key = location.properties!.keys.elementAt(index);
-          final value = location.properties![key]!;
+          var value = location.properties![key] == null ? "" : location.properties![key]!.toString();
           return Container(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -36,7 +36,7 @@ class PropertiesScreen extends StatelessWidget {
                 ),
                 Expanded(
                   flex: 1,
-                  child: Text(value.toString()),
+                  child: Text(value),
                 )
               ]
             ),

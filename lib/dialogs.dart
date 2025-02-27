@@ -1,11 +1,11 @@
-
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-void showLoaderDialog(BuildContext context, {String text='Loading...'}) {
-  showDialog(barrierDismissible: false,
+void showLoaderDialog(BuildContext context, {String text = 'Loading...'}) {
+  showDialog(
+    barrierDismissible: false,
     context: context,
     builder: (BuildContext context) {
       return buildLoadingIndicator(text: text);
@@ -13,46 +13,47 @@ void showLoaderDialog(BuildContext context, {String text='Loading...'}) {
   );
 }
 
-AlertDialog buildLoadingIndicator({String text='Loading...'}){
+AlertDialog buildLoadingIndicator({String text = 'Loading...'}) {
   return AlertDialog(
     content: Row(
       children: [
         CircularProgressIndicator(),
         Container(margin: EdgeInsets.only(left: 7), child: Text(text)),
-      ],),
+      ],
+    ),
   );
 }
 
-void showErrorDialog(BuildContext context, String text, {String title = 'Error'}) {
+void showErrorDialog(BuildContext context, String text,
+    {String title = 'Error'}) {
   showDialog(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        title: Text(title),
-        content: SingleChildScrollView(
-          child: ListBody(
-            children: <Widget>[
-              Text(text),
-            ],
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(title),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text(text),
+              ],
+            ),
           ),
-        ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: Text('OK'),
-          ),
-        ],
-      );
-    }
-  );
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('OK'),
+            ),
+          ],
+        );
+      });
 }
 
 Future<bool?> showContinueDialog(BuildContext context, String text,
-    {String title = 'Continue?', String yesButton = 'Continue',
+    {String title = 'Continue?',
+    String yesButton = 'Continue',
     String noButton = 'Cancel'}) async {
-
   // show the dialog
   var action = await showDialog(
     context: context,
@@ -62,13 +63,13 @@ Future<bool?> showContinueDialog(BuildContext context, String text,
         content: Text(text),
         actions: [
           TextButton(
-            onPressed:  () {
+            onPressed: () {
               Navigator.of(context).pop(false);
             },
             child: Text(noButton),
           ),
           TextButton(
-            onPressed:  () {
+            onPressed: () {
               Navigator.of(context).pop(true);
             },
             child: Text(yesButton),
@@ -80,11 +81,34 @@ Future<bool?> showContinueDialog(BuildContext context, String text,
   return action;
 }
 
-Future<String?> showInputDialog(BuildContext context, String text,
-    {String title = 'Input', String yesButton = 'ok',
-      String noButton = 'cancel', String? initialValue}) async {
+Future<String?> showInputDialog(BuildContext context,
+    {String title = 'Input',
+    String? text,
+    String yesButton = 'ok',
+    String noButton = 'cancel',
+    String? initialValue,
+    String type = 'text',
+    bool selectInitialValue = true}) async {
+  final controller = TextEditingController();
+  if (initialValue != null) {
+    controller.text = initialValue;
+    if (selectInitialValue) {
+      // Select the initial text, so it can be deleted quickly
+      controller.selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: initialValue.length,
+      );
+    }
+  }
 
-  final myController = TextEditingController(text: initialValue);
+  var keyboardType;
+  var inputFormatters;
+  if (type == 'integer') {
+    keyboardType = TextInputType.number;
+    inputFormatters = <TextInputFormatter>[
+      FilteringTextInputFormatter.digitsOnly
+    ];
+  }
   // show the dialog
   var action = await showDialog(
     context: context,
@@ -94,23 +118,25 @@ Future<String?> showInputDialog(BuildContext context, String text,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(text),
+            if (text != null) Text(text),
             TextFormField(
-              controller: myController,
+              controller: controller,
               autofocus: true,
+              keyboardType: keyboardType,
+              inputFormatters: inputFormatters,
             ),
           ],
         ),
         actions: [
           TextButton(
-            onPressed:  () {
+            onPressed: () {
               Navigator.of(context).pop(null);
             },
             child: Text(noButton),
           ),
           TextButton(
-            onPressed:  () {
-              final id = myController.text;
+            onPressed: () {
+              final id = controller.text;
               Navigator.of(context).pop(id);
             },
             child: Text(yesButton),
@@ -122,7 +148,7 @@ Future<String?> showInputDialog(BuildContext context, String text,
   return action;
 }
 
-void displayInformation(context, text){
+void displayInformation(context, text) {
   var snackBar = SnackBar(content: Text(text));
   ScaffoldMessenger.of(context)
     ..removeCurrentSnackBar()
@@ -138,10 +164,8 @@ class MultiSelectDialogItem<V> {
 }
 
 class MultiSelectDialog<V> extends StatefulWidget {
-  MultiSelectDialog({
-    required this.items,
-    this.initialSelectedValues,
-    this.title});
+  MultiSelectDialog(
+      {required this.items, this.initialSelectedValues, this.title});
 
   final List<MultiSelectDialogItem<V>> items;
   final Set<V>? initialSelectedValues;
@@ -187,13 +211,12 @@ class _MultiSelectDialogState<V> extends State<MultiSelectDialog<V>> {
       ),
       actions: <Widget>[
         TextButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          child: Text('Cancel')
-        ),
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: Text('Cancel')),
         TextButton(
-          onPressed: (){
+          onPressed: () {
             Navigator.pop(context, _selectedValues);
           },
           child: Text('Ok'),
@@ -214,16 +237,15 @@ class _MultiSelectDialogState<V> extends State<MultiSelectDialog<V>> {
   }
 }
 
-List<DropdownMenuItem<String>> getDropdownMenuItems(options, {add_empty=false}) {
+List<DropdownMenuItem<String>> getDropdownMenuItems(options,
+    {add_empty = false}) {
   var items = <DropdownMenuItem<String>>[];
   if (add_empty) {
     // add an empty value
-    items.add(
-        DropdownMenuItem(
-          value: '',
-          child: Text(''),
-        )
-    );
+    items.add(DropdownMenuItem(
+      value: '',
+      child: Text(''),
+    ));
   }
   for (var option in options) {
     items.add(
@@ -236,29 +258,50 @@ List<DropdownMenuItem<String>> getDropdownMenuItems(options, {add_empty=false}) 
   return items;
 }
 
-Future<int?> chooseMeasuredInterval(BuildContext context, SharedPreferences prefs, texts) async{
+Future<int?> chooseMeasuredInterval(
+    BuildContext context, SharedPreferences prefs, texts) async {
   final mark_measured_days = prefs.getInt('mark_measured_days') ?? 0;
   var options = <Widget>[];
-  for (var interval in [0, 1, 7, 30, 365]){
+  var fixed_intervals = [0, 1, 7, 30, 365];
+  for (var interval in fixed_intervals) {
     final icon;
-    if (interval == mark_measured_days){
+    if (interval == mark_measured_days) {
       icon = Icon(Icons.check_box_outlined);
     } else {
       icon = Icon(Icons.check_box_outline_blank);
     }
+    final text = interval == 0
+        ? texts.doNotMarkMeasuredLocations
+        : texts.withinIntervalDays(interval);
     options.add(SimpleDialogOption(
         onPressed: () {
           Navigator.of(context).pop(interval);
         },
-        child: Row(
-            children:[
-              icon,
-              SizedBox(width: 10),
-              Text(texts.withinIntervalDays(interval)),
-            ]
-        )
-    ));
+        child: Row(children: [
+          icon,
+          SizedBox(width: 10),
+          Text(text),
+        ])));
   }
+  var text = texts.specifyInterval;
+  if (!fixed_intervals.contains(mark_measured_days)) {
+    text = text + " (" + mark_measured_days.toString() + ")";
+  }
+  options.add(SimpleDialogOption(
+      onPressed: () async {
+        String? interval = await showInputDialog(context,
+            title: texts.specifyInterval,
+            type: "integer",
+            initialValue: mark_measured_days.toString());
+        if (interval != null && interval.isNotEmpty) {
+          Navigator.of(context).pop(int.parse(interval));
+        }
+      },
+      child: Row(children: [
+        Icon(Icons.keyboard_outlined),
+        SizedBox(width: 10),
+        Text(text), // texts.customInterval
+      ])));
 
   var interval = await showDialog(
       context: context,
@@ -267,12 +310,13 @@ Future<int?> chooseMeasuredInterval(BuildContext context, SharedPreferences pref
           title: Text(texts.markMeasuredLocations),
           children: options,
         );
-      }
-  );
+      });
   return interval;
 }
 
-Future<String?> editStringSettingDialog(BuildContext context, String key, String title, prefs, texts, {bool password=false, String default_value=''}) async {
+Future<String?> editStringSettingDialog(
+    BuildContext context, String key, String title, prefs, texts,
+    {bool password = false, String default_value = ''}) async {
   var settingValue;
   if (key == "ftp_username" || key == "ftp_password") {
     final secure_storage = new FlutterSecureStorage();
@@ -317,6 +361,5 @@ Future<String?> editStringSettingDialog(BuildContext context, String key, String
             ),
           ],
         );
-      }
-  );
+      });
 }

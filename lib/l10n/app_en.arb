@@ -10,13 +10,14 @@
     "changeFtpFolder": "Change FTP Folder",
     "chooseGroups": "Choose groups",
     "selectGroups": "Select groups",
-    "deleteAllData": "Delete all data",
-    "sureToDeleteData": "Are you sure you wish to delete all data?",
+    "deleteAllData": "Delete data from phone",
+    "sureToDeleteData": "Are you sure you wish to delete all data from your phone?",
     "unsentMeasurementsTitle": "First send measurements?",
     "unsentMeasurements": "There are still unsent measurements. Are you really sure you want to delete all data?",
     "uploadUnsentMeasurements": "There are unsent measurements. Do you want to upload these first? Otherwise they will be lost.",
     "settings": "Settings",
     "markMeasuredLocations": "Mark measured locations",
+    "doNotMarkMeasuredLocations": "Do not mark measured locations",
     "withinIntervalDays": "Within {interval} days",
     "@withinIntervalDays": {
             "placeholders": {
@@ -25,6 +26,7 @@
                 }
             }
         },
+    "specifyInterval": "Specify a different number of days",
     "markNotMeasured": "Mark locations without measurements",
     "addNewLocation": "Add a new location",
     "chooseSublocation": "Choose a sublocation",
@@ -50,6 +52,7 @@
     "uploadPhotoFailed": "Unable to upload photo: ",
 
     "done": "Done",
+    "previousMeasurements": "Previous measurements:",
     "sureToDeleteMeasurement": "Are you sure you want to delete {value} of type {id}?",
     "@sureToDeleteMeasurement": {
                 "placeholders": {
@@ -61,6 +64,14 @@
                     }
                 }
             },
+    "sureToDeleteMeasurementAt": "Are you sure you want to delete measurement at {datetime}?",
+    "@sureToDeleteMeasurementAt": {
+        "placeholders": {
+            "datetime": {
+                "type": "String"
+            }
+        }
+    },
     "sureToDeleteMeasurementTitle": "Delete measurement?",
     "isNotValidNumber": " is not a valid number",
     "ignoreFilledValues": "All entered values will be deleted when leaving this location. Do you still want to leave?",
@@ -99,6 +110,7 @@
     "changeUserInputfield": "Change name of inputfield for user",
     "path": "Path",
     "onlyExportNewMeasurements": "Only export new measurements",
+    "uploadDataInstantly": "Upload measurements instantly",
     "cancel": "Cancel",
     "ok": "Ok",
     "input": "Input",
@@ -168,6 +180,7 @@
     "requiredInputField": "This is a required field",
     "required": "required",
     "showPreviousAndNextLocation": "Buttons previous/next location",
+    "showSequenceNumber": "Show sequence number on location icons",
 
     "properties": "Properties",
 

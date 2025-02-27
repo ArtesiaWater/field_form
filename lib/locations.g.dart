@@ -26,6 +26,10 @@ Location _$LocationFromJson(Map<String, dynamic> json) => Location(
       max_values: (json['max_values'] as Map<String, dynamic>?)?.map(
         (k, e) => MapEntry(k, (e as num).toDouble()),
       ),
+      sequence_number: (json['sequence_number'] as num?)?.toInt(),
+      measurements: (json['measurements'] as List<dynamic>?)
+          ?.map((e) => Map<String, String>.from(e as Map))
+          .toList(),
     );
 
 Map<String, dynamic> _$LocationToJson(Location instance) => <String, dynamic>{
@@ -40,6 +44,8 @@ Map<String, dynamic> _$LocationToJson(Location instance) => <String, dynamic>{
       'color': instance.color,
       'min_values': instance.min_values,
       'max_values': instance.max_values,
+      'sequence_number': instance.sequence_number,
+      'measurements': instance.measurements,
     };
 
 LocationFile _$LocationFileFromJson(Map<String, dynamic> json) => LocationFile(

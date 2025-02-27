@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:pdfx/pdfx.dart';
 
-import 'constants.dart';
-
 class PhotoScreen extends StatelessWidget {
   PhotoScreen({key, required this.file}) : super(key: key);
 

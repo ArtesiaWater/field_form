@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:json_annotation/json_annotation.dart';
@@ -21,7 +20,9 @@ class Location {
     this.group,
     this.color,
     this.min_values,
-    this.max_values
+    this.max_values,
+    this.sequence_number,
+    this.measurements,
   });
 
   factory Location.fromJson(Map<String, dynamic> json) => _$LocationFromJson(json);
@@ -38,6 +39,8 @@ class Location {
   final String? color;
   final Map<String, double>? min_values;
   final Map<String, double>? max_values;
+  final int? sequence_number;
+  final List<Map<String, String>>? measurements;
 }
 
 @JsonSerializable()
