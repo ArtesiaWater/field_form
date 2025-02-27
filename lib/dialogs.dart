@@ -283,7 +283,7 @@ Future<int?> chooseMeasuredInterval(
           Text(text),
         ])));
   }
-  var text = texts.specifyInterval;
+  var text = texts.other;
   if (!fixed_intervals.contains(mark_measured_days)) {
     text = text + " (" + mark_measured_days.toString() + ")";
   }

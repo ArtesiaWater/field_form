@@ -27,6 +27,7 @@
             }
         },
     "specifyInterval": "Specify a different number of days",
+    "other": "Other",
     "markNotMeasured": "Mark locations without measurements",
     "addNewLocation": "Add a new location",
     "chooseSublocation": "Choose a sublocation",
@@ -184,7 +185,7 @@
 
     "properties": "Properties",
 
-    "value_is_lower_than_min": "The value of {inputfield} ({value}) is lower than {min_value}. Do you want to continue anyway?",
+    "value_is_lower_than_min": "The value of {inputfield} ({value}) is lower than the specified minimum value ({min_value}). Do you want to continue anyway?",
     "@value_is_lower_than_min": {
         "placeholders": {
             "inputfield": {
@@ -200,7 +201,7 @@
     },
     "value_is_lower_than_min_title": "Value too low",
 
-    "value_is_higher_than_max": "The value of {inputfield} ({value}) is higher than {max_value}. Do you want to continue anyway?",
+    "value_is_higher_than_max": "The value of {inputfield} ({value}) is higher than the specified maximum value ({max_value}). Do you want to continue anyway?",
     "@value_is_higher_than_max": {
         "placeholders": {
             "inputfield": {

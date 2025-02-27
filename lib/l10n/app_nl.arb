@@ -20,6 +20,7 @@
     "doNotMarkMeasuredLocations": "Markeer bemeten locaties niet",
     "withinIntervalDays": "Binnen {interval} dagen",
     "specifyInterval": "Geef een ander aantal dagen op",
+    "other": "Anders",
     "markNotMeasured": "Markeer locaties zonder metingen",
     "addNewLocation": "Voeg een nieuwe locatie toe",
     "chooseSublocation": "Kies een sublocatie",
@@ -145,9 +146,9 @@
 
     "properties": "Eigenschappen",
 
-    "value_is_lower_than_min": "De waarde van {inputfield} ({value}) is lager dan {min_value}. Wilt u toch doorgaan?",
+    "value_is_lower_than_min": "De waarde van {inputfield} ({value}) is lager dan de opgegeven minimale waarde ({min_value}). Wilt u toch doorgaan?",
     "value_is_lower_than_min_title": "Waarde te laag",
 
-    "value_is_higher_than_max": "De waarde van {inputfield} ({value}) is hoger dan {max_value}. Wilt u toch doorgaan?",
+    "value_is_higher_than_max": "De waarde van {inputfield} ({value}) is hoger dan de opgegeven maximale waarde ({max_value}). Wilt u toch doorgaan?",
     "value_is_higher_than_max_title": "Waarde te hoog"
 }

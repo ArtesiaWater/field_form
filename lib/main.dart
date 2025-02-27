@@ -1083,8 +1083,10 @@ class _MyAppState extends State<MyApp> {
     await measurementProvider.deleteAllMeasurements();
     await prefs.remove('imported_measurement_files');
 
+    // disable all settings that cannot be changed in the settings-menu
     await prefs.remove('disable_adding_locations');
     await prefs.remove('hide_settings');
+    await prefs.remove('allow_required_override');
     return true;
   }
 
