@@ -35,10 +35,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     texts = AppLocalizations.of(context)!;
-    return WillPopScope(
-        onWillPop: () async {
+    return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (bool didPop, dynamic result) {
+          if (didPop) return;
           Navigator.pop(context, redrawMap);
-          return false;
         },
         child: Scaffold(
             appBar: AppBar(

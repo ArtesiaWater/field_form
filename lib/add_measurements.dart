@@ -150,12 +150,13 @@ class _AddMeasurementsState extends State<AddMeasurements> {
   @override
   Widget build(BuildContext context) {
     texts = AppLocalizations.of(context)!;
-    return WillPopScope(
-        onWillPop: () async {
+    return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (bool didPop, dynamic result) async {
+          if (didPop) return;
           if (await checkToGoBack()) {
             Navigator.pop(context, changedMeasurements);
           }
-          return false;
         },
         child: Scaffold(
             appBar: buildAppBar(),
@@ -821,7 +822,6 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       await widget.measurementProvider.insert(measurement);
       return 2;
     }
-    return 1;
   }
 
   String? numberValidator(String? value) {
