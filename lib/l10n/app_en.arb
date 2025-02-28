@@ -80,6 +80,7 @@
     "ignoreFilledValuesTitle": "Leave without saving?",
     "imageNotSupported": ": this file is not supported. Only jpg, png and pdf are supported",
     "connectToFtpFailed": "Unable to connect to FTP-server",
+    "authenticationError": "Authentication on FTP-server failed. Set a valid username and password, or extend your access session.",
     "unableToFindOnFtp": "Unable to find the file on FTP-server: ",
     "unableToFindPathOnFtp": "Unable to find path on FTP-server: ",
     "noHostnameDefined": "No hostname defined. Please assign a hostname in the settings",

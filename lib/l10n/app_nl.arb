@@ -56,6 +56,7 @@
     "ignoreFilledValuesTitle": "Weggaan zonder op te slaan?",
     "imageNotSupported": ": dit bestand wordt niet ondersteund. Alleen jpg, png en pdf worden ondersteund",
     "connectToFtpFailed": "Het lukt niet om met de FTP-server te verbinden",
+    "authenticationError": "Er is een authenticatie-fout opgetreden met de FTP-server. Voer een geldige gebruikersnaam en wachtwoord in, of verleng uw toegangsessie.",
     "unableToFindOnFtp": "Kan het bestand niet vinden op de FTP-server: ",
     "unableToFindPathOnFtp": "Kan de map niet vinden op de FTP-server: ",
     "noHostnameDefined": "Geen hostnaam opgegeven. Geef aub een hostname op in de instellingen.",

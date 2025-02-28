@@ -43,6 +43,9 @@ Future<Object?>? connectToFtp(BuildContext context, SharedPreferences prefs, {pa
       );
       final sftp = await client.sftp();
       return sftp;
+    } on SSHAuthFailError catch (e) {
+      showErrorDialog(context, e.toString() + ': ' + texts.authenticationError, title: texts.connectToFtpFailed);
+      return null;
     } catch (e) {
       showErrorDialog(context, e.toString(), title: texts.connectToFtpFailed);
       return null;
