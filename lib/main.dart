@@ -1087,6 +1087,8 @@ class _MyAppState extends State<MyApp> {
     await prefs.remove('disable_adding_locations');
     await prefs.remove('hide_settings');
     await prefs.remove('allow_required_override');
+    await prefs.remove('group_previous_measurements_by_date');
+    await prefs.remove('block_character_set');
     return true;
   }
 

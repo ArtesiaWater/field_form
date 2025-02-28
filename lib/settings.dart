@@ -500,6 +500,7 @@ void parseSettings(
       case 'add_user_to_measurements':
       case 'mark_not_measured':
       case 'allow_required_override':
+      case 'group_previous_measurements_by_date':
         // boolean setting
         var value = settings[key]!;
         if (value is String) {

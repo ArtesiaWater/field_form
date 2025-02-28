@@ -65,8 +65,8 @@
                     }
                 }
             },
-    "sureToDeleteMeasurementAt": "Are you sure you want to delete measurement at {datetime}?",
-    "@sureToDeleteMeasurementAt": {
+    "sureToDeleteMeasurementsAt": "Are you sure you want to delete the measurements at {datetime}?",
+    "@sureToDeleteMeasurementsAt": {
         "placeholders": {
             "datetime": {
                 "type": "String"
@@ -74,6 +74,7 @@
         }
     },
     "sureToDeleteMeasurementTitle": "Delete measurement?",
+    "sureToDeleteMeasurementsTitle": "Delete measurements?",
     "isNotValidNumber": " is not a valid number",
     "ignoreFilledValues": "All entered values will be deleted when leaving this location. Do you still want to leave?",
     "ignoreFilledValuesTitle": "Leave without saving?",

@@ -648,25 +648,15 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       measurementsByDatetime.forEach((datetime, measurements) {
         var rows_per_datetime = <Widget>[];
         for (var measurement in measurements) {
-          Widget valueWidget = Text(measurement.value);
-          if (locData.inputFields.containsKey(measurement.type)) {
-            if (locData.inputFields[measurement.type]!.type == 'photo') {
-              valueWidget = TextButton(
-                  onPressed: () {
-                    displayPhoto(measurement.value);
-                  },
-                  child: valueWidget);
-            }
-          }
           rows_per_datetime.add(
               Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
             Expanded(
               flex: 3,
-              child: Text(measurement.type),
+              child: Text(getMeasurementTypeName(measurement.type)),
             ),
             Expanded(
               flex: 2,
-              child: valueWidget,
+              child: getPrevousValueWidget(measurement),
             ),
           ]));
         }
@@ -678,11 +668,11 @@ class _AddMeasurementsState extends State<AddMeasurements> {
             onPressed: () async {
               var action = await showContinueDialog(
                   context,
-                  texts.sureToDeleteMeasurementAt(
+                  texts.sureToDeleteMeasurementsAt(
                       Constant.datetime_format.format(datetime)),
                   yesButton: texts.yes,
                   noButton: texts.no,
-                  title: texts.sureToDeleteMeasurementTitle);
+                  title: texts.sureToDeleteMeasurementsTitle);
               if (action == true) {
                 deleteMeasurements(measurements);
               }
@@ -716,16 +706,6 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       });
     } else {
       for (var measurement in measurements) {
-        Widget valueWidget = Text(measurement.value);
-        if (locData.inputFields.containsKey(measurement.type)) {
-          if (locData.inputFields[measurement.type]!.type == 'photo') {
-            valueWidget = TextButton(
-                onPressed: () {
-                  displayPhoto(measurement.value);
-                },
-                child: valueWidget);
-          }
-        }
         rows.add(
             Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
           Expanded(
@@ -736,11 +716,11 @@ class _AddMeasurementsState extends State<AddMeasurements> {
           ),
           Expanded(
             flex: 2,
-            child: Text(measurement.type),
+            child: Text(getMeasurementTypeName(measurement.type)),
           ),
           Expanded(
             flex: 2,
-            child: valueWidget,
+            child: getPrevousValueWidget(measurement),
           ),
           Expanded(
               flex: 1,
@@ -766,6 +746,15 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       }
     }
     return rows;
+  }
+
+  String getMeasurementTypeName(String id) {
+    if (locData.inputFields.containsKey(id)) {
+      if (locData.inputFields[id]!.name != null) {
+        return locData.inputFields[id]!.name!;
+      }
+    }
+    return id;
   }
 
   Future<int> storeMeasurement(id) async {
@@ -822,6 +811,20 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       await widget.measurementProvider.insert(measurement);
       return 2;
     }
+  }
+
+  Widget getPrevousValueWidget(Measurement measurement) {
+    Widget valueWidget = Text(measurement.value);
+    if (locData.inputFields.containsKey(measurement.type)) {
+      if (locData.inputFields[measurement.type]!.type == 'photo') {
+        valueWidget = TextButton(
+            onPressed: () {
+              displayPhoto(measurement.value);
+            },
+            child: valueWidget);
+      }
+    }
+    return valueWidget;
   }
 
   String? numberValidator(String? value) {
