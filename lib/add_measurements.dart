@@ -906,6 +906,7 @@ class _AddMeasurementsState extends State<AddMeasurements> {
     }
     setState(() {
       measurement.value = '';
+      measurement.exported = false;
       widget.measurementProvider.update(measurement);
     });
     changedMeasurements = true;
