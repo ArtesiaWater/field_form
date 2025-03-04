@@ -1,5 +1,4 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="nl.artesia.field_form">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
    <uses-permission android:name="android.permission.INTERNET"/>
    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
@@ -8,7 +7,8 @@
    <application
         android:label="FieldForm"
         android:icon="@mipmap/launcher_icon"
-        android:roundIcon="@mipmap/launcher_icon_round">
+        android:roundIcon="@mipmap/launcher_icon_round"
+        android:usesCleartextTraffic="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"

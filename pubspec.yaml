@@ -58,9 +58,6 @@ dependencies:
   # check_vpn_connection: ^0.0.2
   # webview_flutter: ^4.8.0
 
-dependency_overrides:
-  meta: ^1.15.0
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
