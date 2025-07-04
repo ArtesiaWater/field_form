@@ -24,7 +24,6 @@ dependencies:
   flutter:
     sdk: flutter
   google_maps_flutter: ^2.10.1 # or the latest version on Pub
-  google_maps_flutter_ios: 2.13.1
   json_serializable: ^6.0.0
   flutter_settings_ui: ^3.0.0
   path_provider: ^2.0.1
