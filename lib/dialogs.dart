@@ -165,11 +165,21 @@ class MultiSelectDialogItem<V> {
 
 class MultiSelectDialog<V> extends StatefulWidget {
   MultiSelectDialog(
-      {required this.items, this.initialSelectedValues, this.title});
+      {required this.items,
+      this.initialSelectedValues,
+      this.title = 'Select',
+      this.selectNone,
+      this.selectAll,
+      this.ok = 'Ok',
+      this.cancel = 'Cancel'});
 
   final List<MultiSelectDialogItem<V>> items;
   final Set<V>? initialSelectedValues;
-  final String? title;
+  final String title;
+  final String? selectNone;
+  final String? selectAll;
+  final String ok;
+  final String cancel;
 
   @override
   State<StatefulWidget> createState() => _MultiSelectDialogState<V>();
@@ -198,8 +208,53 @@ class _MultiSelectDialogState<V> extends State<MultiSelectDialog<V>> {
 
   @override
   Widget build(BuildContext context) {
+    var actions = <Widget>[];
+    if (widget.selectNone != null && widget.selectAll != null) {
+      var extra_actions = <Widget>[];
+      if (widget.selectNone != null) {
+        extra_actions.add(TextButton(
+          onPressed: () {
+            setState(() {
+              _selectedValues.clear();
+            });
+          },
+          child: Text(widget.selectNone!),
+        ));
+      }
+      if (widget.selectAll != null) {
+        extra_actions.add(TextButton(
+          onPressed: () {
+            setState(() {
+              _selectedValues.clear();
+              for (var widget in widget.items) {
+                _selectedValues.add(widget.value);
+              }
+            });
+          },
+          child: Text(widget.selectAll!),
+        ));
+      }
+
+      actions.add(Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: extra_actions));
+    }
+    actions
+        .add(Row(mainAxisAlignment: MainAxisAlignment.end, children: <Widget>[
+      TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          child: Text(widget.cancel)),
+      TextButton(
+        onPressed: () {
+          Navigator.pop(context, _selectedValues);
+        },
+        child: Text(widget.ok),
+      )
+    ]));
     return AlertDialog(
-      title: Text(widget.title ?? 'Select'),
+      title: Text(widget.title),
       contentPadding: EdgeInsets.only(top: 12.0),
       content: SingleChildScrollView(
         child: ListTileTheme(
@@ -209,19 +264,7 @@ class _MultiSelectDialogState<V> extends State<MultiSelectDialog<V>> {
           ),
         ),
       ),
-      actions: <Widget>[
-        TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: Text('Cancel')),
-        TextButton(
-          onPressed: () {
-            Navigator.pop(context, _selectedValues);
-          },
-          child: Text('Ok'),
-        )
-      ],
+      actions: actions,
     );
   }
 

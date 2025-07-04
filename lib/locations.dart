@@ -41,6 +41,10 @@ class Location {
   final Map<String, double>? max_values;
   final int? sequence_number;
   final List<Map<String, String>>? measurements;
+  @JsonKey(includeToJson: false)
+  String? next_location;
+  @JsonKey(includeToJson: false)
+  String? previous_location;
 }
 
 @JsonSerializable()

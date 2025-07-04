@@ -30,22 +30,24 @@ Location _$LocationFromJson(Map<String, dynamic> json) => Location(
       measurements: (json['measurements'] as List<dynamic>?)
           ?.map((e) => Map<String, String>.from(e as Map))
           .toList(),
-    );
+    )
+      ..next_location = json['next_location'] as String?
+      ..previous_location = json['previous_location'] as String?;
 
 Map<String, dynamic> _$LocationToJson(Location instance) => <String, dynamic>{
-      'lat': instance.lat,
-      'lon': instance.lon,
-      'name': instance.name,
-      'inputfields': instance.inputfields,
-      'properties': instance.properties,
-      'photo': instance.photo,
-      'sublocations': instance.sublocations,
-      'group': instance.group,
-      'color': instance.color,
-      'min_values': instance.min_values,
-      'max_values': instance.max_values,
-      'sequence_number': instance.sequence_number,
-      'measurements': instance.measurements,
+      if (instance.lat case final value?) 'lat': value,
+      if (instance.lon case final value?) 'lon': value,
+      if (instance.name case final value?) 'name': value,
+      if (instance.inputfields case final value?) 'inputfields': value,
+      if (instance.properties case final value?) 'properties': value,
+      if (instance.photo case final value?) 'photo': value,
+      if (instance.sublocations case final value?) 'sublocations': value,
+      if (instance.group case final value?) 'group': value,
+      if (instance.color case final value?) 'color': value,
+      if (instance.min_values case final value?) 'min_values': value,
+      if (instance.max_values case final value?) 'max_values': value,
+      if (instance.sequence_number case final value?) 'sequence_number': value,
+      if (instance.measurements case final value?) 'measurements': value,
     };
 
 LocationFile _$LocationFileFromJson(Map<String, dynamic> json) => LocationFile(
@@ -68,11 +70,12 @@ LocationFile _$LocationFileFromJson(Map<String, dynamic> json) => LocationFile(
 
 Map<String, dynamic> _$LocationFileToJson(LocationFile instance) =>
     <String, dynamic>{
-      'settings': instance.settings,
-      'inputfields': instance.inputfields,
-      'inputfield_groups': instance.inputfield_groups,
-      'groups': instance.groups,
-      'locations': instance.locations,
+      if (instance.settings case final value?) 'settings': value,
+      if (instance.inputfields case final value?) 'inputfields': value,
+      if (instance.inputfield_groups case final value?)
+        'inputfield_groups': value,
+      if (instance.groups case final value?) 'groups': value,
+      if (instance.locations case final value?) 'locations': value,
     };
 
 InputField _$InputFieldFromJson(Map<String, dynamic> json) => InputField(
@@ -88,10 +91,10 @@ InputField _$InputFieldFromJson(Map<String, dynamic> json) => InputField(
 Map<String, dynamic> _$InputFieldToJson(InputField instance) =>
     <String, dynamic>{
       'type': instance.type,
-      'hint': instance.hint,
-      'name': instance.name,
-      'options': instance.options,
-      'default_value': instance.default_value,
+      if (instance.hint case final value?) 'hint': value,
+      if (instance.name case final value?) 'name': value,
+      if (instance.options case final value?) 'options': value,
+      if (instance.default_value case final value?) 'default_value': value,
       'required': instance.required,
     };
 
@@ -106,7 +109,7 @@ InputFieldGroup _$InputFieldGroupFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$InputFieldGroupToJson(InputFieldGroup instance) =>
     <String, dynamic>{
       'inputfields': instance.inputfields,
-      'name': instance.name,
+      if (instance.name case final value?) 'name': value,
     };
 
 Group _$GroupFromJson(Map<String, dynamic> json) => Group(
@@ -118,7 +121,7 @@ Group _$GroupFromJson(Map<String, dynamic> json) => Group(
     );
 
 Map<String, dynamic> _$GroupToJson(Group instance) => <String, dynamic>{
-      'name': instance.name,
-      'color': instance.color,
-      'inputfields': instance.inputfields,
+      if (instance.name case final value?) 'name': value,
+      if (instance.color case final value?) 'color': value,
+      if (instance.inputfields case final value?) 'inputfields': value,
     };

@@ -64,6 +64,7 @@ class _MyAppState extends State<MyApp> {
   bool myLocationEnabled = false;
   late AppLocalizations texts;
   var activeMarker;
+  var sequenceNumberIcons;
 
   @override
   void initState() {
@@ -74,6 +75,9 @@ class _MyAppState extends State<MyApp> {
     measurementProvider.open();
     requestPermission();
     setMeasuredIcons();
+
+    // create a map with icons, with the sequence_number as keys
+    sequenceNumberIcons = <int, BitmapDescriptor>{};
   }
 
   Future<void> setMeasuredIcons() async {
@@ -290,7 +294,7 @@ class _MyAppState extends State<MyApp> {
       if (activeMarker == null) {
         return false;
       }
-      if (activeMarker == locData.locations.keys.first) {
+      if (locData.locations[activeMarker]?.previous_location == null){
         return false;
       }
       return true;
@@ -306,7 +310,7 @@ class _MyAppState extends State<MyApp> {
       if (activeMarker == null) {
         return false;
       }
-      if (activeMarker == locData.locations.keys.last) {
+      if (locData.locations[activeMarker]?.next_location == null){
         return false;
       }
       return true;
@@ -347,13 +351,11 @@ class _MyAppState extends State<MyApp> {
   }
 
   void selectPreviousLocation() {
-    var keys = locData.locations.keys.toList();
-    selectLocation(keys[keys.indexOf(activeMarker) - 1]);
+    selectLocation(locData.locations[activeMarker]!.previous_location);
   }
 
   void selectNextLocation() {
-    var keys = locData.locations.keys.toList();
-    selectLocation(keys[keys.indexOf(activeMarker) + 1]);
+    selectLocation(locData.locations[activeMarker]!.next_location);
   }
 
   @override
@@ -418,8 +420,8 @@ class _MyAppState extends State<MyApp> {
     return esb;
   }
 
-  void selectLocation(String key) {
-    if (locData.locations.containsKey(key)) {
+  void selectLocation(String? key) {
+    if (key !=null && locData.locations.containsKey(key)) {
       var location = locData.locations[key]!;
       // first move the camera to the marker
       if ((location.lat != null) & (location.lon != null)) {
@@ -507,6 +509,10 @@ class _MyAppState extends State<MyApp> {
                         items: items,
                         initialSelectedValues: initialSelectedValues.toSet(),
                         title: texts.selectGroups,
+                        selectNone: texts.selectNone,
+                        selectAll: texts.selectAll,
+                        ok: texts.ok,
+                        cancel:texts.cancel,
                       );
                     },
                   );
@@ -516,6 +522,7 @@ class _MyAppState extends State<MyApp> {
                         'selected_groups', selectedGroups.toList());
                     await setMarkers();
                     setState(() {});
+                    ZoomToAllLocations();
                   }
                 },
                 leading: Icon(Icons.group_work)),
@@ -780,6 +787,37 @@ class _MyAppState extends State<MyApp> {
     } else {
       locData.groups = location_file.groups!;
     }
+
+    // check if there are locations without a group
+    var no_group;
+    for (var key in locData.locations.keys) {
+      if (locData.locations[key]!.group == null) {
+        if (no_group == null) {
+          no_group = await prefs!.getString('no_group') ?? 'no_group';
+        }
+        locData.locations[key]!.group = no_group;
+      }
+    }
+    if (no_group != null){
+      if (!locData.groups.keys.contains(no_group)) {
+        locData.groups[no_group!] = Group(name: texts.noGroupName);
+      }
+    }
+
+    // loop over groups and set next and previous location within each group
+    for (var group_id in locData.groups.keys) {
+      var previous_location;
+      for (var location_id in locData.locations.keys) {
+        if (locData.locations[location_id]!.group == group_id) {
+          if (previous_location != null) {
+            locData.locations[previous_location]!.next_location = location_id;
+            locData.locations[location_id]!.previous_location = previous_location;
+          }
+          previous_location = location_id;
+        }
+      }
+    }
+
     await setMarkers();
     setState(() {});
     if (location_file.locations != null) {
@@ -935,10 +973,17 @@ class _MyAppState extends State<MyApp> {
           (prefs!.getBool('show_sequence_number') ?? true)) {
         // generate a sequence number icon
         var sequence_number = location.sequence_number ?? 0;
-        var sequenceNumberIcon = await getMarkerIconFromText(
-            sequence_number.toString(),
-            fontSize: 20.0,
-            color: Colors.black);
+        var sequenceNumberIcon;
+        if (sequenceNumberIcons.containsKey(sequence_number)) {
+          sequenceNumberIcon = sequenceNumberIcons[sequence_number]!;
+        } else {
+          sequenceNumberIcon = await getMarkerIconFromText(
+              sequence_number.toString(),
+              fontSize: 20.0,
+              color: Colors.black);
+          sequenceNumberIcons[sequence_number] = sequenceNumberIcon;
+        }
+        // add a secondary marker with added information
         markers[id + '_s'] = Marker(
           markerId: MarkerId(id + '_s'),
           position: LatLng(location.lat!, location.lon!),
