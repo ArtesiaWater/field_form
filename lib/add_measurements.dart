@@ -381,9 +381,9 @@ class _AddMeasurementsState extends State<AddMeasurements> {
             );
             if (image != null) {
               // copy the image to the documents-directory
-              var name = id +
+              var name = widget.locationId +
                   '_' +
-                  widget.locationId +
+                  id +
                   '_' +
                   Constant.file_datetime_format.format(now) +
                   '.jpg';
