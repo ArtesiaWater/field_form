@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'constants.dart';
 import 'dialogs.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'l10n/app_localizations.dart';
 
 class InputFieldsScreen extends StatefulWidget {
   InputFieldsScreen({Key? key}) : super(key: key);

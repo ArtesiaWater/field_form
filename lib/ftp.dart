@@ -7,7 +7,7 @@ import 'package:ftpconnect/ftpconnect.dart';
 import 'package:path/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dartssh2/dartssh2.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'l10n/app_localizations.dart';
 import 'package:pure_ftp/pure_ftp.dart' as pure_ftp;
 
 import 'dialogs.dart';

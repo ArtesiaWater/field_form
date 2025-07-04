@@ -22,9 +22,9 @@ import 'package:http/http.dart' as http;
 import 'add_measurements.dart';
 import 'dialogs.dart';
 import 'ftp.dart';
+import 'l10n/app_localizations.dart';
 import 'locations.dart';
 import 'package:path/path.dart' as p;
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 void main() {
   runApp(MaterialApp(

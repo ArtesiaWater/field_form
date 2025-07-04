@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'dialogs.dart';
 import 'ftp.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'l10n/app_localizations.dart';
 
 class SettingsScreen extends StatefulWidget {
   SettingsScreen({key, required this.prefs}) : super(key: key);
