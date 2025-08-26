@@ -147,9 +147,10 @@ def location_file_from_fieldlogger(fname_csv, fname_json, return_data=False):
             locations[location["NAME"]]["sublocations"][id] = subloc
         data["locations"] = locations
 
+    # %% write dictionary to json
+    write_location_file(data, fname_json)
+
     # %% return data if requested
     if return_data:
         return data
 
-    # %% write dictionary to json
-    write_location_file(data, fname_json)
