@@ -126,6 +126,24 @@ def location_file_from_fieldlogger(fname_csv, fname_json, return_data=False):
             subloc = {}
             if "INPUTFIELD" in location:
                 subloc["inputfields"] = location["INPUTFIELD"].split("|")
+            if "PROPERTIES" in location:
+                props = location["PROPERTIES"].split("|")
+                propdict = {props[i]: props[i + 1] for i in range(0, len(props) - 1, 2)}
+                subloc["properties"] = propdict
+            if "MIN" in location:
+                mins = location["MIN"].split("|")
+                subloc["min_values"] = {}
+                for key, value in zip(subloc["inputfields"], mins):
+                    if len(value) == 0:
+                        continue
+                    subloc["min_values"][key] = float(value.replace(",", "."))
+            if "MAX" in location:
+                mins = location["MAX"].split("|")
+                subloc["max_values"] = {}
+                for key, value in zip(subloc["inputfields"], mins):
+                    if len(value) == 0:
+                        continue
+                    subloc["max_values"][key] = float(value.replace(",", "."))
             locations[location["NAME"]]["sublocations"][id] = subloc
         data["locations"] = locations
 
