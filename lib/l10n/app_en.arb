@@ -187,6 +187,7 @@
     "required": "required",
     "showPreviousAndNextLocation": "Buttons previous/next location",
     "showSequenceNumber": "Show sequence number on location icons",
+    "clusterLocations": "Cluster locations",
 
     "properties": "Properties",
 

@@ -148,6 +148,7 @@
     "required": "verplicht",
     "showPreviousAndNextLocation": "Knoppen vorige/volgende locatie",
     "showSequenceNumber": "Geef volgnummer op locaties weer",
+    "clusterLocations": "Groepeer locaties op de kaart",
 
     "properties": "Eigenschappen",
 

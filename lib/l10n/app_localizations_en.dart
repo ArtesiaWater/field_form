@@ -445,6 +445,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get showSequenceNumber => 'Show sequence number on location icons';
 
   @override
+  String get clusterLocations => 'Cluster locations';
+
+  @override
   String get properties => 'Properties';
 
   @override

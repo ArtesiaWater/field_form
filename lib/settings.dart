@@ -187,7 +187,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           SettingsTile(
               title: Text(texts.markMeasuredLocations),
-              description: Text(texts.withinIntervalDays(mark_measured_days)),
+              description: Text(mark_measured_days == 0
+                  ? texts.doNotMarkMeasuredLocations
+                  : texts.withinIntervalDays(mark_measured_days)),
               leading: Icon(Icons.verified_user),
               onPressed: (BuildContext context) async {
                 var interval =
@@ -207,6 +209,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onToggle: (bool value) {
                 setState(() {
                   widget.prefs.setBool('mark_not_measured', value);
+                  redrawMap = true;
+                });
+              },
+            ),
+          if (false)
+            SettingsTile.switchTile(
+              title: Text(texts.clusterLocations),
+              leading: Icon(Icons.group_work),
+              initialValue: widget.prefs.getBool('cluster_locations') ?? false,
+              onToggle: (bool value) {
+                setState(() {
+                  widget.prefs.setBool('cluster_locations', value);
                   redrawMap = true;
                 });
               },

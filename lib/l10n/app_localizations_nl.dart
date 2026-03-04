@@ -445,6 +445,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get showSequenceNumber => 'Geef volgnummer op locaties weer';
 
   @override
+  String get clusterLocations => 'Groepeer locaties op de kaart';
+
+  @override
   String get properties => 'Eigenschappen';
 
   @override

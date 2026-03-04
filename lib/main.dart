@@ -45,6 +45,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   final markers = <String, Marker>{};
+  final clusterManagers = <String, ClusterManager>{};
   final locData = LocationData();
   var isLoading = false;
   SharedPreferences? prefs;
@@ -65,6 +66,7 @@ class _MyAppState extends State<MyApp> {
   late AppLocalizations texts;
   var activeMarker;
   var sequenceNumberIcons;
+  var coleredIcons;
 
   @override
   void initState() {
@@ -78,6 +80,7 @@ class _MyAppState extends State<MyApp> {
 
     // create a map with icons, with the sequence_number as keys
     sequenceNumberIcons = <int, BitmapDescriptor>{};
+    coleredIcons = <String, BitmapDescriptor>{};
   }
 
   Future<void> setMeasuredIcons() async {
@@ -294,7 +297,7 @@ class _MyAppState extends State<MyApp> {
       if (activeMarker == null) {
         return false;
       }
-      if (locData.locations[activeMarker]?.previous_location == null){
+      if (locData.locations[activeMarker]?.previous_location == null) {
         return false;
       }
       return true;
@@ -310,7 +313,7 @@ class _MyAppState extends State<MyApp> {
       if (activeMarker == null) {
         return false;
       }
-      if (locData.locations[activeMarker]?.next_location == null){
+      if (locData.locations[activeMarker]?.next_location == null) {
         return false;
       }
       return true;
@@ -421,7 +424,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   void selectLocation(String? key) {
-    if (key !=null && locData.locations.containsKey(key)) {
+    if (key != null && locData.locations.containsKey(key)) {
       var location = locData.locations[key]!;
       // first move the camera to the marker
       if ((location.lat != null) & (location.lon != null)) {
@@ -495,7 +498,7 @@ class _MyAppState extends State<MyApp> {
                   final items = <MultiSelectDialogItem<String>>[];
                   locData.groups.forEach((id, group) {
                     var label = group.name ?? id;
-                    var color = getIconColor(group.color);
+                    var color = getIconColor(group.color ?? "#EA4335");
                     var icon = Icon(Icons.location_pin, color: color);
                     items.add(MultiSelectDialogItem(id, label, icon));
                   });
@@ -512,7 +515,7 @@ class _MyAppState extends State<MyApp> {
                         selectNone: texts.selectNone,
                         selectAll: texts.selectAll,
                         ok: texts.ok,
-                        cancel:texts.cancel,
+                        cancel: texts.cancel,
                       );
                     },
                   );
@@ -656,6 +659,7 @@ class _MyAppState extends State<MyApp> {
       mapType: mapType,
       mapToolbarEnabled: false,
       tileOverlays: tileOverlays,
+      clusterManagers: clusterManagers.values.toSet(),
       onLongPress: (latlng) {
         if (prefs!.getBool('disable_adding_locations') ?? false) {
           return;
@@ -798,7 +802,7 @@ class _MyAppState extends State<MyApp> {
         locData.locations[key]!.group = no_group;
       }
     }
-    if (no_group != null){
+    if (no_group != null) {
       if (!locData.groups.keys.contains(no_group)) {
         locData.groups[no_group!] = Group(name: texts.noGroupName);
       }
@@ -811,7 +815,8 @@ class _MyAppState extends State<MyApp> {
         if (locData.locations[location_id]!.group == group_id) {
           if (previous_location != null) {
             locData.locations[previous_location]!.next_location = location_id;
-            locData.locations[location_id]!.previous_location = previous_location;
+            locData.locations[location_id]!.previous_location =
+                previous_location;
           }
           previous_location = location_id;
         }
@@ -850,10 +855,23 @@ class _MyAppState extends State<MyApp> {
       lastMeasPerLoc = <String, DateTime>{};
     }
     markers.clear();
+    clusterManagers.clear();
+
     final selectedGroups =
         prefs!.getStringList('selected_groups') ?? locData.groups.keys.toList();
+    final clusterLocations = prefs!.getBool('cluster_locations') ?? false;
+    if (clusterLocations) {
+      if (false) {
+        for (var group_id in selectedGroups) {
+          clusterManagers[group_id] =
+              ClusterManager(clusterManagerId: ClusterManagerId(group_id));
+        }
+      } else {
+        clusterManagers["all_groups"] =
+            ClusterManager(clusterManagerId: ClusterManagerId("all_groups"));
+      }
+    }
     final markNotMeasured = prefs!.getBool('mark_not_measured') ?? false;
-    if (markNotMeasured) {}
     for (var id in locData.locations.keys) {
       var location = locData.locations[id]!;
       if ((location.lat == null) | (location.lon == null)) {
@@ -865,6 +883,16 @@ class _MyAppState extends State<MyApp> {
         }
       }
       var icon = getIconForLocation(location, locData.groups);
+      // var color = getColorForLocation(location, locData.groups) ?? "#EA4335";
+      // // var icon = await bitmapDescriptorFromIconData(iconData:Icons.location_pin, color:color, size:50);
+      // var icon;
+      // if (coleredIcons.containsKey(color)) {
+      //   icon = coleredIcons[color]!;
+      // } else {
+      //   icon = await bitmapDescriptorFromIconData(
+      //       iconData: Icons.location_pin, color: getIconColor(color)!, size: 50);
+      // }
+
       var snippet;
       if (location.sublocations == null) {
         snippet = null;
@@ -872,10 +900,19 @@ class _MyAppState extends State<MyApp> {
         final n = location.sublocations!.length;
         snippet = texts.n_sublocations(n);
       }
+
+
+      var clusterManagerId = null;
+      if (clusterLocations) {
+        //clusterManagerId = location.group != null ? ClusterManagerId(location.group!) : null;
+        clusterManagerId = ClusterManagerId("all_groups");
+      }
+
       var marker = Marker(
         markerId: MarkerId(id),
         position: LatLng(location.lat!, location.lon!),
         icon: icon,
+        clusterManagerId: clusterManagerId,
         onTap: () {
           setState(() {
             activeMarker = id;
@@ -884,6 +921,7 @@ class _MyAppState extends State<MyApp> {
             }
           });
         },
+
         infoWindow: InfoWindow(
           title: location.name ?? id,
           snippet: snippet,
@@ -931,7 +969,7 @@ class _MyAppState extends State<MyApp> {
         extraIcon = notMeasuredIcon;
       }
 
-      if (location.sublocations == null) {
+      if (location.sublocations == null || location.sublocations!.isEmpty) {
         if (lastMeasPerLoc.containsKey(id) &&
             lastMeasPerLoc[id].isAfter(reftime)) {
           extraIcon = fullMeasuredIcon;
@@ -961,13 +999,14 @@ class _MyAppState extends State<MyApp> {
             markerId: MarkerId(id + '_v'),
             position: LatLng(location.lat!, location.lon!),
             icon: extraIcon,
+            clusterManagerId: clusterManagerId,
             onTap: () {
               mapController.showMarkerInfoWindow(MarkerId(id));
               setState(() {
                 activeMarker = id;
               });
             },
-            zIndex: 1.0);
+            zIndexInt: 1);
       }
       if (location.sequence_number != null &&
           (prefs!.getBool('show_sequence_number') ?? true)) {
@@ -988,13 +1027,14 @@ class _MyAppState extends State<MyApp> {
           markerId: MarkerId(id + '_s'),
           position: LatLng(location.lat!, location.lon!),
           icon: sequenceNumberIcon,
+          clusterManagerId: clusterManagerId,
           onTap: () {
             mapController.showMarkerInfoWindow(MarkerId(id));
             setState(() {
               activeMarker = id;
             });
           },
-          zIndex: 2.0,
+          zIndexInt: 2,
         );
       }
       ;

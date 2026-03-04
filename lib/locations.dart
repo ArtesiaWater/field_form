@@ -1,5 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:json_annotation/json_annotation.dart';
@@ -156,7 +159,44 @@ class LocationData {
   }
 }
 
-BitmapDescriptor getIconForLocation(Location location, groups){
+Future<BitmapDescriptor> bitmapDescriptorFromIconData({
+  required IconData iconData,
+  required Color color,
+  required double size,
+}) async {
+  final ui.PictureRecorder pictureRecorder = ui.PictureRecorder();
+  final Canvas canvas = Canvas(pictureRecorder);
+  final TextPainter textPainter = TextPainter(
+    textDirection: TextDirection.ltr,
+  );
+
+  final iconStr = String.fromCharCode(iconData.codePoint);
+  final textStyle = TextStyle(
+    letterSpacing: 0.0,
+    fontSize: size,
+    fontFamily: iconData.fontFamily,
+    color: color,
+  );
+
+  textPainter.text = TextSpan(
+    text: iconStr,
+    style: textStyle,
+  );
+
+  textPainter.layout();
+  textPainter.paint(canvas, Offset.zero);
+
+  final ui.Image image = await pictureRecorder.endRecording().toImage(
+    textPainter.width.toInt(),
+    textPainter.height.toInt(),
+  );
+  final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+  final Uint8List uint8List = byteData!.buffer.asUint8List();
+
+  return BitmapDescriptor.bytes(uint8List);
+}
+
+BitmapDescriptor getIconForLocation (Location location, groups){
   var icon = getIconFromString(location.color);
   if (icon == null) {
     if (location.group != null) {
@@ -170,6 +210,19 @@ BitmapDescriptor getIconForLocation(Location location, groups){
     return BitmapDescriptor.defaultMarker;
   }
   return icon;
+}
+
+String? getColorForLocation (Location location, groups){
+  if (location.color != null) {
+    return location.color;
+  }
+  if (location.group != null) {
+    if (groups.containsKey(location.group)) {
+      var group = groups[location.group];
+      return group.color;
+    }
+  }
+  return null;
 }
 
 BitmapDescriptor? getIconFromString(String? color) {

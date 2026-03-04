@@ -935,6 +935,12 @@ abstract class AppLocalizations {
   /// **'Show sequence number on location icons'**
   String get showSequenceNumber;
 
+  /// No description provided for @clusterLocations.
+  ///
+  /// In en, this message translates to:
+  /// **'Cluster locations'**
+  String get clusterLocations;
+
   /// No description provided for @properties.
   ///
   /// In en, this message translates to:
