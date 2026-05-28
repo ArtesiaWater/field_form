@@ -187,7 +187,14 @@ create table measurements (
     var converter = const CsvToListConverter(
         fieldDelimiter: ';', shouldParseNumbers: false);
     var text = await file.readAsString();
+    if (text.trim().isEmpty) {
+      // Ignore empty files gracefully.
+      return;
+    }
     var rows = converter.convert(text);
+    if (rows.isEmpty) {
+      return;
+    }
     var row = rows[0];
     if (row.last.endsWith('\r')) {
       row.last = row.last.substring(0, row.last.length - 1);
@@ -197,16 +204,28 @@ create table measurements (
     var TIME = rows[0].indexOf('TIME');
     var TYPE = rows[0].indexOf('TYPE');
     var VALUE = rows[0].indexOf('VALUE');
+    if (LOCATION < 0 || DATE < 0 || TIME < 0 || TYPE < 0 || VALUE < 0) {
+      return;
+    }
     for (row in rows.sublist(1)) {
+      if (row.isEmpty) {
+        continue;
+      }
       if (row.last.endsWith('\r')) {
         row.last = row.last.substring(0, row.last.length - 1);
       }
-      var date = Constant.datetime_format.parse(row[DATE] + ' ' + row[TIME]);
+      final requiredIndex = [LOCATION, DATE, TIME, TYPE, VALUE]
+          .reduce((a, b) => a > b ? a : b);
+      if (row.length <= requiredIndex) {
+        continue;
+      }
+      var date = Constant.datetime_format
+          .parse('${row[DATE]} ${row[TIME]}');
       var meas = Measurement(
-          location: row[LOCATION],
+          location: row[LOCATION].toString(),
           datetime: date,
-          value: row[VALUE],
-          type: row[TYPE],
+          value: row[VALUE].toString(),
+          type: row[TYPE].toString(),
           exported: exported);
       await update_or_insert(meas);
     }

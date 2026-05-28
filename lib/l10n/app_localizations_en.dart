@@ -189,6 +189,44 @@ class AppLocalizationsEn extends AppLocalizations {
   String get connectToFtpFailed => 'Unable to connect to FTP-server';
 
   @override
+  String get ftpErrorUnknownHost => 'Unable to resolve FTP host. Check the hostname and internet connection.';
+
+  @override
+  String ftpErrorUnknownHostWithHostname(String hostname) {
+    return 'Unable to resolve FTP host: $hostname. Check the hostname and internet connection.';
+  }
+
+  @override
+  String get ftpErrorTimeout => 'FTP connection timed out. Check the server and your internet connection.';
+
+  @override
+  String get ftpErrorConnectFailed => 'Unable to connect to the FTP server. Check hostname, port and firewall settings.';
+
+  @override
+  String get ftpErrorTls => 'Failed to establish a secure FTP connection. Check FTPS settings and certificates.';
+
+  @override
+  String get ftpErrorNetwork => 'Network error while connecting to the FTP server.';
+
+  @override
+  String get ftpErrorPathNotFound => 'Unable to find the requested folder on the FTP server.';
+
+  @override
+  String get ftpErrorListFailed => 'Unable to list files on the FTP server.';
+
+  @override
+  String get ftpErrorUploadFailed => 'Failed to upload file to FTP server.';
+
+  @override
+  String get ftpErrorDownloadFailed => 'Failed to download file from FTP server.';
+
+  @override
+  String get ftpErrorSessionNotFound => 'FTP session expired. Please reconnect.';
+
+  @override
+  String get ftpErrorInvalidArgument => 'Invalid FTP request. Please check your settings.';
+
+  @override
   String get authenticationError => 'Authentication on FTP-server failed. Set a valid username and password, or extend your access session.';
 
   @override
@@ -465,4 +503,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get value_is_higher_than_max_title => 'Value too high';
+
+  @override
+  String get activeConfiguration => 'Active configuration';
+
+  @override
+  String get ftpConfigurations => 'FTP configurations';
+
+  @override
+  String get addConfiguration => 'Add configuration';
+
+  @override
+  String get removeConfiguration => 'Remove configuration';
+
+  @override
+  String get activeFtpConfiguration => 'Active FTP configuration';
+
+  @override
+  String get addFtpHostname => 'Add FTP hostname';
+
+  @override
+  String get overwriteFtpConfigurationTitle => 'Overwrite FTP configuration?';
+
+  @override
+  String get ftpConfigOverwriteWarning => 'A configuration for this hostname already exists. Username and password will be removed. Do you want to continue?';
+
+  @override
+  String get removeFtpConfigurationTitle => 'Remove FTP configuration';
+
+  @override
+  String removeFtpConfigurationPrompt(String hostname) {
+    return 'Remove $hostname?';
+  }
 }

@@ -969,12 +969,14 @@ class _AddMeasurementsState extends State<AddMeasurements> {
       if (!dir.existsSync()) {
         await dir.create();
       }
-      var success = await downloadFileFromFtp(connection, file, prefs);
-      if (!success) {
+      var downloadResult =
+          await downloadFileFromFtp(connection, file, prefs, context);
+      if (!downloadResult.success) {
         setState(() {
           isLoading = false;
         });
-        showErrorDialog(context, texts.downloadFailed + name);
+        showErrorDialog(
+            context, downloadResult.errorMessage ?? texts.downloadFailed + name);
         return;
       }
       closeFtp(connection, prefs);

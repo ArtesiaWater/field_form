@@ -189,6 +189,44 @@ class AppLocalizationsNl extends AppLocalizations {
   String get connectToFtpFailed => 'Het lukt niet om met de FTP-server te verbinden';
 
   @override
+  String get ftpErrorUnknownHost => 'Kan de FTP-hostnaam niet vinden. Controleer de hostnaam en internetverbinding.';
+
+  @override
+  String ftpErrorUnknownHostWithHostname(String hostname) {
+    return 'Kan de FTP-hostnaam niet vinden: $hostname. Controleer de hostnaam en internetverbinding.';
+  }
+
+  @override
+  String get ftpErrorTimeout => 'Time-out bij het verbinden met de FTP-server. Controleer de server en internetverbinding.';
+
+  @override
+  String get ftpErrorConnectFailed => 'Kan geen verbinding maken met de FTP-server. Controleer hostnaam, poort en firewall-instellingen.';
+
+  @override
+  String get ftpErrorTls => 'Kan geen beveiligde FTP-verbinding opzetten. Controleer FTPS-instellingen en certificaten.';
+
+  @override
+  String get ftpErrorNetwork => 'Netwerkfout tijdens verbinden met de FTP-server.';
+
+  @override
+  String get ftpErrorPathNotFound => 'Kan de gevraagde map niet vinden op de FTP-server.';
+
+  @override
+  String get ftpErrorListFailed => 'Kan de bestanden op de FTP-server niet ophalen.';
+
+  @override
+  String get ftpErrorUploadFailed => 'Uploaden van bestand naar FTP-server is mislukt.';
+
+  @override
+  String get ftpErrorDownloadFailed => 'Downloaden van bestand van FTP-server is mislukt.';
+
+  @override
+  String get ftpErrorSessionNotFound => 'FTP-sessie is verlopen. Maak opnieuw verbinding.';
+
+  @override
+  String get ftpErrorInvalidArgument => 'Ongeldige FTP-aanvraag. Controleer uw instellingen.';
+
+  @override
   String get authenticationError => 'Er is een authenticatie-fout opgetreden met de FTP-server. Voer een geldige gebruikersnaam en wachtwoord in, of verleng uw toegangsessie.';
 
   @override
@@ -465,4 +503,36 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get value_is_higher_than_max_title => 'Waarde te hoog';
+
+  @override
+  String get activeConfiguration => 'Actieve configuratie';
+
+  @override
+  String get ftpConfigurations => 'FTP-configuraties';
+
+  @override
+  String get addConfiguration => 'Configuratie toevoegen';
+
+  @override
+  String get removeConfiguration => 'Configuratie verwijderen';
+
+  @override
+  String get activeFtpConfiguration => 'Actieve FTP-configuratie';
+
+  @override
+  String get addFtpHostname => 'FTP-hostnaam toevoegen';
+
+  @override
+  String get overwriteFtpConfigurationTitle => 'FTP-configuratie overschrijven?';
+
+  @override
+  String get ftpConfigOverwriteWarning => 'Er bestaat al een configuratie voor deze hostnaam. Gebruikersnaam en wachtwoord worden verwijderd. Wilt u doorgaan?';
+
+  @override
+  String get removeFtpConfigurationTitle => 'FTP-configuratie verwijderen';
+
+  @override
+  String removeFtpConfigurationPrompt(String hostname) {
+    return '$hostname verwijderen?';
+  }
 }

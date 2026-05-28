@@ -22,6 +22,7 @@ import 'package:http/http.dart' as http;
 import 'add_measurements.dart';
 import 'dialogs.dart';
 import 'ftp.dart';
+import 'ftp_configurations.dart';
 import 'l10n/app_localizations.dart';
 import 'locations.dart';
 import 'package:path/path.dart' as p;
@@ -59,14 +60,17 @@ class _MyAppState extends State<MyApp> {
     'terrain': MapType.terrain,
     'OSM': MapType.none
   };
-  late BitmapDescriptor notMeasuredIcon;
-  late BitmapDescriptor halfMeasuredIcon;
-  late BitmapDescriptor fullMeasuredIcon;
+    BitmapDescriptor notMeasuredIcon =
+      BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
+    BitmapDescriptor halfMeasuredIcon =
+      BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow);
+    BitmapDescriptor fullMeasuredIcon =
+      BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen);
   bool myLocationEnabled = false;
   late AppLocalizations texts;
   var activeMarker;
   var sequenceNumberIcons;
-  var coleredIcons;
+  var coloredIcons;
 
   @override
   void initState() {
@@ -80,7 +84,7 @@ class _MyAppState extends State<MyApp> {
 
     // create a map with icons, with the sequence_number as keys
     sequenceNumberIcons = <int, BitmapDescriptor>{};
-    coleredIcons = <String, BitmapDescriptor>{};
+    coloredIcons = <String, BitmapDescriptor>{};
   }
 
   Future<void> setMeasuredIcons() async {
@@ -89,6 +93,12 @@ class _MyAppState extends State<MyApp> {
         await getMarkerIconFromText('✓', color: Colors.yellow, offset_x: 10);
     fullMeasuredIcon =
         await getMarkerIconFromText('✓', color: Colors.green, offset_x: 10);
+
+    // Redraw markers so custom measured icons appear when async generation completes.
+    if (mounted && prefs != null) {
+      await setMarkers();
+      setState(() {});
+    }
   }
 
   Future<BytesMapBitmap> getMarkerIconFromText(String text,
@@ -156,6 +166,7 @@ class _MyAppState extends State<MyApp> {
         prefs!.remove('ftp_password');
       }
     }
+    await ensureFtpConfigurationsMigrated(prefs!);
   }
 
   @override
@@ -622,6 +633,9 @@ class _MyAppState extends State<MyApp> {
     if (prefs == null) {
       return buildLoadingScreen();
     }
+    final double mapBottomPadding = Platform.isAndroid
+      ? MediaQuery.of(context).viewPadding.bottom + 12.0
+      : 0.0;
     var lat = prefs!.getDouble('latitude') ?? 30;
     var lng = prefs!.getDouble('longitude') ?? 0;
     var zoom = prefs!.getDouble('zoom') ?? 2;
@@ -653,6 +667,7 @@ class _MyAppState extends State<MyApp> {
     return GoogleMap(
       onMapCreated: _onMapCreated,
       myLocationEnabled: myLocationEnabled,
+      padding: EdgeInsets.only(bottom: mapBottomPadding),
       initialCameraPosition: initialCameraPosition,
       compassEnabled: true,
       markers: markers.values.toSet(),
@@ -733,7 +748,7 @@ class _MyAppState extends State<MyApp> {
         LocationFile.fromJson(json.decode(await file.readAsString()));
 
     if (location_file.settings != null) {
-      parseSettings(location_file.settings!, prefs!);
+      await parseSettings(location_file.settings!, prefs!);
     }
     if (location_file.locations != null) {
       locData.locations = location_file.locations!;
@@ -886,8 +901,8 @@ class _MyAppState extends State<MyApp> {
       // var color = getColorForLocation(location, locData.groups) ?? "#EA4335";
       // // var icon = await bitmapDescriptorFromIconData(iconData:Icons.location_pin, color:color, size:50);
       // var icon;
-      // if (coleredIcons.containsKey(color)) {
-      //   icon = coleredIcons[color]!;
+      // if (coloredIcons.containsKey(color)) {
+      //   icon = coloredIcons[color]!;
       // } else {
       //   icon = await bitmapDescriptorFromIconData(
       //       iconData: Icons.location_pin, color: getIconColor(color)!, size: 50);
@@ -902,7 +917,7 @@ class _MyAppState extends State<MyApp> {
       }
 
 
-      var clusterManagerId = null;
+      var clusterManagerId;
       if (clusterLocations) {
         //clusterManagerId = location.group != null ? ClusterManagerId(location.group!) : null;
         clusterManagerId = ClusterManagerId("all_groups");
@@ -1241,7 +1256,7 @@ class _MyAppState extends State<MyApp> {
     // Choose FTP folder
     var path = await chooseFtpPath(ftp, context, prefs);
     if (path != null) {
-      unawaited(prefs.setString('ftp_path', path));
+      await updateActiveFtpConfiguration(prefs, path: path);
       // Delete all data
       await deleteAllData();
 
@@ -1296,9 +1311,10 @@ class _MyAppState extends State<MyApp> {
     file = await measurementProvider.measurementsToCsv(measurements, file);
 
     displayInformation(context, texts.sendingMeasurements);
-    var success = await uploadFileToFtp(connection, file, prefs);
-    if (!success) {
-      showErrorDialog(context, texts.uploadMeasurementsFailed);
+    var uploadResult = await uploadFileToFtp(connection, file, prefs, context);
+    if (!uploadResult.success) {
+      showErrorDialog(
+          context, uploadResult.errorMessage ?? texts.uploadMeasurementsFailed);
       return false;
     }
     // Send photos
@@ -1309,10 +1325,13 @@ class _MyAppState extends State<MyApp> {
       if (locData.inputFields[measurement.type]!.type == 'photo') {
         var file = File(p.join(docsDir.path, 'photos', measurement.value));
         if (await file.exists()) {
-          var success = await uploadFileToFtp(connection, file, prefs);
-          if (!success) {
+          var uploadResult =
+              await uploadFileToFtp(connection, file, prefs, context);
+          if (!uploadResult.success) {
             showErrorDialog(
-                context, texts.uploadPhotoFailed + measurement.value);
+                context,
+                uploadResult.errorMessage ??
+                    texts.uploadPhotoFailed + measurement.value);
             return false;
           }
         }
@@ -1397,9 +1416,11 @@ class _MyAppState extends State<MyApp> {
       displayInformation(context, texts.downloading + name);
       // download locations
       var file = File(p.join(tempDir.path, name));
-      var success = await downloadFileFromFtp(connection, file, prefs);
-      if (!success) {
-        showErrorDialog(context, texts.downloadFailed + name);
+      var downloadResult =
+          await downloadFileFromFtp(connection, file, prefs, context);
+      if (!downloadResult.success) {
+        showErrorDialog(
+            context, downloadResult.errorMessage ?? texts.downloadFailed + name);
         return false;
       }
       // read locations
@@ -1429,9 +1450,11 @@ class _MyAppState extends State<MyApp> {
         // download measurements
         var file = File(p.join(tempDir.path, name));
         try {
-          var success = await downloadFileFromFtp(connection, file, prefs);
-          if (!success) {
-            showErrorDialog(context, texts.downloadFailed + name);
+          var downloadResult =
+              await downloadFileFromFtp(connection, file, prefs, context);
+          if (!downloadResult.success) {
+            showErrorDialog(context,
+                downloadResult.errorMessage ?? texts.downloadFailed + name);
             return false;
           }
         } catch (e) {

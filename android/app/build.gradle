@@ -71,3 +71,7 @@ android {
 flutter {
     source '../..'
 }
+
+dependencies {
+    implementation 'commons-net:commons-net:3.10.0'
+}

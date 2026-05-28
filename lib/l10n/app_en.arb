@@ -82,6 +82,25 @@
     "ignoreFilledValuesTitle": "Leave without saving?",
     "imageNotSupported": ": this file is not supported. Only jpg, png and pdf are supported",
     "connectToFtpFailed": "Unable to connect to FTP-server",
+    "ftpErrorUnknownHost": "Unable to resolve FTP host. Check the hostname and internet connection.",
+    "ftpErrorUnknownHostWithHostname": "Unable to resolve FTP host: {hostname}. Check the hostname and internet connection.",
+    "@ftpErrorUnknownHostWithHostname": {
+        "placeholders": {
+            "hostname": {
+                "type": "String"
+            }
+        }
+    },
+    "ftpErrorTimeout": "FTP connection timed out. Check the server and your internet connection.",
+    "ftpErrorConnectFailed": "Unable to connect to the FTP server. Check hostname, port and firewall settings.",
+    "ftpErrorTls": "Failed to establish a secure FTP connection. Check FTPS settings and certificates.",
+    "ftpErrorNetwork": "Network error while connecting to the FTP server.",
+    "ftpErrorPathNotFound": "Unable to find the requested folder on the FTP server.",
+    "ftpErrorListFailed": "Unable to list files on the FTP server.",
+    "ftpErrorUploadFailed": "Failed to upload file to FTP server.",
+    "ftpErrorDownloadFailed": "Failed to download file from FTP server.",
+    "ftpErrorSessionNotFound": "FTP session expired. Please reconnect.",
+    "ftpErrorInvalidArgument": "Invalid FTP request. Please check your settings.",
     "authenticationError": "Authentication on FTP-server failed. Set a valid username and password, or extend your access session.",
     "unableToFindOnFtp": "Unable to find the file on FTP-server: ",
     "unableToFindPathOnFtp": "Unable to find path on FTP-server: ",
@@ -221,5 +240,23 @@
             }
         }
     },
-    "value_is_higher_than_max_title": "Value too high"
+    "value_is_higher_than_max_title": "Value too high",
+
+    "activeConfiguration": "Active configuration",
+    "ftpConfigurations": "FTP configurations",
+    "addConfiguration": "Add configuration",
+    "removeConfiguration": "Remove configuration",
+    "activeFtpConfiguration": "Active FTP configuration",
+    "addFtpHostname": "Add FTP hostname",
+    "overwriteFtpConfigurationTitle": "Overwrite FTP configuration?",
+    "ftpConfigOverwriteWarning": "A configuration for this hostname already exists. Username and password will be removed. Do you want to continue?",
+    "removeFtpConfigurationTitle": "Remove FTP configuration",
+    "removeFtpConfigurationPrompt": "Remove {hostname}?",
+    "@removeFtpConfigurationPrompt": {
+        "placeholders": {
+            "hostname": {
+                "type": "String"
+            }
+        }
+    }
 }

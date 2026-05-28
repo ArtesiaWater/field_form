@@ -1,13 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
-import 'dart:ui';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'ftp_configurations.dart';
 part 'locations.g.dart';
 
 @JsonSerializable()
@@ -148,9 +149,12 @@ class LocationData {
   static final LocationData _instance = LocationData._internal();
 
   void save_locations() async {
+    var prefs = await SharedPreferences.getInstance();
+    var settings = await buildFtpExportSettings(prefs);
     var docsDir = await getApplicationDocumentsDirectory();
     var file = File(p.join(docsDir.path, 'locations.json'));
-    var location_file = LocationFile(locations: locations,
+    var location_file = LocationFile(settings: settings,
+      locations: locations,
         inputfields: inputFields,
         inputfield_groups: inputFieldGroups,
         groups: groups);

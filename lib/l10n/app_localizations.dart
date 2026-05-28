@@ -443,6 +443,78 @@ abstract class AppLocalizations {
   /// **'Unable to connect to FTP-server'**
   String get connectToFtpFailed;
 
+  /// No description provided for @ftpErrorUnknownHost.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to resolve FTP host. Check the hostname and internet connection.'**
+  String get ftpErrorUnknownHost;
+
+  /// No description provided for @ftpErrorUnknownHostWithHostname.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to resolve FTP host: {hostname}. Check the hostname and internet connection.'**
+  String ftpErrorUnknownHostWithHostname(String hostname);
+
+  /// No description provided for @ftpErrorTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'FTP connection timed out. Check the server and your internet connection.'**
+  String get ftpErrorTimeout;
+
+  /// No description provided for @ftpErrorConnectFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to connect to the FTP server. Check hostname, port and firewall settings.'**
+  String get ftpErrorConnectFailed;
+
+  /// No description provided for @ftpErrorTls.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to establish a secure FTP connection. Check FTPS settings and certificates.'**
+  String get ftpErrorTls;
+
+  /// No description provided for @ftpErrorNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Network error while connecting to the FTP server.'**
+  String get ftpErrorNetwork;
+
+  /// No description provided for @ftpErrorPathNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to find the requested folder on the FTP server.'**
+  String get ftpErrorPathNotFound;
+
+  /// No description provided for @ftpErrorListFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to list files on the FTP server.'**
+  String get ftpErrorListFailed;
+
+  /// No description provided for @ftpErrorUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to upload file to FTP server.'**
+  String get ftpErrorUploadFailed;
+
+  /// No description provided for @ftpErrorDownloadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to download file from FTP server.'**
+  String get ftpErrorDownloadFailed;
+
+  /// No description provided for @ftpErrorSessionNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'FTP session expired. Please reconnect.'**
+  String get ftpErrorSessionNotFound;
+
+  /// No description provided for @ftpErrorInvalidArgument.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid FTP request. Please check your settings.'**
+  String get ftpErrorInvalidArgument;
+
   /// No description provided for @authenticationError.
   ///
   /// In en, this message translates to:
@@ -970,6 +1042,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Value too high'**
   String get value_is_higher_than_max_title;
+
+  /// No description provided for @activeConfiguration.
+  ///
+  /// In en, this message translates to:
+  /// **'Active configuration'**
+  String get activeConfiguration;
+
+  /// No description provided for @ftpConfigurations.
+  ///
+  /// In en, this message translates to:
+  /// **'FTP configurations'**
+  String get ftpConfigurations;
+
+  /// No description provided for @addConfiguration.
+  ///
+  /// In en, this message translates to:
+  /// **'Add configuration'**
+  String get addConfiguration;
+
+  /// No description provided for @removeConfiguration.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove configuration'**
+  String get removeConfiguration;
+
+  /// No description provided for @activeFtpConfiguration.
+  ///
+  /// In en, this message translates to:
+  /// **'Active FTP configuration'**
+  String get activeFtpConfiguration;
+
+  /// No description provided for @addFtpHostname.
+  ///
+  /// In en, this message translates to:
+  /// **'Add FTP hostname'**
+  String get addFtpHostname;
+
+  /// No description provided for @overwriteFtpConfigurationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Overwrite FTP configuration?'**
+  String get overwriteFtpConfigurationTitle;
+
+  /// No description provided for @ftpConfigOverwriteWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'A configuration for this hostname already exists. Username and password will be removed. Do you want to continue?'**
+  String get ftpConfigOverwriteWarning;
+
+  /// No description provided for @removeFtpConfigurationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove FTP configuration'**
+  String get removeFtpConfigurationTitle;
+
+  /// No description provided for @removeFtpConfigurationPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {hostname}?'**
+  String removeFtpConfigurationPrompt(String hostname);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

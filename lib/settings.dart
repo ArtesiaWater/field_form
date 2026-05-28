@@ -1,11 +1,11 @@
 import 'package:field_form/inputfield_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_settings_ui/flutter_settings_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'dialogs.dart';
-import 'ftp.dart';
+import 'ftp_configuration_screen.dart';
+import 'ftp_configurations.dart';
 import 'l10n/app_localizations.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -21,16 +21,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   var isLoading = false;
   var redrawMap = false;
   late AppLocalizations texts;
-  var ftp_username;
-  var ftp_password;
-
-  @override
-  void initState() {
-    super.initState();
-    final secure_storage = new FlutterSecureStorage();
-    ftp_username = secure_storage.read(key: 'ftp_username');
-    ftp_password = secure_storage.read(key: 'ftp_password');
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -213,18 +203,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 });
               },
             ),
-          if (false)
-            SettingsTile.switchTile(
-              title: Text(texts.clusterLocations),
-              leading: Icon(Icons.group_work),
-              initialValue: widget.prefs.getBool('cluster_locations') ?? false,
-              onToggle: (bool value) {
-                setState(() {
-                  widget.prefs.setBool('cluster_locations', value);
-                  redrawMap = true;
-                });
-              },
-            ),
         ]),
         SettingsSection(title: Text(texts.photos), tiles: [
           SettingsTile(
@@ -263,156 +241,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title: Text(texts.ftp),
           tiles: [
             SettingsTile(
-              title: Text(texts.hostname),
-              description: Text(widget.prefs.getString('ftp_hostname') ?? ""),
+              title: Text(texts.ftpConfigurations),
+              description: Text(widget.prefs.getString('ftp_hostname') ?? ''),
               leading: Icon(Icons.cloud),
-              onPressed: (BuildContext context) {
-                editStringSetting(
-                    context, 'ftp_hostname', texts.changeFtpHostname);
-              },
-            ),
-            SettingsTile(
-              title: Text(texts.username),
-              description: FutureBuilder<String?>(
-                  future: ftp_username,
-                  builder:
-                      (BuildContext context, AsyncSnapshot<String?> snapshot) {
-                    if (snapshot.hasData) {
-                      return Text(snapshot.data ?? "");
-                    } else {
-                      return Text('');
-                    }
-                  }),
-              leading: Icon(Icons.person),
-              onPressed: (BuildContext context) {
-                editStringSetting(
-                    context, 'ftp_username', texts.changeFtpUsername);
-              },
-            ),
-            SettingsTile(
-              title: Text(texts.password),
-              description: FutureBuilder<String?>(
-                  future: ftp_password,
-                  builder:
-                      (BuildContext context, AsyncSnapshot<String?> snapshot) {
-                    if (snapshot.hasData) {
-                      return Text('*' * (snapshot.data ?? "").length);
-                    } else {
-                      return Text('');
-                    }
-                  }),
-              leading: Icon(Icons.lock),
-              onPressed: (BuildContext context) {
-                editStringSetting(
-                    context, 'ftp_password', texts.changeFtpPassword,
-                    password: true);
-              },
-            ),
-            SettingsTile(
-              title: Text(texts.path),
-              description: Text(widget.prefs.getString('ftp_path') ?? ""),
-              leading: Icon(Icons.folder),
               onPressed: (BuildContext context) async {
-                setState(() {
-                  isLoading = true;
-                });
-                var root = getFtpRoot(widget.prefs);
-                var ftp = await connectToFtp(context, widget.prefs, path: root);
-                if (ftp == null) {
-                  setState(() {
-                    isLoading = false;
-                  });
-                  return;
-                }
-                var ftp_path = await chooseFtpPath(ftp, context, widget.prefs);
-                // if (ftp_path == null) {
-                //   var current_path = widget.prefs.getString('ftp_path') ?? "";
-                //   if (current_path != ""){
-                //     final remove_path = await showContinueDialog(context, "remove ftp path?", title: "remove ftp_path", yesButton: "yes", noButton: "no");
-                //     if (remove_path ?? false) {
-                //       ftp_path = "";
-                //     }
-                //   }
-                // }
-                if (ftp_path != null) {
-                  setState(() {
-                    widget.prefs.setString('ftp_path', ftp_path);
-                    isLoading = false;
-                  });
-                } else {
-                  setState(() {
-                    isLoading = false;
-                  });
-                }
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) {
+                    return FtpConfigurationScreen(prefs: widget.prefs);
+                  }),
+                );
+                setState(() {});
               },
             ),
-            if (true)
-              SettingsTile.switchTile(
-                title: Text(texts.useFtps),
-                leading: Icon(Icons.security),
-                initialValue: widget.prefs.getBool('use_ftps') ?? false,
-                onToggle: (bool value) {
-                  setState(() {
-                    widget.prefs.setBool('use_ftps', value);
-                    if (value) {
-                      widget.prefs.setBool('use_sftp', false);
-                      widget.prefs.setBool('use_implicit_ftps', false);
-                    }
-                  });
-                },
-              ),
-            SettingsTile.switchTile(
-              title: Text(texts.useImplicitFtps),
-              leading: Icon(Icons.security),
-              initialValue: widget.prefs.getBool('use_implicit_ftps') ?? false,
-              onToggle: (bool value) {
-                setState(() {
-                  widget.prefs.setBool('use_implicit_ftps', value);
-                  if (value) {
-                    widget.prefs.setBool('use_sftp', false);
-                    widget.prefs.setBool('use_ftps', false);
-                  }
-                });
-              },
-            ),
-            SettingsTile.switchTile(
-              title: Text(texts.useSftp),
-              leading: Icon(Icons.security),
-              initialValue: widget.prefs.getBool('use_sftp') ?? false,
-              onToggle: (bool value) {
-                setState(() {
-                  widget.prefs.setBool('use_sftp', value);
-                  if (value) {
-                    widget.prefs.setBool('use_ftps', false);
-                    widget.prefs.setBool('use_implicit_ftps', false);
-                  }
-                });
-              },
-            ),
-            // SettingsTile(
-            //     title: Text("Check VPN Connection"),
-            //     leading: Icon(Icons.vpn_lock),
-            //     onPressed: (BuildContext context) async {
-            //       await Navigator.push(
-            //         context,
-            //         MaterialPageRoute(builder: (context) {
-            //           return VpnConnectionCheck();
-            //         }),
-            //       );
-            //     }
-            // ),
-            // SettingsTile(
-            //     title: Text("Webview"),
-            //     leading: Icon(Icons.web),
-            //     onPressed: (BuildContext context) async {
-            //       await Navigator.push(
-            //         context,
-            //         MaterialPageRoute(builder: (context) {
-            //           return WebViewExample();
-            //         }),
-            //       );
-            //     }
-            // ),
             SettingsTile.switchTile(
               title: Text(texts.onlyExportNewMeasurements),
               leading: Icon(Icons.fiber_new),
@@ -447,38 +288,123 @@ class _SettingsScreenState extends State<SettingsScreen> {
         context, key, title, widget.prefs, texts,
         password: password, default_value: default_value);
     if (new_setting != null) {
-      setState(() {
-        if (key == "ftp_username" || key == "ftp_password") {
-          // Save to SecureStorage
-          final secure_storage = new FlutterSecureStorage();
-          secure_storage.write(key: key, value: new_setting);
-          if (key == "ftp_username") {
-            ftp_username = secure_storage.read(key: 'ftp_username');
-          } else if (key == "ftp_password") {
-            ftp_password = secure_storage.read(key: 'ftp_password');
-          }
-        } else {
-          // save to SharedPreferences
-          widget.prefs.setString(key, new_setting);
-        }
-      });
+      await widget.prefs.setString(key, new_setting);
+      if (!mounted) {
+        return;
+      }
+      setState(() {});
     }
   }
 }
 
-void parseSettings(
+Future<void> parseSettings(
     Map<String, dynamic> settings, SharedPreferences prefs) async {
+  await ensureFtpConfigurationsMigrated(prefs);
+
+  bool _toBool(dynamic value, bool fallback) {
+    if (value is bool) {
+      return value;
+    }
+    if (value is String) {
+      var stringValue = value.toLowerCase();
+      return (stringValue == 'yes') || (stringValue == 'true');
+    }
+    return fallback;
+  }
+
+  final importedHostname = (settings['ftp_hostname'] ?? '').toString().trim();
+  final importedActiveHostname =
+      (settings['ftp_active_hostname'] ?? '').toString().trim();
+  final importedFtpConfigsRaw = settings['ftp_configurations'];
+  final importedFtpConfigs = importedFtpConfigsRaw is List
+      ? importedFtpConfigsRaw.whereType<Map>().toList()
+      : <Map>[];
+
+  if (importedFtpConfigs.isNotEmpty) {
+    for (final item in importedFtpConfigs) {
+      final map = Map<String, dynamic>.from(item);
+      final hostname = (map['hostname'] ?? '').toString().trim();
+      if (hostname.isEmpty) {
+        continue;
+      }
+      final existing = await getFtpConfigurationByHostname(prefs, hostname);
+      final config = (existing ?? FtpConfiguration(hostname: hostname)).copyWith(
+        path: (map['path'] ?? existing?.path ?? '').toString(),
+        useFtps: _toBool(map['use_ftps'], existing?.useFtps ?? false),
+        useSftp: _toBool(map['use_sftp'], existing?.useSftp ?? false),
+        useImplicitFtps:
+            _toBool(map['use_implicit_ftps'], existing?.useImplicitFtps ?? false),
+      );
+
+      await upsertFtpConfiguration(
+        prefs,
+        config,
+        username: map['ftp_username']?.toString(),
+        password: map['ftp_password']?.toString(),
+      );
+    }
+
+    final nextActive = importedActiveHostname.isNotEmpty
+        ? importedActiveHostname
+        : importedHostname;
+    if (nextActive.isNotEmpty) {
+      await setActiveFtpConfiguration(prefs, nextActive);
+    }
+  }
+
+  final hasFtpUpdate = importedHostname.isNotEmpty ||
+      settings.containsKey('ftp_path') ||
+      settings.containsKey('use_ftps') ||
+      settings.containsKey('use_sftp') ||
+      settings.containsKey('use_implicit_ftps') ||
+      settings.containsKey('ftp_username') ||
+      settings.containsKey('ftp_password');
+
+  if (hasFtpUpdate && importedFtpConfigs.isEmpty) {
+    final baseConfig = importedHostname.isNotEmpty
+        ? (await getFtpConfigurationByHostname(prefs, importedHostname) ??
+            FtpConfiguration(hostname: importedHostname))
+        : await getActiveFtpConfiguration(prefs);
+
+    if (baseConfig.hostname.isNotEmpty) {
+      final updatedConfig = baseConfig.copyWith(
+        path: settings.containsKey('ftp_path')
+            ? (settings['ftp_path'] ?? '').toString()
+            : baseConfig.path,
+        useFtps: settings.containsKey('use_ftps')
+            ? _toBool(settings['use_ftps'], baseConfig.useFtps)
+            : baseConfig.useFtps,
+        useSftp: settings.containsKey('use_sftp')
+            ? _toBool(settings['use_sftp'], baseConfig.useSftp)
+            : baseConfig.useSftp,
+        useImplicitFtps: settings.containsKey('use_implicit_ftps')
+            ? _toBool(settings['use_implicit_ftps'], baseConfig.useImplicitFtps)
+            : baseConfig.useImplicitFtps,
+      );
+      await upsertFtpConfiguration(
+        prefs,
+        updatedConfig,
+        username: settings['ftp_username']?.toString(),
+        password: settings['ftp_password']?.toString(),
+        setActive: importedHostname.isNotEmpty,
+      );
+    }
+  }
+
   for (var key in settings.keys) {
     switch (key) {
+      case 'settings_format_version':
+        break;
       case 'ftp_username':
       case 'ftp_password':
-        // string setting, to be stores securely
-        final secure_storage = new FlutterSecureStorage();
-        secure_storage.write(key: key, value: settings[key]!);
-      case 'email_address':
-      case 'photo_resolution':
       case 'ftp_hostname':
       case 'ftp_path':
+      case 'use_ftps':
+      case 'use_sftp':
+      case 'use_implicit_ftps':
+        break;
+      case 'email_address':
+      case 'photo_resolution':
       case 'wms_url':
       case 'wms_layers':
       case 'user_inputfield':
@@ -495,9 +421,6 @@ void parseSettings(
         }
         await prefs.setInt(key, value);
         break;
-      case 'use_ftps':
-      case 'use_sftp':
-      case 'use_implicit_ftps':
       case 'only_export_new_data':
       case 'use_standard_time':
       case 'automatic_synchronisation_on':
@@ -520,18 +443,6 @@ void parseSettings(
         if (value is String) {
           var stringValue = value.toLowerCase();
           value = (stringValue == 'yes') || (stringValue == 'true');
-        }
-        if (key == 'use_ftps' && value) {
-          await prefs.setBool('use_sftp', false);
-          await prefs.setBool('use_implicit_ftps', false);
-        }
-        if (key == 'use_sftp' && value) {
-          await prefs.setBool('use_ftps', false);
-          await prefs.setBool('use_implicit_ftps', false);
-        }
-        if (key == 'use_implicit_ftps' && value) {
-          await prefs.setBool('use_sftp', false);
-          await prefs.setBool('use_ftps', false);
         }
         await prefs.setBool(key, value);
         break;

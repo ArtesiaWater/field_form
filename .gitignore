@@ -45,3 +45,4 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 /python/test_output/
+/android/app/.cxx/
