@@ -51,16 +51,23 @@ class AppLocalizationsNl extends AppLocalizations {
   String get deleteAllData => 'Verwijder data van telefoon';
 
   @override
-  String get sureToDeleteData => 'Weet u zeker dat u alle data wilt verwijderen van uw telefoon?';
+  String get sureToDeleteData =>
+      'Weet u zeker dat u alle data wilt verwijderen van uw telefoon?';
+
+  @override
+  String get ftpSwitchDeletesData =>
+      'Bij het wisselen van FTP-configuratie worden alle locatie- en meetgegevens van uw telefoon verwijderd. Wilt u doorgaan?';
 
   @override
   String get unsentMeasurementsTitle => 'Eerst metingen versturen?';
 
   @override
-  String get unsentMeasurements => 'Er zijn nog niet-verzonden metingen. Weet u zeker dat u alle date wilt verwijderen?';
+  String get unsentMeasurements =>
+      'Er zijn nog niet-verzonden metingen. Weet u zeker dat u alle date wilt verwijderen?';
 
   @override
-  String get uploadUnsentMeasurements => 'Er zijn nog niet-verzonden metingen. Wilt u deze eerst uploaden? Zo niet, dan gaan ze verloren.';
+  String get uploadUnsentMeasurements =>
+      'Er zijn nog niet-verzonden metingen. Wilt u deze eerst uploaden? Zo niet, dan gaan ze verloren.';
 
   @override
   String get settings => 'Instellingen';
@@ -104,10 +111,18 @@ class AppLocalizationsNl extends AppLocalizations {
   String get measurements => 'Metingen';
 
   @override
-  String get removeExistingLocationsTitle => 'Importeren locaties verwijdert bestaande locaties';
+  String get removeExistingLocationsTitle =>
+      'Importeren locaties verwijdert bestaande locaties';
 
   @override
-  String get removeExistingLocations => 'Het importeren van nieuwe locaties zal alle bestaande locaties verwijderen. Wilt u doorgaan?';
+  String get removeExistingLocations =>
+      'Het importeren van nieuwe locaties zal alle bestaande locaties verwijderen. Wilt u doorgaan?';
+
+  @override
+  String get continueQuestion => 'Doorgaan?';
+
+  @override
+  String get continueAction => 'Doorgaan';
 
   @override
   String get yes => 'Ja';
@@ -116,13 +131,21 @@ class AppLocalizationsNl extends AppLocalizations {
   String get no => 'Nee';
 
   @override
+  String get error => 'Fout';
+
+  @override
+  String get select => 'Selecteer';
+
+  @override
   String get importFailed => 'Importeren niet gelukt';
 
   @override
-  String get csvNotImplemented => 'csv-locatie-bestanden worden (nog) niet ondersteund. Gebruik json-bestanden voor locatie-data.';
+  String get csvNotImplemented =>
+      'csv-locatie-bestanden worden (nog) niet ondersteund. Gebruik json-bestanden voor locatie-data.';
 
   @override
-  String get unknownFileExtension => 'Onebekende bestands-extensie. Locatie-data moet in een json-bestand worden opgegeven.';
+  String get unknownFileExtension =>
+      'Onebekende bestands-extensie. Locatie-data moet in een json-bestand worden opgegeven.';
 
   @override
   String get syncCompleted => 'Synchronisatie voltooid';
@@ -131,7 +154,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get sendingMeasurements => 'Versturen van metingen';
 
   @override
-  String get uploadMeasurementsFailed => 'Het lukt niet om metingen te versturen';
+  String get uploadMeasurementsFailed =>
+      'Het lukt niet om metingen te versturen';
 
   @override
   String get retreivingFiles => 'Opvragen van lijst met bestanden';
@@ -177,19 +201,23 @@ class AppLocalizationsNl extends AppLocalizations {
   String get isNotValidNumber => ' is geen geldig getal';
 
   @override
-  String get ignoreFilledValues => 'Alle ingevulde waarden worden verwijderd wanneer u deze locatie verlaat. Wilt u nog steeds weggaan?';
+  String get ignoreFilledValues =>
+      'Alle ingevulde waarden worden verwijderd wanneer u deze locatie verlaat. Wilt u nog steeds weggaan?';
 
   @override
   String get ignoreFilledValuesTitle => 'Weggaan zonder op te slaan?';
 
   @override
-  String get imageNotSupported => ': dit bestand wordt niet ondersteund. Alleen jpg, png en pdf worden ondersteund';
+  String get imageNotSupported =>
+      ': dit bestand wordt niet ondersteund. Alleen jpg, png en pdf worden ondersteund';
 
   @override
-  String get connectToFtpFailed => 'Het lukt niet om met de FTP-server te verbinden';
+  String get connectToFtpFailed =>
+      'Het lukt niet om met de FTP-server te verbinden';
 
   @override
-  String get ftpErrorUnknownHost => 'Kan de FTP-hostnaam niet vinden. Controleer de hostnaam en internetverbinding.';
+  String get ftpErrorUnknownHost =>
+      'Kan de FTP-hostnaam niet vinden. Controleer de hostnaam en internetverbinding.';
 
   @override
   String ftpErrorUnknownHostWithHostname(String hostname) {
@@ -197,49 +225,66 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get ftpErrorTimeout => 'Time-out bij het verbinden met de FTP-server. Controleer de server en internetverbinding.';
+  String get ftpErrorTimeout =>
+      'Time-out bij het verbinden met de FTP-server. Controleer de server en internetverbinding.';
 
   @override
-  String get ftpErrorConnectFailed => 'Kan geen verbinding maken met de FTP-server. Controleer hostnaam, poort en firewall-instellingen.';
+  String get ftpErrorConnectFailed =>
+      'Kan geen verbinding maken met de FTP-server. Controleer hostnaam, poort en firewall-instellingen.';
 
   @override
-  String get ftpErrorTls => 'Kan geen beveiligde FTP-verbinding opzetten. Controleer FTPS-instellingen en certificaten.';
+  String get ftpErrorTls =>
+      'Kan geen beveiligde FTP-verbinding opzetten. Controleer FTPS-instellingen en certificaten.';
 
   @override
-  String get ftpErrorNetwork => 'Netwerkfout tijdens verbinden met de FTP-server.';
+  String get ftpErrorNetwork =>
+      'Netwerkfout tijdens verbinden met de FTP-server.';
 
   @override
-  String get ftpErrorPathNotFound => 'Kan de gevraagde map niet vinden op de FTP-server.';
+  String get ftpErrorPathNotFound =>
+      'Kan de gevraagde map niet vinden op de FTP-server.';
 
   @override
-  String get ftpErrorListFailed => 'Kan de bestanden op de FTP-server niet ophalen.';
+  String get ftpErrorListFailed =>
+      'Kan de bestanden op de FTP-server niet ophalen.';
 
   @override
-  String get ftpErrorUploadFailed => 'Uploaden van bestand naar FTP-server is mislukt.';
+  String get ftpErrorUploadFailed =>
+      'Uploaden van bestand naar FTP-server is mislukt.';
 
   @override
-  String get ftpErrorDownloadFailed => 'Downloaden van bestand van FTP-server is mislukt.';
+  String get ftpErrorDownloadFailed =>
+      'Downloaden van bestand van FTP-server is mislukt.';
 
   @override
-  String get ftpErrorSessionNotFound => 'FTP-sessie is verlopen. Maak opnieuw verbinding.';
+  String get ftpErrorSessionNotFound =>
+      'FTP-sessie is verlopen. Maak opnieuw verbinding.';
 
   @override
-  String get ftpErrorInvalidArgument => 'Ongeldige FTP-aanvraag. Controleer uw instellingen.';
+  String get ftpErrorInvalidArgument =>
+      'Ongeldige FTP-aanvraag. Controleer uw instellingen.';
 
   @override
-  String get authenticationError => 'Er is een authenticatie-fout opgetreden met de FTP-server. Voer een geldige gebruikersnaam en wachtwoord in, of verleng uw toegangsessie.';
+  String get authenticationError =>
+      'Er is een authenticatie-fout opgetreden met de FTP-server. Voer een geldige gebruikersnaam en wachtwoord in, of verleng uw toegangsessie.';
 
   @override
-  String get unableToFindOnFtp => 'Kan het bestand niet vinden op de FTP-server: ';
+  String get unableToFindOnFtp =>
+      'Kan het bestand niet vinden op de FTP-server: ';
 
   @override
-  String get unableToFindPathOnFtp => 'Kan de map niet vinden op de FTP-server: ';
+  String get unableToFindPathOnFtp =>
+      'Kan de map niet vinden op de FTP-server: ';
 
   @override
-  String get noHostnameDefined => 'Geen hostnaam opgegeven. Geef aub een hostname op in de instellingen.';
+  String get noHostnameDefined =>
+      'Geen hostnaam opgegeven. Geef aub een hostname op in de instellingen.';
 
   @override
   String get connected => 'Verbonden';
+
+  @override
+  String get testFtpConnection => 'Test FTP-verbinding';
 
   @override
   String get chooseAFolder => 'Kies een map';
@@ -254,7 +299,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get useStandardTime => 'Gebruik wintertijd';
 
   @override
-  String get useStandardTimeSubtitle => 'Wanneer aan gebruik ook in de zomer de wintertijd';
+  String get useStandardTimeSubtitle =>
+      'Wanneer aan gebruik ook in de zomer de wintertijd';
 
   @override
   String get wms => 'WMS';
@@ -281,7 +327,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get hostname => 'Hostnaam';
 
   @override
-  String get changeFtpHostname => 'Verander FTP hostnaam (gebruik / om mappen op te geven)';
+  String get changeFtpHostname =>
+      'Verander FTP hostnaam (gebruik / om mappen op te geven)';
 
   @override
   String get username => 'Gebruikersnaam';
@@ -299,7 +346,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get rootFolder => 'Hoofdmap';
 
   @override
-  String get changeFtpRoot => 'Verander hoofdmap (gebruik / om mappen te scheiden)';
+  String get changeFtpRoot =>
+      'Verander hoofdmap (gebruik / om mappen te scheiden)';
 
   @override
   String get addUserToMeasurements => 'Voeg gebruiker toe aan elke meting';
@@ -314,7 +362,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get userInputfield => 'Naam van invoerveld voor gebruiker';
 
   @override
-  String get changeUserInputfield => 'Verander naam van invoerveld voor gebruiker';
+  String get changeUserInputfield =>
+      'Verander naam van invoerveld voor gebruiker';
 
   @override
   String get path => 'Pad';
@@ -344,7 +393,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get useImplicitFtps => 'Gebruik impliciete FTPS';
 
   @override
-  String get deleteInputField => 'Weet u zeker dat u dit invoerveld wilt verwijderen?';
+  String get deleteInputField =>
+      'Weet u zeker dat u dit invoerveld wilt verwijderen?';
 
   @override
   String get deleteOption => 'Weet u zeker dat u deze optie wilt verwijderen?';
@@ -356,7 +406,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get supplyInputFieldId => 'Geef aub de id van het invoerveld op.';
 
   @override
-  String get inputFieldIdExists => ': dit id bestaat al. Vul aub een ander id in voor dit invoerveld.';
+  String get inputFieldIdExists =>
+      ': dit id bestaat al. Vul aub een ander id in voor dit invoerveld.';
 
   @override
   String get chooseId => 'Kies id';
@@ -410,7 +461,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get specifyId => 'Vul aub een id in';
 
   @override
-  String get locationIdExists => ': dit id bestaat al. Vul aub een ander id in voor deze locatie.';
+  String get locationIdExists =>
+      ': dit id bestaat al. Vul aub een ander id in voor deze locatie.';
 
   @override
   String get takePicture => 'Neem een foto';
@@ -523,10 +575,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get addFtpHostname => 'FTP-hostnaam toevoegen';
 
   @override
-  String get overwriteFtpConfigurationTitle => 'FTP-configuratie overschrijven?';
+  String get overwriteFtpConfigurationTitle =>
+      'FTP-configuratie overschrijven?';
 
   @override
-  String get ftpConfigOverwriteWarning => 'Er bestaat al een configuratie voor deze hostnaam. Gebruikersnaam en wachtwoord worden verwijderd. Wilt u doorgaan?';
+  String get ftpConfigOverwriteWarning =>
+      'Er bestaat al een configuratie voor deze hostnaam. Gebruikersnaam en wachtwoord worden verwijderd. Wilt u doorgaan?';
 
   @override
   String get removeFtpConfigurationTitle => 'FTP-configuratie verwijderen';
@@ -535,4 +589,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String removeFtpConfigurationPrompt(String hostname) {
     return '$hostname verwijderen?';
   }
+
+  @override
+  String get version => 'Versie';
 }

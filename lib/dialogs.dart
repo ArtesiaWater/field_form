@@ -1,7 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'l10n/app_localizations.dart';
+
+final _infoMessageNotifier = ValueNotifier<String>('');
+ScaffoldFeatureController<SnackBar, SnackBarClosedReason>? _infoSnackBarController;
+Timer? _infoSnackBarHideTimer;
 
 void showLoaderDialog(BuildContext context, {String text = 'Loading...'}) {
   showDialog(
@@ -25,12 +33,13 @@ AlertDialog buildLoadingIndicator({String text = 'Loading...'}) {
 }
 
 void showErrorDialog(BuildContext context, String text,
-    {String title = 'Error'}) {
+    {String? title}) {
+  final texts = AppLocalizations.of(context);
   showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text(title),
+          title: Text(title ?? texts?.error ?? 'Error'),
           content: SingleChildScrollView(
             child: ListBody(
               children: <Widget>[
@@ -43,7 +52,7 @@ void showErrorDialog(BuildContext context, String text,
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: Text('OK'),
+              child: Text(texts?.ok ?? 'Ok'),
             ),
           ],
         );
@@ -51,28 +60,29 @@ void showErrorDialog(BuildContext context, String text,
 }
 
 Future<bool?> showContinueDialog(BuildContext context, String text,
-    {String title = 'Continue?',
-    String yesButton = 'Continue',
-    String noButton = 'Cancel'}) async {
+    {String? title,
+    String? yesButton,
+    String? noButton}) async {
+  final texts = AppLocalizations.of(context);
   // show the dialog
   var action = await showDialog(
     context: context,
     builder: (BuildContext context) {
       return AlertDialog(
-        title: Text(title),
+        title: Text(title ?? texts?.continueQuestion ?? 'Continue?'),
         content: Text(text),
         actions: [
           TextButton(
             onPressed: () {
               Navigator.of(context).pop(false);
             },
-            child: Text(noButton),
+            child: Text(noButton ?? texts?.cancel ?? 'Cancel'),
           ),
           TextButton(
             onPressed: () {
               Navigator.of(context).pop(true);
             },
-            child: Text(yesButton),
+            child: Text(yesButton ?? texts?.continueAction ?? 'Continue'),
           ),
         ],
       );
@@ -82,23 +92,22 @@ Future<bool?> showContinueDialog(BuildContext context, String text,
 }
 
 Future<String?> showInputDialog(BuildContext context,
-    {String title = 'Input',
+    {String? title,
     String? text,
-    String yesButton = 'ok',
-    String noButton = 'cancel',
+    String? yesButton,
+    String? noButton,
     String? initialValue,
     String type = 'text',
     bool selectInitialValue = true}) async {
+  final texts = AppLocalizations.of(context);
   final controller = TextEditingController();
   if (initialValue != null) {
-    controller.text = initialValue;
-    if (selectInitialValue) {
-      // Select the initial text, so it can be deleted quickly
-      controller.selection = TextSelection(
-        baseOffset: 0,
-        extentOffset: initialValue.length,
-      );
-    }
+    controller.value = TextEditingValue(
+      text: initialValue,
+      selection: selectInitialValue
+          ? TextSelection(baseOffset: 0, extentOffset: initialValue.length)
+          : TextSelection.collapsed(offset: initialValue.length),
+    );
   }
 
   var keyboardType;
@@ -114,7 +123,7 @@ Future<String?> showInputDialog(BuildContext context,
     context: context,
     builder: (BuildContext context) {
       return AlertDialog(
-        title: Text(title),
+        title: Text(title ?? texts?.input ?? 'Input'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -132,14 +141,14 @@ Future<String?> showInputDialog(BuildContext context,
             onPressed: () {
               Navigator.of(context).pop(null);
             },
-            child: Text(noButton),
+            child: Text(noButton ?? texts?.cancel ?? 'Cancel'),
           ),
           TextButton(
             onPressed: () {
               final id = controller.text;
               Navigator.of(context).pop(id);
             },
-            child: Text(yesButton),
+            child: Text(yesButton ?? texts?.ok ?? 'Ok'),
           ),
         ],
       );
@@ -149,10 +158,41 @@ Future<String?> showInputDialog(BuildContext context,
 }
 
 void displayInformation(context, text) {
-  var snackBar = SnackBar(content: Text(text));
-  ScaffoldMessenger.of(context)
-    ..removeCurrentSnackBar()
-    ..showSnackBar(snackBar);
+  final message = text.toString();
+  if (message.trim().isEmpty) {
+    return;
+  }
+
+  final messenger = ScaffoldMessenger.maybeOf(context);
+  if (messenger == null) {
+    return;
+  }
+
+  _infoMessageNotifier.value = message;
+
+  if (_infoSnackBarController == null) {
+    _infoSnackBarController = messenger.showSnackBar(
+      SnackBar(
+        duration: const Duration(days: 1),
+        content: ValueListenableBuilder<String>(
+          valueListenable: _infoMessageNotifier,
+          builder: (context, value, _) {
+            return Text(value);
+          },
+        ),
+      ),
+    );
+    _infoSnackBarController!.closed.then((_) {
+      _infoSnackBarController = null;
+      _infoSnackBarHideTimer?.cancel();
+      _infoSnackBarHideTimer = null;
+    });
+  }
+
+  _infoSnackBarHideTimer?.cancel();
+  _infoSnackBarHideTimer = Timer(const Duration(seconds: 2), () {
+    messenger.hideCurrentSnackBar();
+  });
 }
 
 class MultiSelectDialogItem<V> {
@@ -167,19 +207,19 @@ class MultiSelectDialog<V> extends StatefulWidget {
   MultiSelectDialog(
       {required this.items,
       this.initialSelectedValues,
-      this.title = 'Select',
+  this.title,
       this.selectNone,
       this.selectAll,
-      this.ok = 'Ok',
-      this.cancel = 'Cancel'});
+  this.ok,
+  this.cancel});
 
   final List<MultiSelectDialogItem<V>> items;
   final Set<V>? initialSelectedValues;
-  final String title;
+  final String? title;
   final String? selectNone;
   final String? selectAll;
-  final String ok;
-  final String cancel;
+  final String? ok;
+  final String? cancel;
 
   @override
   State<StatefulWidget> createState() => _MultiSelectDialogState<V>();
@@ -208,6 +248,10 @@ class _MultiSelectDialogState<V> extends State<MultiSelectDialog<V>> {
 
   @override
   Widget build(BuildContext context) {
+    final texts = AppLocalizations.of(context);
+    final title = widget.title ?? texts?.select ?? 'Select';
+    final ok = widget.ok ?? texts?.ok ?? 'Ok';
+    final cancel = widget.cancel ?? texts?.cancel ?? 'Cancel';
     var actions = <Widget>[];
     if (widget.selectNone != null && widget.selectAll != null) {
       var extra_actions = <Widget>[];
@@ -245,16 +289,16 @@ class _MultiSelectDialogState<V> extends State<MultiSelectDialog<V>> {
           onPressed: () {
             Navigator.pop(context);
           },
-          child: Text(widget.cancel)),
+          child: Text(cancel)),
       TextButton(
         onPressed: () {
           Navigator.pop(context, _selectedValues);
         },
-        child: Text(widget.ok),
+        child: Text(ok),
       )
     ]));
     return AlertDialog(
-      title: Text(widget.title),
+      title: Text(title),
       contentPadding: EdgeInsets.only(top: 12.0),
       content: SingleChildScrollView(
         child: ListTileTheme(
@@ -372,11 +416,12 @@ Future<String?> editStringSettingDialog(
       context: context,
       builder: (context) {
         var textEditingController = TextEditingController();
-        textEditingController.text = settingValue;
-        // Select the initial text, so it can be deleted quickly
-        textEditingController.selection = TextSelection(
-          baseOffset: 0,
-          extentOffset: settingValue.length,
+        textEditingController.value = TextEditingValue(
+          text: settingValue,
+          selection: TextSelection(
+            baseOffset: 0,
+            extentOffset: settingValue.length,
+          ),
         );
         return AlertDialog(
           title: Text(title),

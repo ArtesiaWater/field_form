@@ -274,17 +274,28 @@ Future<void> updateActiveFtpConfiguration(
   var normalizedUseSftp = useSftp ?? active.useSftp;
   var normalizedUseImplicitFtps = useImplicitFtps ?? active.useImplicitFtps;
 
-  if (normalizedUseFtps) {
+  // If the user explicitly enables one mode, that mode wins and the others
+  // are disabled to keep protocol selection mutually exclusive.
+  if (useFtps == true) {
+    normalizedUseFtps = true;
     normalizedUseSftp = false;
     normalizedUseImplicitFtps = false;
-  }
-  if (normalizedUseSftp) {
+  } else if (useSftp == true) {
+    normalizedUseSftp = true;
     normalizedUseFtps = false;
     normalizedUseImplicitFtps = false;
-  }
-  if (normalizedUseImplicitFtps) {
+  } else if (useImplicitFtps == true) {
+    normalizedUseImplicitFtps = true;
     normalizedUseFtps = false;
     normalizedUseSftp = false;
+  } else {
+    // Keep legacy values sane when no explicit "enable" action was provided.
+    if (normalizedUseFtps) {
+      normalizedUseSftp = false;
+      normalizedUseImplicitFtps = false;
+    } else if (normalizedUseSftp) {
+      normalizedUseImplicitFtps = false;
+    }
   }
 
   final next = active.copyWith(

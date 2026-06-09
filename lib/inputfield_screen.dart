@@ -335,7 +335,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
-              child: Text('x'),
+              child: Icon(Icons.close),
             )),
       ]));
     });

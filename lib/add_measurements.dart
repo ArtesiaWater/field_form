@@ -950,40 +950,64 @@ class _AddMeasurementsState extends State<AddMeasurements> {
     // check if photo exists in documents-directory
     var docsDir = await getApplicationDocumentsDirectory();
     var dir = Directory(p.join((docsDir).path, 'photos'));
-    File? file = File(p.join(dir.path, name));
+    final file = File(p.join(dir.path, name));
+
+    // A previous failed transfer may have left an empty file behind.
+    if (file.existsSync() && file.lengthSync() == 0) {
+      unawaited(file.delete());
+    }
+
     // check if photo exists on ftp-server
     if (!file.existsSync()) {
       setState(() {
         isLoading = true;
       });
       var prefs = await SharedPreferences.getInstance();
-      var connection = await connectToFtp(context, prefs);
-      if (connection == null) {
-        setState(() {
-          isLoading = false;
-        });
-        showErrorDialog(context, texts.connectToFtpFailed);
+      Object? connection;
+      try {
+        connection = await connectToFtp(context, prefs);
+        if (connection == null) {
+          showErrorDialog(context, texts.connectToFtpFailed);
+          return;
+        }
+        displayInformation(context, texts.downloading + name);
+        if (!dir.existsSync()) {
+          await dir.create();
+        }
+        var downloadResult =
+            await downloadFileFromFtp(connection, file, prefs, context);
+        if (!downloadResult.success) {
+          // Prevent broken local files from causing errors on retry.
+          if (file.existsSync()) {
+            unawaited(file.delete());
+          }
+          showErrorDialog(context,
+              downloadResult.errorMessage ?? texts.downloadFailed + name);
+          return;
+        }
+      } catch (e) {
+        if (file.existsSync()) {
+          unawaited(file.delete());
+        }
+        showErrorDialog(context, e.toString());
         return;
+      } finally {
+        if (connection != null) {
+          closeFtp(connection, prefs);
+        }
+        if (mounted) {
+          setState(() {
+            isLoading = false;
+          });
+        }
       }
-      displayInformation(context, texts.downloading + name);
-      if (!dir.existsSync()) {
-        await dir.create();
-      }
-      var downloadResult =
-          await downloadFileFromFtp(connection, file, prefs, context);
-      if (!downloadResult.success) {
-        setState(() {
-          isLoading = false;
-        });
-        showErrorDialog(
-            context, downloadResult.errorMessage ?? texts.downloadFailed + name);
-        return;
-      }
-      closeFtp(connection, prefs);
-      setState(() {
-        isLoading = false;
-      });
     }
+
+    if (!file.existsSync() || file.lengthSync() == 0) {
+      showErrorDialog(context, texts.downloadFailed + name);
+      return;
+    }
+
     // Open the photo screen
     await Navigator.push(
       context,

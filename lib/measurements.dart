@@ -163,8 +163,8 @@ create table measurements (
     }
 
     // make a string
-    var converter = ListToCsvConverter(fieldDelimiter: ';');
-    return file.writeAsString(converter.convert(rows));
+    var converter = Csv(fieldDelimiter: ';');
+    return file.writeAsString(converter.encode(rows));
   }
 
   Future<File?> exportToCsv(File file,
@@ -184,14 +184,14 @@ create table measurements (
   }
 
   Future<void> importFromCsv(File file, {exported = true}) async {
-    var converter = const CsvToListConverter(
-        fieldDelimiter: ';', shouldParseNumbers: false);
+    var converter = Csv(
+        fieldDelimiter: ';', dynamicTyping: false);
     var text = await file.readAsString();
     if (text.trim().isEmpty) {
       // Ignore empty files gracefully.
       return;
     }
-    var rows = converter.convert(text);
+    var rows = converter.decode(text);
     if (rows.isEmpty) {
       return;
     }

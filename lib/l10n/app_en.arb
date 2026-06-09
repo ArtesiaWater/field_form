@@ -14,6 +14,7 @@
     "selectNone": "Select none",
     "deleteAllData": "Delete data from phone",
     "sureToDeleteData": "Are you sure you wish to delete all data from your phone?",
+    "ftpSwitchDeletesData": "Switching FTP configuration will delete all location and measurement data from your phone. Do you want to continue?",
     "unsentMeasurementsTitle": "First send measurements?",
     "unsentMeasurements": "There are still unsent measurements. Are you really sure you want to delete all data?",
     "uploadUnsentMeasurements": "There are unsent measurements. Do you want to upload these first? Otherwise they will be lost.",
@@ -39,8 +40,12 @@
     "measurements": "Measurements",
     "removeExistingLocationsTitle": "Import of locations removes existing locations",
     "removeExistingLocations": "Importing new locations will remove all existing locations. Do you want to continue?",
+    "continueQuestion": "Continue?",
+    "continueAction": "Continue",
     "yes": "Yes",
     "no": "No",
+    "error": "Error",
+    "select": "Select",
     "importFailed": "Import failed",
     "csvNotImplemented": "csv-location files not implemented (yet). Use json-files for location-data",
     "unknownFileExtension": "Unknown file-extension. Location-data has to be supplied in a json-file.",
@@ -106,6 +111,7 @@
     "unableToFindPathOnFtp": "Unable to find path on FTP-server: ",
     "noHostnameDefined": "No hostname defined. Please assign a hostname in the settings",
     "connected": "Connected",
+    "testFtpConnection": "Test FTP connection",
     "chooseAFolder": "Choose a folder",
     "removePhotoTitle": "Remove photo",
 
@@ -258,5 +264,6 @@
                 "type": "String"
             }
         }
-    }
+    },
+    "version": "Version"
 }

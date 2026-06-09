@@ -14,6 +14,7 @@
     "selectNone": "Selecteer geen",
     "deleteAllData": "Verwijder data van telefoon",
     "sureToDeleteData": "Weet u zeker dat u alle data wilt verwijderen van uw telefoon?",
+    "ftpSwitchDeletesData": "Bij het wisselen van FTP-configuratie worden alle locatie- en meetgegevens van uw telefoon verwijderd. Wilt u doorgaan?",
     "unsentMeasurementsTitle": "Eerst metingen versturen?",
     "unsentMeasurements": "Er zijn nog niet-verzonden metingen. Weet u zeker dat u alle date wilt verwijderen?",
     "uploadUnsentMeasurements": "Er zijn nog niet-verzonden metingen. Wilt u deze eerst uploaden? Zo niet, dan gaan ze verloren.",
@@ -32,8 +33,12 @@
     "measurements": "Metingen",
     "removeExistingLocationsTitle": "Importeren locaties verwijdert bestaande locaties",
     "removeExistingLocations": "Het importeren van nieuwe locaties zal alle bestaande locaties verwijderen. Wilt u doorgaan?",
+    "continueQuestion": "Doorgaan?",
+    "continueAction": "Doorgaan",
     "yes": "Ja",
     "no": "Nee",
+    "error": "Fout",
+    "select": "Selecteer",
     "importFailed": "Importeren niet gelukt",
     "csvNotImplemented": "csv-locatie-bestanden worden (nog) niet ondersteund. Gebruik json-bestanden voor locatie-data.",
     "unknownFileExtension": "Onebekende bestands-extensie. Locatie-data moet in een json-bestand worden opgegeven.",
@@ -82,6 +87,7 @@
     "unableToFindPathOnFtp": "Kan de map niet vinden op de FTP-server: ",
     "noHostnameDefined": "Geen hostnaam opgegeven. Geef aub een hostname op in de instellingen.",
     "connected": "Verbonden",
+    "testFtpConnection": "Test FTP-verbinding",
     "chooseAFolder": "Kies een map",
     "removePhotoTitle": "Verwijder foto",
 
@@ -193,5 +199,6 @@
                 "type": "String"
             }
         }
-    }
+    },
+    "version": "Versie"
 }

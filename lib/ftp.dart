@@ -14,10 +14,12 @@ import 'native_ftp.dart';
 import 'dialogs.dart';
 
 class FtpTransferResult {
-  const FtpTransferResult({required this.success, this.errorMessage});
+  const FtpTransferResult(
+      {required this.success, this.errorMessage, this.isEmptyFile = false});
 
   final bool success;
   final String? errorMessage;
+  final bool isEmptyFile;
 }
 
 Future<Object?>? connectToFtp(BuildContext context, SharedPreferences prefs, {path}) async {
@@ -87,15 +89,15 @@ Future<Object?>? connectToFtp(BuildContext context, SharedPreferences prefs, {pa
   }
   var securityType;
   if (use_implicit_ftps){
-    securityType = SecurityType.FTPS;
+    securityType = SecurityType.ftps;
   } else if (use_ftps) {
-    securityType = SecurityType.FTPES;
+    securityType = SecurityType.ftpes;
   } else {
-    securityType = SecurityType.FTP;
+    securityType = SecurityType.ftp;
   }
   var ftpConnect = FTPConnect(host, user: user, pass: pass, timeout: 5, securityType: securityType, logger: Logger(isEnabled: true));
   if (use_implicit_ftps){
-    ftpConnect.listCommand = ListCommand.NLST;
+    ftpConnect.listCommand = ListCommand.nlst;
   }
   try {
     await ftpConnect.connect();
@@ -291,18 +293,23 @@ Future<FtpTransferResult> downloadFileFromFtp(
     connection, File file, SharedPreferences prefs, BuildContext context) async {
   var use_sftp = prefs.getBool('use_sftp') ?? false;
   var success;
+  var isEmptyFile = false;
   final texts = AppLocalizations.of(context)!;
   final activeConfig = await getActiveFtpConfiguration(prefs);
   final host = activeConfig.hostname.split('/').first.trim();
+  final tempFile = File('${file.path}.part');
+
+  if (await tempFile.exists()) {
+    await tempFile.delete();
+  }
+
   if (use_sftp){
     SftpClient sftp = connection;
     try {
       var ftpPath = getFtpPath(prefs) + '/' + basename(file.path);
       final sftpFile = await sftp.open(ftpPath);
       final data = await sftpFile.readBytes();
-      // final buffer = data.buffer;
-      // await file.writeAsBytes(buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
-      await file.writeAsBytes(data);
+      await tempFile.writeAsBytes(data);
       success = true;
     } catch (e) {
       success = false;
@@ -310,9 +317,12 @@ Future<FtpTransferResult> downloadFileFromFtp(
   } else {
     if (connection is NativeFtpConnection) {
       try {
-        success = await connection.downloadFile(basename(file.path), file);
+        success = await connection.downloadFile(basename(file.path), tempFile);
       } on PlatformException catch (e) {
         success = false;
+        if (await tempFile.exists()) {
+          await tempFile.delete();
+        }
         closeFtp(connection, prefs);
         return FtpTransferResult(
           success: false,
@@ -324,16 +334,38 @@ Future<FtpTransferResult> downloadFileFromFtp(
     } else {
       FTPConnect ftp = connection;
       try {
-        success = await ftp.downloadFile(basename(file.path), file);
+        success = await ftp.downloadFile(basename(file.path), tempFile);
       } catch (e) {
         success = false;
       }
     }
   }
-  if (!success){
-    closeFtp(connection, prefs);
+
+  if (success) {
+    final hasValidTempFile =
+        await tempFile.exists() && (await tempFile.length()) > 0;
+    success = hasValidTempFile;
+    if (!hasValidTempFile) {
+      isEmptyFile = true;
+    }
   }
-  return FtpTransferResult(success: success);
+
+  if (success) {
+    if (await file.exists()) {
+      await file.delete();
+    }
+    await tempFile.rename(file.path);
+  }
+
+  if (!success){
+    if (await tempFile.exists()) {
+      await tempFile.delete();
+    }
+    if (!isEmptyFile) {
+      closeFtp(connection, prefs);
+    }
+  }
+  return FtpTransferResult(success: success, isEmptyFile: isEmptyFile);
 }
 
 void closeFtp(connection, prefs){

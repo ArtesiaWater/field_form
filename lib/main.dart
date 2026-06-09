@@ -36,6 +36,19 @@ void main() {
           colorScheme: ColorScheme.fromSeed(
         seedColor: Constant.primaryColor,
       )),
+      builder: (context, child) {
+        if (child == null) {
+          return const SizedBox.shrink();
+        }
+        return SafeArea(
+          top: false,
+          left: false,
+          right: false,
+          bottom: true,
+          maintainBottomViewPadding: true,
+          child: child,
+        );
+      },
       home: MyApp()));
 }
 
@@ -136,7 +149,9 @@ class _MyAppState extends State<MyApp> {
     // https://github.com/flutter/flutter/issues/30171
     final status = await Permission.location.status;
     if (status == PermissionStatus.granted) {
-      myLocationEnabled = true;
+      setState(() {
+        myLocationEnabled = true;
+      });
     } else {
       final permissionStatus = await Permission.location.request();
       if (permissionStatus == PermissionStatus.granted) {
@@ -233,9 +248,7 @@ class _MyAppState extends State<MyApp> {
                   if (action != null) {
                     setState(() {
                       prefs!.setString('map_type', action);
-                      setState(() {
-                        maptype = action;
-                      });
+                      maptype = action;
                     });
                   }
                 },
@@ -592,13 +605,16 @@ class _MyAppState extends State<MyApp> {
                 final redrawMap = await Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) {
-                    return SettingsScreen(prefs: prefs!);
+                    return SettingsScreen(
+                      prefs: prefs!,
+                      onSwitchFtpFolder: switchFtpFolder,
+                    );
                   }),
                 );
                 if (redrawMap) {
-                  setState(() {
-                    setMarkers();
-                  });
+                  await syncPendingFtpDownload(context);
+                  await setMarkers();
+                  setState(() {});
                 }
               },
               leading: Icon(Icons.settings),
@@ -667,6 +683,7 @@ class _MyAppState extends State<MyApp> {
     return GoogleMap(
       onMapCreated: _onMapCreated,
       myLocationEnabled: myLocationEnabled,
+      myLocationButtonEnabled: myLocationEnabled,
       padding: EdgeInsets.only(bottom: mapBottomPadding),
       initialCameraPosition: initialCameraPosition,
       compassEnabled: true,
@@ -1090,7 +1107,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   void choose_file() async {
-    var result = await FilePicker.platform.pickFiles();
+    var result = await FilePicker.pickFiles();
     if (result != null) {
       var file = File(result.files.single.path!);
       var is_location_file;
@@ -1192,9 +1209,39 @@ class _MyAppState extends State<MyApp> {
     return true;
   }
 
-  Future<void> switchFtpFolder(context) async {
+  Future<bool> switchFtpFolder(context,
+      {bool chooseFolder = true,
+      bool downloadNow = true,
+      bool connectNow = true}) async {
     var prefs = await SharedPreferences.getInstance();
     var use_sftp = prefs.getBool('use_sftp') ?? false;
+    final hasLocalLocations = locData.locations.isNotEmpty;
+    final hasLocalMeasurements =
+        (await measurementProvider.getMeasurements()).isNotEmpty;
+
+    if (hasLocalLocations || hasLocalMeasurements) {
+      final continueAction = await showContinueDialog(
+        context,
+        texts.ftpSwitchDeletesData,
+        title: texts.deleteAllData,
+        yesButton: texts.yes,
+        noButton: texts.no,
+      );
+      if (continueAction != true) {
+        return false;
+      }
+    }
+
+    if (!connectNow) {
+      if (chooseFolder) {
+        return false;
+      }
+      final path = prefs.getString('ftp_path') ?? '';
+      await updateActiveFtpConfiguration(prefs, path: path);
+      await deleteAllData();
+      await prefs.setBool('ftp_sync_pending', true);
+      return true;
+    }
 
     var ftp;
 
@@ -1216,14 +1263,14 @@ class _MyAppState extends State<MyApp> {
           setState(() {
             isLoading = false;
           });
-          return;
+          return false;
         }
         var success = await sendMeasurementsToFtp(ftp, prefs);
         if (!success) {
           setState(() {
             isLoading = false;
           });
-          return;
+          return false;
         }
         var path = prefs.getString('ftp_path') ?? '';
         if (!use_sftp && path.isNotEmpty) {
@@ -1233,7 +1280,7 @@ class _MyAppState extends State<MyApp> {
             setState(() {
               isLoading = false;
             });
-            return;
+            return false;
           }
         }
       }
@@ -1249,16 +1296,27 @@ class _MyAppState extends State<MyApp> {
         setState(() {
           isLoading = false;
         });
-        return;
+        return false;
       }
     }
 
-    // Choose FTP folder
-    var path = await chooseFtpPath(ftp, context, prefs);
+    // Choose FTP folder or reuse the currently configured path.
+    final path = chooseFolder
+        ? await chooseFtpPath(ftp, context, prefs)
+        : prefs.getString('ftp_path') ?? '';
     if (path != null) {
       await updateActiveFtpConfiguration(prefs, path: path);
       // Delete all data
       await deleteAllData();
+
+      if (!downloadNow) {
+        await prefs.setBool('ftp_sync_pending', true);
+        closeFtp(ftp, prefs);
+        setState(() {
+          isLoading = false;
+        });
+        return true;
+      }
 
       if (!use_sftp) {
         // Go to the specified folder
@@ -1267,7 +1325,7 @@ class _MyAppState extends State<MyApp> {
           setState(() {
             isLoading = false;
           });
-          return;
+          return false;
         }
       }
 
@@ -1277,16 +1335,48 @@ class _MyAppState extends State<MyApp> {
         setState(() {
           isLoading = false;
         });
-        return;
+        return false;
       }
 
       displayInformation(context, texts.syncCompleted);
+      await prefs.remove('ftp_sync_pending');
     }
     // finish up
     closeFtp(ftp, prefs);
     setState(() {
       isLoading = false;
     });
+    return path != null;
+  }
+
+  Future<void> syncPendingFtpDownload(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    final pending = prefs.getBool('ftp_sync_pending') ?? false;
+    if (!pending) {
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+    final ftp = await connectToFtp(context, prefs);
+    if (ftp == null) {
+      setState(() {
+        isLoading = false;
+      });
+      return;
+    }
+
+    final success = await downloadDataFromFtp(ftp, context, prefs);
+    closeFtp(ftp, prefs);
+    setState(() {
+      isLoading = false;
+    });
+
+    if (success) {
+      await prefs.remove('ftp_sync_pending');
+      displayInformation(context, texts.syncCompleted);
+    }
   }
 
   Future<bool> sendMeasurementsToFtp(
@@ -1453,6 +1543,16 @@ class _MyAppState extends State<MyApp> {
           var downloadResult =
               await downloadFileFromFtp(connection, file, prefs, context);
           if (!downloadResult.success) {
+            if (downloadResult.isEmptyFile) {
+              if (!importedMeasurementFiles.contains(name)) {
+                importedMeasurementFiles.add(name);
+                await prefs.setStringList(
+                    'imported_measurement_files', importedMeasurementFiles);
+              }
+              displayInformation(
+                  context, '${texts.downloadFailed}$name (0 bytes, skipped)');
+              continue;
+            }
             showErrorDialog(context,
                 downloadResult.errorMessage ?? texts.downloadFailed + name);
             return false;

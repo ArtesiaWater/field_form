@@ -8,9 +8,15 @@ import 'ftp_configurations.dart';
 import 'l10n/app_localizations.dart';
 
 class FtpConfigurationScreen extends StatefulWidget {
-  const FtpConfigurationScreen({super.key, required this.prefs});
+  const FtpConfigurationScreen({
+    super.key,
+    required this.prefs,
+    required this.onSwitchFtpFolder,
+  });
 
   final SharedPreferences prefs;
+  final Future<bool> Function(BuildContext context,
+      {bool chooseFolder, bool downloadNow, bool connectNow}) onSwitchFtpFolder;
 
   @override
   State<FtpConfigurationScreen> createState() => _FtpConfigurationScreenState();
@@ -23,6 +29,7 @@ class _FtpConfigurationScreenState extends State<FtpConfigurationScreen> {
   var ftpPassword = '';
   var activeFtpHostname = '';
   var ftpHostnames = <String>[];
+  var didSwitchFtpFolder = false;
 
   @override
   void initState() {
@@ -73,7 +80,15 @@ class _FtpConfigurationScreenState extends State<FtpConfigurationScreen> {
       },
     );
     if (chosen != null) {
+      final previousActive = activeFtpHostname;
       await setActiveFtpConfiguration(widget.prefs, chosen.toString());
+        final switched = await widget.onSwitchFtpFolder(context,
+          chooseFolder: false, downloadNow: false, connectNow: false);
+      if (switched) {
+        didSwitchFtpFolder = true;
+      } else {
+        await setActiveFtpConfiguration(widget.prefs, previousActive);
+      }
       await _loadFtpConfigurations();
     }
   }
@@ -139,15 +154,60 @@ class _FtpConfigurationScreenState extends State<FtpConfigurationScreen> {
     }
 
     if (key == 'ftp_username') {
+      final previousUsername = await getActiveFtpUsername(widget.prefs);
       await setActiveFtpUsername(widget.prefs, newSetting);
+      final switched = await widget.onSwitchFtpFolder(context,
+          chooseFolder: false, downloadNow: false, connectNow: false);
+      if (switched) {
+        didSwitchFtpFolder = true;
+      } else {
+        await setActiveFtpUsername(widget.prefs, previousUsername);
+      }
     } else if (key == 'ftp_password') {
       await setActiveFtpPassword(widget.prefs, newSetting);
     } else if (key == 'ftp_hostname') {
+      final active = await getActiveFtpConfiguration(widget.prefs);
+      final previousHostname = active.hostname;
       await renameActiveFtpHostname(widget.prefs, newSetting);
+      final switched = await widget.onSwitchFtpFolder(context,
+          chooseFolder: false, downloadNow: false, connectNow: false);
+      if (switched) {
+        didSwitchFtpFolder = true;
+      } else {
+        await renameActiveFtpHostname(widget.prefs, previousHostname);
+      }
     } else if (key == 'ftp_path') {
+      final active = await getActiveFtpConfiguration(widget.prefs);
+      final previousPath = active.path;
       await updateActiveFtpConfiguration(widget.prefs, path: newSetting);
+      final switched = await widget.onSwitchFtpFolder(context,
+          chooseFolder: false, downloadNow: false, connectNow: false);
+      if (switched) {
+        didSwitchFtpFolder = true;
+      } else {
+        await updateActiveFtpConfiguration(widget.prefs, path: previousPath);
+      }
     }
     await _loadFtpConfigurations();
+  }
+
+  Future<void> _testConnection(BuildContext context) async {
+    setState(() {
+      isLoading = true;
+    });
+    final ftp = await connectToFtp(context, widget.prefs);
+    if (ftp != null) {
+      closeFtp(ftp, widget.prefs);
+      if (mounted) {
+        displayInformation(context, texts.connected);
+      }
+    }
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      isLoading = false;
+    });
   }
 
   String _selectedHostnameLabel() {
@@ -163,7 +223,13 @@ class _FtpConfigurationScreenState extends State<FtpConfigurationScreen> {
     final selectedHostname = _selectedHostnameLabel();
     final colorScheme = Theme.of(context).colorScheme;
     final bottomInset = MediaQuery.of(context).viewPadding.bottom;
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, dynamic result) {
+        if (didPop) return;
+        Navigator.pop(context, didSwitchFtpFolder);
+      },
+      child: Scaffold(
       appBar: AppBar(
         title: Text(texts.ftp),
         backgroundColor: Theme.of(context).colorScheme.primary,
@@ -275,25 +341,14 @@ class _FtpConfigurationScreenState extends State<FtpConfigurationScreen> {
                 description: Text(widget.prefs.getString('ftp_path') ?? ''),
                 leading: const Icon(Icons.folder),
                 onPressed: (BuildContext context) async {
-                  setState(() {
-                    isLoading = true;
-                  });
-                  var root = getFtpRoot(widget.prefs);
-                  var ftp = await connectToFtp(context, widget.prefs, path: root);
-                  if (ftp == null) {
-                    setState(() {
-                      isLoading = false;
-                    });
-                    return;
-                  }
-                  var ftpPath = await chooseFtpPath(ftp, context, widget.prefs);
-                  if (ftpPath != null) {
-                    await updateActiveFtpConfiguration(widget.prefs, path: ftpPath);
+                  final switched = await widget.onSwitchFtpFolder(context,
+                      chooseFolder: true,
+                      downloadNow: false,
+                      connectNow: true);
+                  if (switched) {
+                    didSwitchFtpFolder = true;
                     await _loadFtpConfigurations();
                   }
-                  setState(() {
-                    isLoading = false;
-                  });
                 },
               ),
               SettingsTile.switchTile(
@@ -324,11 +379,19 @@ class _FtpConfigurationScreenState extends State<FtpConfigurationScreen> {
                   await _loadFtpConfigurations();
                 },
               ),
+              SettingsTile(
+                title: Text(texts.testFtpConnection),
+                leading: const Icon(Icons.wifi_tethering),
+                onPressed: (BuildContext context) async {
+                  await _testConnection(context);
+                },
+              ),
             ]),
           ]),
           ),
           if (isLoading) buildLoadingIndicator(),
         ],
+      ),
       ),
     );
   }

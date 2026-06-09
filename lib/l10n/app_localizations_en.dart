@@ -51,16 +51,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteAllData => 'Delete data from phone';
 
   @override
-  String get sureToDeleteData => 'Are you sure you wish to delete all data from your phone?';
+  String get sureToDeleteData =>
+      'Are you sure you wish to delete all data from your phone?';
+
+  @override
+  String get ftpSwitchDeletesData =>
+      'Switching FTP configuration will delete all location and measurement data from your phone. Do you want to continue?';
 
   @override
   String get unsentMeasurementsTitle => 'First send measurements?';
 
   @override
-  String get unsentMeasurements => 'There are still unsent measurements. Are you really sure you want to delete all data?';
+  String get unsentMeasurements =>
+      'There are still unsent measurements. Are you really sure you want to delete all data?';
 
   @override
-  String get uploadUnsentMeasurements => 'There are unsent measurements. Do you want to upload these first? Otherwise they will be lost.';
+  String get uploadUnsentMeasurements =>
+      'There are unsent measurements. Do you want to upload these first? Otherwise they will be lost.';
 
   @override
   String get settings => 'Settings';
@@ -104,10 +111,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get measurements => 'Measurements';
 
   @override
-  String get removeExistingLocationsTitle => 'Import of locations removes existing locations';
+  String get removeExistingLocationsTitle =>
+      'Import of locations removes existing locations';
 
   @override
-  String get removeExistingLocations => 'Importing new locations will remove all existing locations. Do you want to continue?';
+  String get removeExistingLocations =>
+      'Importing new locations will remove all existing locations. Do you want to continue?';
+
+  @override
+  String get continueQuestion => 'Continue?';
+
+  @override
+  String get continueAction => 'Continue';
 
   @override
   String get yes => 'Yes';
@@ -116,13 +131,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get no => 'No';
 
   @override
+  String get error => 'Error';
+
+  @override
+  String get select => 'Select';
+
+  @override
   String get importFailed => 'Import failed';
 
   @override
-  String get csvNotImplemented => 'csv-location files not implemented (yet). Use json-files for location-data';
+  String get csvNotImplemented =>
+      'csv-location files not implemented (yet). Use json-files for location-data';
 
   @override
-  String get unknownFileExtension => 'Unknown file-extension. Location-data has to be supplied in a json-file.';
+  String get unknownFileExtension =>
+      'Unknown file-extension. Location-data has to be supplied in a json-file.';
 
   @override
   String get syncCompleted => 'Synchronisation complete';
@@ -177,19 +200,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get isNotValidNumber => ' is not a valid number';
 
   @override
-  String get ignoreFilledValues => 'All entered values will be deleted when leaving this location. Do you still want to leave?';
+  String get ignoreFilledValues =>
+      'All entered values will be deleted when leaving this location. Do you still want to leave?';
 
   @override
   String get ignoreFilledValuesTitle => 'Leave without saving?';
 
   @override
-  String get imageNotSupported => ': this file is not supported. Only jpg, png and pdf are supported';
+  String get imageNotSupported =>
+      ': this file is not supported. Only jpg, png and pdf are supported';
 
   @override
   String get connectToFtpFailed => 'Unable to connect to FTP-server';
 
   @override
-  String get ftpErrorUnknownHost => 'Unable to resolve FTP host. Check the hostname and internet connection.';
+  String get ftpErrorUnknownHost =>
+      'Unable to resolve FTP host. Check the hostname and internet connection.';
 
   @override
   String ftpErrorUnknownHostWithHostname(String hostname) {
@@ -197,19 +223,24 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get ftpErrorTimeout => 'FTP connection timed out. Check the server and your internet connection.';
+  String get ftpErrorTimeout =>
+      'FTP connection timed out. Check the server and your internet connection.';
 
   @override
-  String get ftpErrorConnectFailed => 'Unable to connect to the FTP server. Check hostname, port and firewall settings.';
+  String get ftpErrorConnectFailed =>
+      'Unable to connect to the FTP server. Check hostname, port and firewall settings.';
 
   @override
-  String get ftpErrorTls => 'Failed to establish a secure FTP connection. Check FTPS settings and certificates.';
+  String get ftpErrorTls =>
+      'Failed to establish a secure FTP connection. Check FTPS settings and certificates.';
 
   @override
-  String get ftpErrorNetwork => 'Network error while connecting to the FTP server.';
+  String get ftpErrorNetwork =>
+      'Network error while connecting to the FTP server.';
 
   @override
-  String get ftpErrorPathNotFound => 'Unable to find the requested folder on the FTP server.';
+  String get ftpErrorPathNotFound =>
+      'Unable to find the requested folder on the FTP server.';
 
   @override
   String get ftpErrorListFailed => 'Unable to list files on the FTP server.';
@@ -218,16 +249,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ftpErrorUploadFailed => 'Failed to upload file to FTP server.';
 
   @override
-  String get ftpErrorDownloadFailed => 'Failed to download file from FTP server.';
+  String get ftpErrorDownloadFailed =>
+      'Failed to download file from FTP server.';
 
   @override
-  String get ftpErrorSessionNotFound => 'FTP session expired. Please reconnect.';
+  String get ftpErrorSessionNotFound =>
+      'FTP session expired. Please reconnect.';
 
   @override
-  String get ftpErrorInvalidArgument => 'Invalid FTP request. Please check your settings.';
+  String get ftpErrorInvalidArgument =>
+      'Invalid FTP request. Please check your settings.';
 
   @override
-  String get authenticationError => 'Authentication on FTP-server failed. Set a valid username and password, or extend your access session.';
+  String get authenticationError =>
+      'Authentication on FTP-server failed. Set a valid username and password, or extend your access session.';
 
   @override
   String get unableToFindOnFtp => 'Unable to find the file on FTP-server: ';
@@ -236,10 +271,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get unableToFindPathOnFtp => 'Unable to find path on FTP-server: ';
 
   @override
-  String get noHostnameDefined => 'No hostname defined. Please assign a hostname in the settings';
+  String get noHostnameDefined =>
+      'No hostname defined. Please assign a hostname in the settings';
 
   @override
   String get connected => 'Connected';
+
+  @override
+  String get testFtpConnection => 'Test FTP connection';
 
   @override
   String get chooseAFolder => 'Choose a folder';
@@ -254,7 +293,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get useStandardTime => 'Use standard time';
 
   @override
-  String get useStandardTimeSubtitle => 'When true, disable daylight saving time';
+  String get useStandardTimeSubtitle =>
+      'When true, disable daylight saving time';
 
   @override
   String get wms => 'WMS';
@@ -281,7 +321,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hostname => 'Hostname';
 
   @override
-  String get changeFtpHostname => 'Change FTP hostname (use / to specify folders)';
+  String get changeFtpHostname =>
+      'Change FTP hostname (use / to specify folders)';
 
   @override
   String get username => 'Username';
@@ -344,7 +385,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get useImplicitFtps => 'Use implicit FTPS';
 
   @override
-  String get deleteInputField => 'Are you sure you want to delete this input field?';
+  String get deleteInputField =>
+      'Are you sure you want to delete this input field?';
 
   @override
   String get deleteOption => 'Are you sure you want to delete this option?';
@@ -356,7 +398,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get supplyInputFieldId => 'Please supply the id of the input field.';
 
   @override
-  String get inputFieldIdExists => ': this id already exists. Please enter another id for this input field.';
+  String get inputFieldIdExists =>
+      ': this id already exists. Please enter another id for this input field.';
 
   @override
   String get chooseId => 'Choose id';
@@ -410,7 +453,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get specifyId => 'Please specify an id';
 
   @override
-  String get locationIdExists => ': this id already exists. Please enter another id for this location.';
+  String get locationIdExists =>
+      ': this id already exists. Please enter another id for this location.';
 
   @override
   String get takePicture => 'Take a picture';
@@ -526,7 +570,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overwriteFtpConfigurationTitle => 'Overwrite FTP configuration?';
 
   @override
-  String get ftpConfigOverwriteWarning => 'A configuration for this hostname already exists. Username and password will be removed. Do you want to continue?';
+  String get ftpConfigOverwriteWarning =>
+      'A configuration for this hostname already exists. Username and password will be removed. Do you want to continue?';
 
   @override
   String get removeFtpConfigurationTitle => 'Remove FTP configuration';
@@ -535,4 +580,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String removeFtpConfigurationPrompt(String hostname) {
     return 'Remove $hostname?';
   }
+
+  @override
+  String get version => 'Version';
 }

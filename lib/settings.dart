@@ -1,6 +1,7 @@
 import 'package:field_form/inputfield_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_settings_ui/flutter_settings_ui.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'dialogs.dart';
@@ -9,9 +10,15 @@ import 'ftp_configurations.dart';
 import 'l10n/app_localizations.dart';
 
 class SettingsScreen extends StatefulWidget {
-  SettingsScreen({key, required this.prefs}) : super(key: key);
+  SettingsScreen({
+    key,
+    required this.prefs,
+    required this.onSwitchFtpFolder,
+  }) : super(key: key);
 
   final SharedPreferences prefs;
+    final Future<bool> Function(BuildContext context,
+      {bool chooseFolder, bool downloadNow, bool connectNow}) onSwitchFtpFolder;
 
   @override
   _SettingsScreenState createState() => _SettingsScreenState();
@@ -21,6 +28,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
   var isLoading = false;
   var redrawMap = false;
   late AppLocalizations texts;
+  var appVersion = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAppVersion();
+  }
+
+  Future<void> _loadAppVersion() async {
+    final info = await PackageInfo.fromPlatform();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      appVersion = info.version;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -245,12 +269,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
               description: Text(widget.prefs.getString('ftp_hostname') ?? ''),
               leading: Icon(Icons.cloud),
               onPressed: (BuildContext context) async {
-                await Navigator.push(
+                final didSwitch = await Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) {
-                    return FtpConfigurationScreen(prefs: widget.prefs);
+                    return FtpConfigurationScreen(
+                      prefs: widget.prefs,
+                      onSwitchFtpFolder: widget.onSwitchFtpFolder,
+                    );
                   }),
                 );
+                if (didSwitch == true) {
+                  redrawMap = true;
+                }
                 setState(() {});
               },
             ),
@@ -275,6 +305,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   widget.prefs.setBool('upload_data_instantly', value);
                 });
               },
+            ),
+          ],
+        ),
+        SettingsSection(
+          tiles: [
+            SettingsTile(
+              title: Text(texts.version),
+              description: Text(appVersion),
+              leading: Icon(Icons.info_outline),
             ),
           ],
         ),
