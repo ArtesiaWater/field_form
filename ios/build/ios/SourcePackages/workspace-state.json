@@ -1,0 +1,195 @@
+{
+  "object" : {
+    "artifacts" : [
+
+    ],
+    "dependencies" : [
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "camera_avfoundation-0.10.1",
+          "kind" : "fileSystem",
+          "location" : "/Users/rubencalje/Documents/GitHub/field_form/ios/Flutter/ephemeral/Packages/.packages/camera_avfoundation-0.10.1",
+          "name" : "camera_avfoundation"
+        },
+        "state" : {
+          "name" : "fileSystem",
+          "path" : "/Users/rubencalje/Documents/GitHub/field_form/ios/Flutter/ephemeral/Packages/.packages/camera_avfoundation-0.10.1"
+        },
+        "subpath" : "camera_avfoundation-0.10.1"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "file_picker-12.0.0-beta.5",
+          "kind" : "fileSystem",
+          "location" : "/Users/rubencalje/Documents/GitHub/field_form/ios/Flutter/ephemeral/Packages/.packages/file_picker-12.0.0-beta.5",
+          "name" : "file_picker"
+        },
+        "state" : {
+          "name" : "fileSystem",
+          "path" : "/Users/rubencalje/Documents/GitHub/field_form/ios/Flutter/ephemeral/Packages/.packages/file_picker-12.0.0-beta.5"
+        },
+        "subpath" : "file_picker-12.0.0-beta.5"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "flutter_localization-0.4.0",
+          "kind" : "fileSystem",
+          "location" : "/Users/rubencalje/Documents/GitHub/field_form/ios/Flutter/ephemeral/Packages/.packages/flutter_localization-0.4.0",
+          "name" : "flutter_localization"
+        },
+        "state" : {
+          "name" : "fileSystem",
+          "path" : "/Users/rubencalje/Documents/GitHub/field_form/ios/Flutter/ephemeral/Packages/.packages/flutter_localization-0.4.0"
+        },
+        "subpath" : "flutter_localization-0.4.0"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "flutter_secure_storage_darwin-0.3.2",
+          "kind" : "fileSystem",
+          "location" : "/Users/rubencalje/Documents/GitHub/field_form/ios/Flutter/ephemeral/Packages/.packages/flutter_secure_storage_darwin-0.3.2",
+          "name" : "flutter_secure_storage_darwin"
+        },
+        "state" : {
+          "name" : "fileSystem",
+          "path" : "/Users/rubencalje/Documents/GitHub/field_form/ios/Flutter/ephemeral/Packages/.packages/flutter_secure_storage_darwin-0.3.2"
+        },
+        "subpath" : "flutter_secure_storage_darwin-0.3.2"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "flutterframework",
+          "kind" : "fileSystem",
+          "location" : "/Users/rubencalje/Documents/GitHub/field_form/ios/Flutter/ephemeral/Packages/.packages/FlutterFramework",
+          "name" : "FlutterFramework"
+        },
+        "state" : {
+          "name" : "fileSystem",
+          "path" : "/Users/rubencalje/Documents/GitHub/field_form/ios/Flutter/ephemeral/Packages/.packages/FlutterFramework"
+        },
+        "subpath" : "flutterframework"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "geolocator_apple-2.3.13",
+          "kind" : "fileSystem",
+          "location" : "/Users/rubencalje/Documents/GitHub/field_form/ios/Flutter/ephemeral/Packages/.packages/geolocator_apple-2.3.13",
+          "name" : "geolocator_apple"
+        },
+        "state" : {
+          "name" : "fileSystem",
+          "path" : "/Users/rubencalje/Documents/GitHub/field_form/ios/Flutter/ephemeral/Packages/.packages/geolocator_apple-2.3.13"
+        },
+        "subpath" : "geolocator_apple-2.3.13"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "map_launcher-4.5.0",
+          "kind" : "fileSystem",
+          "location" : "/Users/rubencalje/Documents/GitHub/field_form/ios/Flutter/ephemeral/Packages/.packages/map_launcher-4.5.0",
+          "name" : "map_launcher"
+        },
+        "state" : {
+          "name" : "fileSystem",
+          "path" : "/Users/rubencalje/Documents/GitHub/field_form/ios/Flutter/ephemeral/Packages/.packages/map_launcher-4.5.0"
+        },
+        "subpath" : "map_launcher-4.5.0"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "native_exif-0.8.0",
+          "kind" : "fileSystem",
+          "location" : "/Users/rubencalje/Documents/GitHub/field_form/ios/Flutter/ephemeral/Packages/.packages/native_exif-0.8.0",
+          "name" : "native_exif"
+        },
+        "state" : {
+          "name" : "fileSystem",
+          "path" : "/Users/rubencalje/Documents/GitHub/field_form/ios/Flutter/ephemeral/Packages/.packages/native_exif-0.8.0"
+        },
+        "subpath" : "native_exif-0.8.0"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "package_info_plus-10.1.0",
+          "kind" : "fileSystem",
+          "location" : "/Users/rubencalje/Documents/GitHub/field_form/ios/Flutter/ephemeral/Packages/.packages/package_info_plus-10.1.0",
+          "name" : "package_info_plus"
+        },
+        "state" : {
+          "name" : "fileSystem",
+          "path" : "/Users/rubencalje/Documents/GitHub/field_form/ios/Flutter/ephemeral/Packages/.packages/package_info_plus-10.1.0"
+        },
+        "subpath" : "package_info_plus-10.1.0"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "permission_handler_apple-9.4.9",
+          "kind" : "fileSystem",
+          "location" : "/Users/rubencalje/Documents/GitHub/field_form/ios/Flutter/ephemeral/Packages/.packages/permission_handler_apple-9.4.9",
+          "name" : "permission_handler_apple"
+        },
+        "state" : {
+          "name" : "fileSystem",
+          "path" : "/Users/rubencalje/Documents/GitHub/field_form/ios/Flutter/ephemeral/Packages/.packages/permission_handler_apple-9.4.9"
+        },
+        "subpath" : "permission_handler_apple-9.4.9"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "share_plus-13.1.0",
+          "kind" : "fileSystem",
+          "location" : "/Users/rubencalje/Documents/GitHub/field_form/ios/Flutter/ephemeral/Packages/.packages/share_plus-13.1.0",
+          "name" : "share_plus"
+        },
+        "state" : {
+          "name" : "fileSystem",
+          "path" : "/Users/rubencalje/Documents/GitHub/field_form/ios/Flutter/ephemeral/Packages/.packages/share_plus-13.1.0"
+        },
+        "subpath" : "share_plus-13.1.0"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "shared_preferences_foundation-2.5.6",
+          "kind" : "fileSystem",
+          "location" : "/Users/rubencalje/Documents/GitHub/field_form/ios/Flutter/ephemeral/Packages/.packages/shared_preferences_foundation-2.5.6",
+          "name" : "shared_preferences_foundation"
+        },
+        "state" : {
+          "name" : "fileSystem",
+          "path" : "/Users/rubencalje/Documents/GitHub/field_form/ios/Flutter/ephemeral/Packages/.packages/shared_preferences_foundation-2.5.6"
+        },
+        "subpath" : "shared_preferences_foundation-2.5.6"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "sqflite_darwin-2.4.3",
+          "kind" : "fileSystem",
+          "location" : "/Users/rubencalje/Documents/GitHub/field_form/ios/Flutter/ephemeral/Packages/.packages/sqflite_darwin-2.4.3",
+          "name" : "sqflite_darwin"
+        },
+        "state" : {
+          "name" : "fileSystem",
+          "path" : "/Users/rubencalje/Documents/GitHub/field_form/ios/Flutter/ephemeral/Packages/.packages/sqflite_darwin-2.4.3"
+        },
+        "subpath" : "sqflite_darwin-2.4.3"
+      }
+    ],
+    "prebuilts" : [
+
+    ]
+  },
+  "version" : 7
+}
