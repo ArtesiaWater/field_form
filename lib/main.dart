@@ -1219,42 +1219,17 @@ class _MyAppState extends State<MyApp> {
     final hasLocalMeasurements =
         (await measurementProvider.getMeasurements()).isNotEmpty;
 
-    if (hasLocalLocations || hasLocalMeasurements) {
-      final continueAction = await showContinueDialog(
-        context,
-        texts.ftpSwitchDeletesData,
-        title: texts.deleteAllData,
-        yesButton: texts.yes,
-        noButton: texts.no,
-      );
-      if (continueAction != true) {
-        return false;
-      }
-    }
-
-    if (!connectNow) {
-      if (chooseFolder) {
-        return false;
-      }
-      final path = prefs.getString('ftp_path') ?? '';
-      await updateActiveFtpConfiguration(prefs, path: path);
-      await deleteAllData();
-      await prefs.setBool('ftp_sync_pending', true);
-      return true;
-    }
-
     var ftp;
 
-    // First upload existing measurements
+    // First ask what to do with unsent measurements.
     if (await measurementProvider.areThereMessagesToBeSent(prefs)) {
-      // Check if user wants to send unsent measurements
       var action = await showContinueDialog(
           context, texts.uploadUnsentMeasurements,
           yesButton: texts.yes,
           noButton: texts.no,
           title: texts.unsentMeasurementsTitle);
       if (action == true) {
-        // connect to the current ftp folder and send the measurements
+        // Connect to the current FTP folder and send measurements.
         setState(() {
           isLoading = true;
         });
@@ -1274,7 +1249,7 @@ class _MyAppState extends State<MyApp> {
         }
         var path = prefs.getString('ftp_path') ?? '';
         if (!use_sftp && path.isNotEmpty) {
-          // Go to root of ftp server again
+          // Go to root of ftp server again.
           var success = await changeDirectory(ftp, context, '..', prefs);
           if (!success) {
             setState(() {
@@ -1285,6 +1260,38 @@ class _MyAppState extends State<MyApp> {
         }
       }
     }
+
+    // Ask confirmation before deleting local data.
+    if (hasLocalLocations || hasLocalMeasurements) {
+      final continueAction = await showContinueDialog(
+        context,
+        texts.ftpSwitchDeletesData,
+        title: texts.deleteAllData,
+        yesButton: texts.yes,
+        noButton: texts.no,
+      );
+      if (continueAction != true) {
+        if (ftp != null) {
+          closeFtp(ftp, prefs);
+          setState(() {
+            isLoading = false;
+          });
+        }
+        return false;
+      }
+    }
+
+    if (!connectNow) {
+      if (chooseFolder) {
+        return false;
+      }
+      final path = prefs.getString('ftp_path') ?? '';
+      await updateActiveFtpConfiguration(prefs, path: path);
+      await deleteAllData();
+      await prefs.setBool('ftp_sync_pending', true);
+      return true;
+    }
+
     if (ftp == null) {
       // If not connected yet, connect to the ftp-root
       var root = getFtpRoot(prefs);

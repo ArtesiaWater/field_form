@@ -80,14 +80,14 @@ class _FtpConfigurationScreenState extends State<FtpConfigurationScreen> {
       },
     );
     if (chosen != null) {
-      final previousActive = activeFtpHostname;
-      await setActiveFtpConfiguration(widget.prefs, chosen.toString());
-        final switched = await widget.onSwitchFtpFolder(context,
+      if (chosen.toString() == activeFtpHostname) {
+        return;
+      }
+      final switched = await widget.onSwitchFtpFolder(context,
           chooseFolder: false, downloadNow: false, connectNow: false);
       if (switched) {
+        await setActiveFtpConfiguration(widget.prefs, chosen.toString());
         didSwitchFtpFolder = true;
-      } else {
-        await setActiveFtpConfiguration(widget.prefs, previousActive);
       }
       await _loadFtpConfigurations();
     }
@@ -118,10 +118,17 @@ class _FtpConfigurationScreenState extends State<FtpConfigurationScreen> {
       }
     }
 
+    final switched = await widget.onSwitchFtpFolder(context,
+        chooseFolder: false, downloadNow: false, connectNow: false);
+    if (!switched) {
+      return;
+    }
+
     final config = existing ?? FtpConfiguration(hostname: hostname);
     await upsertFtpConfiguration(widget.prefs, config, setActive: true);
     await setActiveFtpUsername(widget.prefs, '');
     await setActiveFtpPassword(widget.prefs, '');
+    didSwitchFtpFolder = true;
     await _loadFtpConfigurations();
   }
 
@@ -154,39 +161,31 @@ class _FtpConfigurationScreenState extends State<FtpConfigurationScreen> {
     }
 
     if (key == 'ftp_username') {
-      final previousUsername = await getActiveFtpUsername(widget.prefs);
-      await setActiveFtpUsername(widget.prefs, newSetting);
       final switched = await widget.onSwitchFtpFolder(context,
           chooseFolder: false, downloadNow: false, connectNow: false);
-      if (switched) {
-        didSwitchFtpFolder = true;
-      } else {
-        await setActiveFtpUsername(widget.prefs, previousUsername);
+      if (!switched) {
+        return;
       }
+      await setActiveFtpUsername(widget.prefs, newSetting);
+      didSwitchFtpFolder = true;
     } else if (key == 'ftp_password') {
       await setActiveFtpPassword(widget.prefs, newSetting);
     } else if (key == 'ftp_hostname') {
-      final active = await getActiveFtpConfiguration(widget.prefs);
-      final previousHostname = active.hostname;
+      final switched = await widget.onSwitchFtpFolder(context,
+          chooseFolder: false, downloadNow: false, connectNow: false);
+      if (!switched) {
+        return;
+      }
       await renameActiveFtpHostname(widget.prefs, newSetting);
-      final switched = await widget.onSwitchFtpFolder(context,
-          chooseFolder: false, downloadNow: false, connectNow: false);
-      if (switched) {
-        didSwitchFtpFolder = true;
-      } else {
-        await renameActiveFtpHostname(widget.prefs, previousHostname);
-      }
+      didSwitchFtpFolder = true;
     } else if (key == 'ftp_path') {
-      final active = await getActiveFtpConfiguration(widget.prefs);
-      final previousPath = active.path;
-      await updateActiveFtpConfiguration(widget.prefs, path: newSetting);
       final switched = await widget.onSwitchFtpFolder(context,
           chooseFolder: false, downloadNow: false, connectNow: false);
-      if (switched) {
-        didSwitchFtpFolder = true;
-      } else {
-        await updateActiveFtpConfiguration(widget.prefs, path: previousPath);
+      if (!switched) {
+        return;
       }
+      await updateActiveFtpConfiguration(widget.prefs, path: newSetting);
+      didSwitchFtpFolder = true;
     }
     await _loadFtpConfigurations();
   }
