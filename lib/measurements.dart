@@ -14,16 +14,17 @@ class Measurement {
       {required this.location,
       required this.datetime,
       required this.type,
-      required this.value,
+      required String value,
       this.id,
-      this.exported = false});
+      this.exported = false})
+      : value = value.trim();
 
   Measurement.fromMap(Map map)
       : location = map['location'].toString(),
-        datetime = DateTime.fromMicrosecondsSinceEpoch(map['datetime']),
-        type = map['type'],
-        value = map['value'],
-        id = map['id'],
+        datetime = DateTime.fromMicrosecondsSinceEpoch(map['datetime'] as int),
+        type = map['type'].toString(),
+        value = map['value'].toString().trim(),
+        id = map['id'] as int?,
         exported = map['exported'] == 1;
 
   String location;
@@ -158,7 +159,7 @@ create table measurements (
       row.add(Constant.date_format.format(measurement.datetime));
       row.add(Constant.time_format.format(measurement.datetime));
       row.add(measurement.type);
-      row.add(measurement.value);
+      row.add(measurement.value.trim());
       rows.add(row);
     }
 
@@ -224,7 +225,7 @@ create table measurements (
       var meas = Measurement(
           location: row[LOCATION].toString(),
           datetime: date,
-          value: row[VALUE].toString(),
+          value: row[VALUE].toString().trim(),
           type: row[TYPE].toString(),
           exported: exported);
       await update_or_insert(meas);
