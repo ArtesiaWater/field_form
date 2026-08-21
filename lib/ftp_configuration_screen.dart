@@ -83,7 +83,7 @@ class _FtpConfigurationScreenState extends State<FtpConfigurationScreen> {
       if (chosen.toString() == activeFtpHostname) {
         return;
       }
-      final switched = await widget.onSwitchFtpFolder(context,
+      final switched = await _onSwitchFtpFolder(context,
           chooseFolder: false, downloadNow: false, connectNow: false);
       if (switched) {
         await setActiveFtpConfiguration(widget.prefs, chosen.toString());
@@ -118,7 +118,7 @@ class _FtpConfigurationScreenState extends State<FtpConfigurationScreen> {
       }
     }
 
-    final switched = await widget.onSwitchFtpFolder(context,
+    final switched = await _onSwitchFtpFolder(context,
         chooseFolder: false, downloadNow: false, connectNow: false);
     if (!switched) {
       return;
@@ -161,7 +161,7 @@ class _FtpConfigurationScreenState extends State<FtpConfigurationScreen> {
     }
 
     if (key == 'ftp_username') {
-      final switched = await widget.onSwitchFtpFolder(context,
+      final switched = await _onSwitchFtpFolder(context,
           chooseFolder: false, downloadNow: false, connectNow: false);
       if (!switched) {
         return;
@@ -171,7 +171,7 @@ class _FtpConfigurationScreenState extends State<FtpConfigurationScreen> {
     } else if (key == 'ftp_password') {
       await setActiveFtpPassword(widget.prefs, newSetting);
     } else if (key == 'ftp_hostname') {
-      final switched = await widget.onSwitchFtpFolder(context,
+      final switched = await _onSwitchFtpFolder(context,
           chooseFolder: false, downloadNow: false, connectNow: false);
       if (!switched) {
         return;
@@ -179,7 +179,7 @@ class _FtpConfigurationScreenState extends State<FtpConfigurationScreen> {
       await renameActiveFtpHostname(widget.prefs, newSetting);
       didSwitchFtpFolder = true;
     } else if (key == 'ftp_path') {
-      final switched = await widget.onSwitchFtpFolder(context,
+      final switched = await _onSwitchFtpFolder(context,
           chooseFolder: false, downloadNow: false, connectNow: false);
       if (!switched) {
         return;
@@ -188,6 +188,27 @@ class _FtpConfigurationScreenState extends State<FtpConfigurationScreen> {
       didSwitchFtpFolder = true;
     }
     await _loadFtpConfigurations();
+  }
+
+  Future<bool> _onSwitchFtpFolder(BuildContext context,
+      {bool chooseFolder = true,
+      bool downloadNow = true,
+      bool connectNow = true}) async {
+    setState(() {
+      isLoading = true;
+    });
+    try {
+      return await widget.onSwitchFtpFolder(context,
+          chooseFolder: chooseFolder,
+          downloadNow: downloadNow,
+          connectNow: connectNow);
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
   }
 
   Future<void> _testConnection(BuildContext context) async {
@@ -340,7 +361,7 @@ class _FtpConfigurationScreenState extends State<FtpConfigurationScreen> {
                 description: Text(widget.prefs.getString('ftp_path') ?? ''),
                 leading: const Icon(Icons.folder),
                 onPressed: (BuildContext context) async {
-                  final switched = await widget.onSwitchFtpFolder(context,
+                  final switched = await _onSwitchFtpFolder(context,
                       chooseFolder: true,
                       downloadNow: false,
                       connectNow: true);

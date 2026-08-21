@@ -45,7 +45,7 @@ Future<Object?>? connectToFtp(BuildContext context, SharedPreferences prefs, {pa
   if (use_sftp) {
     try {
       final client = SSHClient(
-        await SSHSocket.connect(host, 22, timeout:const Duration(seconds: 5)),
+        await SSHSocket.connect(host, 22, timeout: const Duration(seconds: 3)),
         username: user,
         onPasswordRequest: () => pass,
       );
@@ -76,6 +76,40 @@ Future<Object?>? connectToFtp(BuildContext context, SharedPreferences prefs, {pa
       displayInformation(context, texts.connected);
       return nativeConnection;
     } on PlatformException catch (e) {
+      if (e.code == 'tls_cert_error') {
+        final shouldContinue = await showContinueDialog(
+          context,
+          "The server certificate is not trusted. Do you want to connect anyway?",
+          title: texts.connectToFtpFailed,
+          yesButton: texts.continueAction,
+          noButton: texts.cancel,
+        );
+        if (shouldContinue == true) {
+          try {
+            final nativeConnection = await NativeFtpConnection.connect(
+              host: host,
+              username: user,
+              password: pass,
+              useFtps: use_ftps,
+              useImplicitFtps: use_implicit_ftps,
+              path: path,
+              acceptAnyCertificate: true,
+            );
+            displayInformation(context, texts.connected);
+            return nativeConnection;
+          } on PlatformException catch (e2) {
+            showErrorDialog(
+              context,
+              _nativeFtpErrorMessage(texts, e2, host),
+              title: texts.connectToFtpFailed,
+            );
+            return null;
+          } catch (e2) {
+            showErrorDialog(context, e2.toString(), title: texts.connectToFtpFailed);
+            return null;
+          }
+        }
+      }
       showErrorDialog(
         context,
         _nativeFtpErrorMessage(texts, e, host),
@@ -95,7 +129,12 @@ Future<Object?>? connectToFtp(BuildContext context, SharedPreferences prefs, {pa
   } else {
     securityType = SecurityType.ftp;
   }
-  var ftpConnect = FTPConnect(host, user: user, pass: pass, timeout: 5, securityType: securityType, logger: Logger(isEnabled: true));
+  var ftpConnect = FTPConnect(host,
+      user: user,
+      pass: pass,
+      timeout: 1,
+      securityType: securityType,
+      logger: Logger(isEnabled: true));
   if (use_implicit_ftps){
     ftpConnect.listCommand = ListCommand.nlst;
   }
@@ -133,6 +172,8 @@ String _nativeFtpErrorMessage(
       return texts.ftpErrorConnectFailed;
     case 'tls_error':
       return texts.ftpErrorTls;
+    case 'tls_cert_error':
+      return "The server certificate is untrusted.";
     case 'network_error':
       return texts.ftpErrorNetwork;
     case 'path_not_found':
@@ -247,7 +288,9 @@ Future<FtpTransferResult> uploadFileToFtp(
     SftpClient sftp = connection;
     try {
       var ftpPath = getFtpPath(prefs) + '/' + basename(file.path);
-      final sftpFile = await sftp.open(ftpPath, mode: SftpFileOpenMode.create | SftpFileOpenMode.write);
+      final sftpFile = await sftp
+          .open(ftpPath, mode: SftpFileOpenMode.create | SftpFileOpenMode.write)
+          .timeout(const Duration(minutes: 1));
       await sftpFile.write(file.openRead().cast());
       await sftpFile.close();
       success = true;
@@ -258,7 +301,16 @@ Future<FtpTransferResult> uploadFileToFtp(
   } else {
     if (connection is NativeFtpConnection) {
       try {
-        success = await connection.uploadFile(file);
+        success = await connection
+            .uploadFile(file)
+            .timeout(const Duration(minutes: 1));
+      } on TimeoutException {
+        success = false;
+        unawaited(connection.disconnect());
+        return FtpTransferResult(
+          success: false,
+          errorMessage: texts.ftpErrorTimeout,
+        );
       } on PlatformException catch (e) {
         success = false;
         unawaited(connection.disconnect());
@@ -277,7 +329,9 @@ Future<FtpTransferResult> uploadFileToFtp(
 
     FTPConnect ftp = connection;
     try {
-      success = await ftp.uploadFile(file);
+      success = await ftp.uploadFile(file).timeout(const Duration(minutes: 1));
+    } on TimeoutException {
+      success = false;
     } catch (e) {
       success = false;
     }
@@ -307,7 +361,8 @@ Future<FtpTransferResult> downloadFileFromFtp(
     SftpClient sftp = connection;
     try {
       var ftpPath = getFtpPath(prefs) + '/' + basename(file.path);
-      final sftpFile = await sftp.open(ftpPath);
+      final sftpFile =
+          await sftp.open(ftpPath).timeout(const Duration(minutes: 1));
       final data = await sftpFile.readBytes();
       await tempFile.writeAsBytes(data);
       success = true;
@@ -317,7 +372,19 @@ Future<FtpTransferResult> downloadFileFromFtp(
   } else {
     if (connection is NativeFtpConnection) {
       try {
-        success = await connection.downloadFile(basename(file.path), tempFile);
+        success = await connection
+            .downloadFile(basename(file.path), tempFile)
+            .timeout(const Duration(minutes: 1));
+      } on TimeoutException {
+        success = false;
+        if (await tempFile.exists()) {
+          await tempFile.delete();
+        }
+        closeFtp(connection, prefs);
+        return FtpTransferResult(
+          success: false,
+          errorMessage: texts.ftpErrorTimeout,
+        );
       } on PlatformException catch (e) {
         success = false;
         if (await tempFile.exists()) {
@@ -334,7 +401,11 @@ Future<FtpTransferResult> downloadFileFromFtp(
     } else {
       FTPConnect ftp = connection;
       try {
-        success = await ftp.downloadFile(basename(file.path), tempFile);
+        success = await ftp
+            .downloadFile(basename(file.path), tempFile)
+            .timeout(const Duration(minutes: 1));
+      } on TimeoutException {
+        success = false;
       } catch (e) {
         success = false;
       }

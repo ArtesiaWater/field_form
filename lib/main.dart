@@ -1220,140 +1220,108 @@ class _MyAppState extends State<MyApp> {
         (await measurementProvider.getMeasurements()).isNotEmpty;
 
     var ftp;
+    try {
+      // First ask what to do with unsent measurements.
+      if (await measurementProvider.areThereMessagesToBeSent(prefs)) {
+        var action = await showContinueDialog(
+            context, texts.uploadUnsentMeasurements,
+            yesButton: texts.yes,
+            noButton: texts.no,
+            title: texts.unsentMeasurementsTitle);
+        if (action == true) {
+          // Connect to the current FTP folder and send measurements.
+          setState(() {
+            isLoading = true;
+          });
+          ftp = await connectToFtp(context, prefs);
+          if (ftp == null) return false;
 
-    // First ask what to do with unsent measurements.
-    if (await measurementProvider.areThereMessagesToBeSent(prefs)) {
-      var action = await showContinueDialog(
-          context, texts.uploadUnsentMeasurements,
-          yesButton: texts.yes,
-          noButton: texts.no,
-          title: texts.unsentMeasurementsTitle);
-      if (action == true) {
-        // Connect to the current FTP folder and send measurements.
-        setState(() {
-          isLoading = true;
-        });
-        ftp = await connectToFtp(context, prefs);
-        if (ftp == null) {
-          setState(() {
-            isLoading = false;
-          });
-          return false;
-        }
-        var success = await sendMeasurementsToFtp(ftp, prefs);
-        if (!success) {
-          setState(() {
-            isLoading = false;
-          });
-          return false;
-        }
-        var path = prefs.getString('ftp_path') ?? '';
-        if (!use_sftp && path.isNotEmpty) {
-          // Go to root of ftp server again.
-          var success = await changeDirectory(ftp, context, '..', prefs);
-          if (!success) {
-            setState(() {
-              isLoading = false;
-            });
-            return false;
+          var success = await sendMeasurementsToFtp(ftp, prefs);
+          if (!success) return false;
+
+          var path = prefs.getString('ftp_path') ?? '';
+          if (!use_sftp && path.isNotEmpty) {
+            // Go to root of ftp server again.
+            var success = await changeDirectory(ftp, context, '..', prefs);
+            if (!success) return false;
           }
         }
       }
-    }
 
-    // Ask confirmation before deleting local data.
-    if (hasLocalLocations || hasLocalMeasurements) {
-      final continueAction = await showContinueDialog(
-        context,
-        texts.ftpSwitchDeletesData,
-        title: texts.deleteAllData,
-        yesButton: texts.yes,
-        noButton: texts.no,
-      );
-      if (continueAction != true) {
-        if (ftp != null) {
-          closeFtp(ftp, prefs);
-          setState(() {
-            isLoading = false;
-          });
-        }
-        return false;
-      }
-    }
+      // Ask confirmation before deleting local data.
+      // if (hasLocalLocations || hasLocalMeasurements) {
+      //   final continueAction = await showContinueDialog(
+      //     context,
+      //     texts.ftpSwitchDeletesData,
+      //     title: texts.deleteAllData,
+      //     yesButton: texts.yes,
+      //     noButton: texts.no,
+      //   );
+      //   if (continueAction != true) return false;
+      // }
 
-    if (!connectNow) {
-      if (chooseFolder) {
-        return false;
-      }
-      final path = prefs.getString('ftp_path') ?? '';
-      await updateActiveFtpConfiguration(prefs, path: path);
-      await deleteAllData();
-      await prefs.setBool('ftp_sync_pending', true);
-      return true;
-    }
-
-    if (ftp == null) {
-      // If not connected yet, connect to the ftp-root
-      var root = getFtpRoot(prefs);
-      setState(() {
-        isLoading = true;
-      });
-      ftp = await connectToFtp(context, prefs, path: root);
-      if (ftp == null) {
-        setState(() {
-          isLoading = false;
-        });
-        return false;
-      }
-    }
-
-    // Choose FTP folder or reuse the currently configured path.
-    final path = chooseFolder
-        ? await chooseFtpPath(ftp, context, prefs)
-        : prefs.getString('ftp_path') ?? '';
-    if (path != null) {
-      await updateActiveFtpConfiguration(prefs, path: path);
-      // Delete all data
-      await deleteAllData();
-
-      if (!downloadNow) {
+      if (!connectNow) {
+        if (chooseFolder) return false;
+        final path = prefs.getString('ftp_path') ?? '';
+        await updateActiveFtpConfiguration(prefs, path: path);
+        await deleteAllData();
         await prefs.setBool('ftp_sync_pending', true);
-        closeFtp(ftp, prefs);
-        setState(() {
-          isLoading = false;
-        });
         return true;
       }
 
-      if (!use_sftp) {
-        // Go to the specified folder
-        var success = await changeDirectory(ftp, context, path, prefs);
-        if (!success) {
-          setState(() {
-            isLoading = false;
-          });
-          return false;
-        }
+      if (ftp == null) {
+        // If not connected yet, connect to the ftp-root
+        var root = getFtpRoot(prefs);
+        setState(() {
+          isLoading = true;
+        });
+        ftp = await connectToFtp(context, prefs, path: root);
+        if (ftp == null) return false;
       }
 
-      // sync with the new ftp folder
-      var success = await downloadDataFromFtp(ftp, context, prefs);
-      if (!success) {
+      // Choose FTP folder or reuse the currently configured path.
+      final path = chooseFolder
+          ? await chooseFtpPath(ftp, context, prefs)
+          : prefs.getString('ftp_path') ?? '';
+      if (path != null) {
+        await updateActiveFtpConfiguration(prefs, path: path);
+        // Delete all data
+        await deleteAllData();
+
+        if (!downloadNow) {
+          await prefs.setBool('ftp_sync_pending', true);
+          return true;
+        }
+
+        if (!use_sftp) {
+          // Go to the specified folder
+          var success = await changeDirectory(ftp, context, path, prefs);
+          if (!success) return false;
+        }
+
+        // sync with the new ftp folder
+        var success = await downloadDataFromFtp(ftp, context, prefs);
+        if (!success) return false;
+
+        displayInformation(context, texts.syncCompleted);
+        await prefs.remove('ftp_sync_pending');
+      }
+      return path != null;
+    } catch (e) {
+      if (mounted) {
+        showErrorDialog(context, e.toString());
+      }
+      return false;
+    } finally {
+      if (ftp != null) {
+        closeFtp(ftp, prefs);
+      }
+      if (mounted) {
         setState(() {
           isLoading = false;
         });
-        return false;
       }
-
-      displayInformation(context, texts.syncCompleted);
-      await prefs.remove('ftp_sync_pending');
     }
-    // finish up
-    closeFtp(ftp, prefs);
-    setState(() {
-      isLoading = false;
-    });
-    return path != null;
   }
 
   Future<void> syncPendingFtpDownload(BuildContext context) async {
@@ -1366,23 +1334,30 @@ class _MyAppState extends State<MyApp> {
     setState(() {
       isLoading = true;
     });
-    final ftp = await connectToFtp(context, prefs);
-    if (ftp == null) {
-      setState(() {
-        isLoading = false;
-      });
-      return;
-    }
 
-    final success = await downloadDataFromFtp(ftp, context, prefs);
-    closeFtp(ftp, prefs);
-    setState(() {
-      isLoading = false;
-    });
+    try {
+      final ftp = await connectToFtp(context, prefs);
+      if (ftp == null) return;
 
-    if (success) {
-      await prefs.remove('ftp_sync_pending');
-      displayInformation(context, texts.syncCompleted);
+      try {
+        final success = await downloadDataFromFtp(ftp, context, prefs);
+        if (success) {
+          await prefs.remove('ftp_sync_pending');
+          displayInformation(context, texts.syncCompleted);
+        }
+      } finally {
+        closeFtp(ftp, prefs);
+      }
+    } catch (e) {
+      if (mounted) {
+        showErrorDialog(context, e.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -1414,24 +1389,33 @@ class _MyAppState extends State<MyApp> {
           context, uploadResult.errorMessage ?? texts.uploadMeasurementsFailed);
       return false;
     }
-    // Send photos
-    for (var measurement in measurements) {
-      if (!locData.inputFields.containsKey(measurement.type)) {
-        continue;
-      }
-      if (locData.inputFields[measurement.type]!.type == 'photo') {
-        var file = File(p.join(docsDir.path, 'photos', measurement.value));
-        if (await file.exists()) {
-          var uploadResult =
-              await uploadFileToFtp(connection, file, prefs, context);
-          if (!uploadResult.success) {
-            showErrorDialog(
-                context,
-                uploadResult.errorMessage ??
-                    texts.uploadPhotoFailed + measurement.value);
-            return false;
-          }
+
+    // Filter measurements that are photos and exist
+    final photoMeasurements = <Measurement>[];
+    for (var m in measurements) {
+      if (locData.inputFields.containsKey(m.type) &&
+          locData.inputFields[m.type]!.type == 'photo') {
+        var photoFile = File(p.join(docsDir.path, 'photos', m.value));
+        if (await photoFile.exists()) {
+          photoMeasurements.add(m);
         }
+      }
+    }
+
+    // Send photos
+    for (int i = 0; i < photoMeasurements.length; i++) {
+      var measurement = photoMeasurements[i];
+      displayInformation(context,
+          "${texts.sendingMeasurements} (${i + 1}/${photoMeasurements.length})");
+      var file = File(p.join(docsDir.path, 'photos', measurement.value));
+      var uploadResult =
+          await uploadFileToFtp(connection, file, prefs, context);
+      if (!uploadResult.success) {
+        showErrorDialog(
+            context,
+            uploadResult.errorMessage ??
+                texts.uploadPhotoFailed + measurement.value);
+        return false;
       }
     }
     var importedMeasurementFiles =
@@ -1445,46 +1429,41 @@ class _MyAppState extends State<MyApp> {
   }
 
   void synchroniseWithFtp(BuildContext context) async {
-    var success;
     setState(() {
       isLoading = true;
     });
-    //showLoaderDialog(context, text: 'Synchronising with FTP server');
-    var prefs = await SharedPreferences.getInstance();
-    var ftp = await connectToFtp(context, prefs);
-    if (ftp == null) {
-      setState(() {
-        isLoading = false;
-      });
-      return;
-    }
 
-    // send measurements
-    if (await measurementProvider.areThereMessagesToBeSent(prefs)) {
-      success = await sendMeasurementsToFtp(ftp, prefs);
-      if (!success) {
+    try {
+      var prefs = await SharedPreferences.getInstance();
+      var ftp = await connectToFtp(context, prefs);
+      if (ftp == null) return;
+
+      try {
+        // send measurements
+        if (await measurementProvider.areThereMessagesToBeSent(prefs)) {
+          var success = await sendMeasurementsToFtp(ftp, prefs);
+          if (!success) return;
+        }
+
+        // download (new) locations and measurements
+        var success = await downloadDataFromFtp(ftp, context, prefs);
+        if (!success) return;
+
+        displayInformation(context, texts.syncCompleted);
+      } finally {
+        closeFtp(ftp, prefs);
+      }
+    } catch (e) {
+      if (mounted) {
+        showErrorDialog(context, e.toString());
+      }
+    } finally {
+      if (mounted) {
         setState(() {
           isLoading = false;
         });
-        return;
       }
     }
-
-    // download (new) locations and measurements
-    success = await downloadDataFromFtp(ftp, context, prefs);
-    if (!success) {
-      setState(() {
-        isLoading = false;
-      });
-      return;
-    }
-
-    // finish up
-    closeFtp(ftp, prefs);
-    setState(() {
-      isLoading = false;
-    });
-    displayInformation(context, texts.syncCompleted);
   }
 
   Future<bool> downloadDataFromFtp(

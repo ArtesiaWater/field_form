@@ -11,6 +11,7 @@ import org.apache.commons.net.ftp.FTPClient
 import org.apache.commons.net.ftp.FTPFile
 import org.apache.commons.net.ftp.FTPReply
 import org.apache.commons.net.ftp.FTPSClient
+import org.apache.commons.net.util.TrustManagerUtils
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.net.ConnectException
@@ -97,11 +98,19 @@ class MainActivity: FlutterActivity() {
 				message = root.message ?: "Unable to connect to FTP server",
 				details = root::class.java.simpleName,
 			)
-			is SSLException -> NativeFtpMappedError(
-				code = "tls_error",
-				message = root.message ?: "Failed to establish secure FTP connection",
-				details = root::class.java.simpleName,
-			)
+			is SSLException -> {
+				val msg = root.message ?: ""
+				val code = if (msg.contains("cert", ignoreCase = true) || msg.contains("trust", ignoreCase = true) || msg.contains("validate", ignoreCase = true)) {
+					"tls_cert_error"
+				} else {
+					"tls_error"
+				}
+				NativeFtpMappedError(
+					code = code,
+					message = root.message ?: "Failed to establish secure FTP connection",
+					details = root::class.java.simpleName,
+				)
+			}
 			is SocketException -> NativeFtpMappedError(
 				code = "network_error",
 				message = root.message ?: "Network error during FTP operation",
@@ -121,6 +130,7 @@ class MainActivity: FlutterActivity() {
 		val password = call.argument<String>("password") ?: ""
 		val useFtps = call.argument<Boolean>("useFtps") ?: false
 		val useImplicitFtps = call.argument<Boolean>("useImplicitFtps") ?: false
+		val acceptAnyCertificate = call.argument<Boolean>("acceptAnyCertificate") ?: false
 		val timeoutSeconds = call.argument<Int>("timeout") ?: 5
 		val initialPath = normalizePath(call.argument<String>("path") ?: "")
 		val port = call.argument<Int>("port") ?: when {
@@ -134,10 +144,14 @@ class MainActivity: FlutterActivity() {
 			return
 		}
 
-		val client = when {
+		val client: FTPClient = when {
 			useImplicitFtps -> FTPSClient("TLS", true)
 			useFtps -> FTPSClient("TLS", false)
 			else -> FTPClient()
+		}
+
+		if (client is FTPSClient && acceptAnyCertificate) {
+			(client as FTPSClient).setTrustManager(org.apache.commons.net.util.TrustManagerUtils.getAcceptAllTrustManager())
 		}
 
 		client.connectTimeout = timeoutSeconds * 1000
@@ -145,10 +159,11 @@ class MainActivity: FlutterActivity() {
 		client.dataTimeout = Duration.ofSeconds(timeoutSeconds.toLong())
 
 		client.connect(host, port)
+
 		val replyCode = client.replyCode
 		if (!FTPReply.isPositiveCompletion(replyCode)) {
 			runCatching { client.disconnect() }
-			error(result, "connect_failed", "FTP server rejected connection (reply $replyCode)")
+			error(result, "connect_failed", "FTP server rejected connection (code $replyCode)")
 			return
 		}
 

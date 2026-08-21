@@ -3,10 +3,14 @@ import Flutter
 import GoogleMaps
 
 @main
-@objc class AppDelegate: FlutterAppDelegate {
+@objc class AppDelegate: FlutterAppDelegate, URLSessionDelegate {
   private let channelName = "nl.artesia.field_form/native_ftp"
   private var ftpSessions: [String: NativeFtpSession] = [:]
   private let ftpQueue = DispatchQueue(label: "nl.artesia.field_form.native_ftp", qos: .userInitiated)
+
+  private lazy var urlSession: URLSession = {
+    return URLSession(configuration: .default, delegate: self, delegateQueue: nil)
+  }()
 
   override func application(
     _ application: UIApplication,
@@ -46,7 +50,21 @@ import GoogleMaps
         }
       }
     } catch {
-      sendError(result: result, code: "native_ftp_error", message: error.localizedDescription)
+      let nsError = error as NSError
+      var code = "native_ftp_error"
+
+      // Check for TLS/Certificate specific errors in iOS
+      if nsError.domain == NSURLErrorDomain {
+        if nsError.code == NSURLErrorServerCertificateUntrusted ||
+           nsError.code == NSURLErrorServerCertificateHasBadDate ||
+           nsError.code == NSURLErrorServerCertificateHasUnknownRoot ||
+           nsError.code == NSURLErrorServerCertificateNotYetValid ||
+           nsError.code == NSURLErrorSecureConnectionFailed {
+          code = "tls_cert_error"
+        }
+      }
+
+      sendError(result: result, code: code, message: error.localizedDescription)
     }
   }
 
@@ -60,6 +78,7 @@ import GoogleMaps
     let password = args["password"] as? String ?? ""
     let useFtps = args["useFtps"] as? Bool ?? false
     let useImplicitFtps = args["useImplicitFtps"] as? Bool ?? false
+    let acceptAnyCertificate = args["acceptAnyCertificate"] as? Bool ?? false
     let timeout = args["timeout"] as? Int ?? 5
     let path = normalizePath(args["path"] as? String ?? "")
 
@@ -77,7 +96,8 @@ import GoogleMaps
       password: password,
       scheme: scheme,
       timeout: timeout,
-      currentPath: path
+      currentPath: path,
+      acceptAnyCertificate: acceptAnyCertificate
     )
 
     do {
@@ -85,7 +105,7 @@ import GoogleMaps
       ftpSessions[sessionId] = ftpSession
       sendSuccess(result: result, value: sessionId)
     } catch {
-      sendError(result: result, code: "connect_failed", message: error.localizedDescription)
+      throw error // Re-throw to be caught by handleFtpCall
     }
   }
 
@@ -110,7 +130,7 @@ import GoogleMaps
       ftpSessions[sessionId] = session
       sendSuccess(result: result, value: true)
     } catch {
-      sendError(result: result, code: "path_not_found", message: error.localizedDescription)
+      throw error
     }
   }
 
@@ -130,7 +150,7 @@ import GoogleMaps
       let listing = parseListing(data: data)
       sendSuccess(result: result, value: listing)
     } catch {
-      sendError(result: result, code: "list_failed", message: error.localizedDescription)
+      throw error
     }
   }
 
@@ -154,7 +174,7 @@ import GoogleMaps
       try uploadFile(session: session, localPath: localPath, remotePath: remotePath)
       sendSuccess(result: result, value: true)
     } catch {
-      sendError(result: result, code: "upload_failed", message: error.localizedDescription)
+      throw error
     }
   }
 
@@ -178,7 +198,7 @@ import GoogleMaps
       try downloadFile(session: session, remotePath: remotePath, localPath: localPath)
       sendSuccess(result: result, value: true)
     } catch {
-      sendError(result: result, code: "download_failed", message: error.localizedDescription)
+      throw error
     }
   }
 
@@ -203,7 +223,7 @@ import GoogleMaps
     var responseData: Data?
     var responseError: Error?
 
-    let task = URLSession.shared.dataTask(with: request) { data, _, error in
+    let task = urlSession.dataTask(with: request) { data, _, error in
       responseData = data
       responseError = error
       semaphore.signal()
@@ -230,7 +250,7 @@ import GoogleMaps
     request.timeoutInterval = TimeInterval(session.timeout)
     request.httpMethod = "PUT"
 
-    let task = URLSession.shared.uploadTask(with: request, fromFile: localUrl) { _, response, error in
+    let task = urlSession.uploadTask(with: request, fromFile: localUrl) { _, response, error in
       uploadError = error
       responseCode = (response as? HTTPURLResponse)?.statusCode
       semaphore.signal()
@@ -255,7 +275,7 @@ import GoogleMaps
     var downloadError: Error?
     var tempUrl: URL?
 
-    let task = URLSession.shared.downloadTask(with: url) { downloadedUrl, _, error in
+    let task = urlSession.downloadTask(with: url) { downloadedUrl, _, error in
       tempUrl = downloadedUrl
       downloadError = error
       semaphore.signal()
@@ -351,6 +371,19 @@ import GoogleMaps
       result(FlutterError(code: code, message: message, details: nil))
     }
   }
+
+  func urlSession(_ session: URLSession, task: URLSessionTask, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+    if challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
+       let serverTrust = challenge.protectionSpace.serverTrust {
+      let host = challenge.protectionSpace.host
+      let shouldAccept = ftpSessions.values.contains { $0.host == host && $0.acceptAnyCertificate }
+      if shouldAccept {
+        completionHandler(.useCredential, URLCredential(trust: serverTrust))
+        return
+      }
+    }
+    completionHandler(.performDefaultHandling, nil)
+  }
 }
 
 private struct NativeFtpSession {
@@ -361,6 +394,7 @@ private struct NativeFtpSession {
   let scheme: String
   let timeout: Int
   var currentPath: String
+  let acceptAnyCertificate: Bool
 }
 
 private enum NativeFtpError: Error {

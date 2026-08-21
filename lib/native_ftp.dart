@@ -20,6 +20,7 @@ class NativeFtpConnection {
     required bool useFtps,
     required bool useImplicitFtps,
     required String path,
+    bool acceptAnyCertificate = false,
     int timeoutSeconds = 5,
   }) async {
     final sessionId = await _channel.invokeMethod<String>('connect', {
@@ -29,6 +30,7 @@ class NativeFtpConnection {
       'useFtps': useFtps,
       'useImplicitFtps': useImplicitFtps,
       'path': path,
+      'acceptAnyCertificate': acceptAnyCertificate,
       'timeout': timeoutSeconds,
     });
     if (sessionId == null || sessionId.isEmpty) {
