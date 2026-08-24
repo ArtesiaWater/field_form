@@ -81,6 +81,7 @@ import GoogleMaps
     let acceptAnyCertificate = args["acceptAnyCertificate"] as? Bool ?? false
     let timeout = args["timeout"] as? Int ?? 5
     let path = normalizePath(args["path"] as? String ?? "")
+    let connectStartedAtMs = Int64(Date().timeIntervalSince1970 * 1000)
 
     if host.isEmpty {
       sendError(result: result, code: "invalid_argument", message: "FTP host is empty")
@@ -105,7 +106,38 @@ import GoogleMaps
       ftpSessions[sessionId] = ftpSession
       sendSuccess(result: result, value: sessionId)
     } catch {
-      throw error // Re-throw to be caught by handleFtpCall
+      let nsError = error as NSError
+      let nowMs = Int64(Date().timeIntervalSince1970 * 1000)
+      var code = "native_ftp_error"
+      if nsError.domain == NSURLErrorDomain {
+        if nsError.code == NSURLErrorServerCertificateUntrusted ||
+           nsError.code == NSURLErrorServerCertificateHasBadDate ||
+           nsError.code == NSURLErrorServerCertificateHasUnknownRoot ||
+           nsError.code == NSURLErrorServerCertificateNotYetValid ||
+           nsError.code == NSURLErrorSecureConnectionFailed {
+          code = "tls_cert_error"
+        }
+      }
+
+      let details: [String: Any] = [
+        "operation": "ftp_connect",
+        "timestampEpochMs": nowMs,
+        "elapsedMs": max(0, nowMs - connectStartedAtMs),
+        "host": host,
+        "port": (useImplicitFtps || useFtps) ? 990 : 21,
+        "useFtps": useFtps,
+        "useImplicitFtps": useImplicitFtps,
+        "acceptAnyCertificate": acceptAnyCertificate,
+        "timeoutSeconds": timeout,
+        "step": "request_data",
+        "errorClass": String(describing: type(of: error)),
+        "errorMessage": error.localizedDescription,
+        "rootErrorClass": nsError.domain,
+        "rootErrorMessage": nsError.localizedDescription,
+      ]
+
+      sendError(result: result, code: code, message: error.localizedDescription, details: details)
+      return
     }
   }
 
@@ -366,9 +398,9 @@ import GoogleMaps
     }
   }
 
-  private func sendError(result: @escaping FlutterResult, code: String, message: String) {
+  private func sendError(result: @escaping FlutterResult, code: String, message: String, details: Any? = nil) {
     DispatchQueue.main.async {
-      result(FlutterError(code: code, message: message, details: nil))
+      result(FlutterError(code: code, message: message, details: details))
     }
   }
 

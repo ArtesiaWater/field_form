@@ -2,6 +2,7 @@ package nl.artesia.field_form
 
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.plugin.common.MethodCall
@@ -27,6 +28,7 @@ import java.util.concurrent.Executors
 
 class MainActivity: FlutterActivity() {
 	private val channelName = "nl.artesia.field_form/native_ftp"
+	private val logTag = "FieldFormNativeFtp"
 	private val mainHandler = Handler(Looper.getMainLooper())
 	private val executor: ExecutorService = Executors.newSingleThreadExecutor()
 	private val sessions = ConcurrentHashMap<String, NativeFtpSession>()
@@ -80,23 +82,24 @@ class MainActivity: FlutterActivity() {
 		}
 	}
 
-	private fun mapNativeFtpException(e: Exception): NativeFtpMappedError {
+	private fun mapNativeFtpException(e: Exception, detailsOverride: Any? = null): NativeFtpMappedError {
 		val root = generateSequence<Throwable>(e) { it.cause }.last()
+		val defaultDetails = detailsOverride ?: root::class.java.simpleName
 		return when (root) {
 			is UnknownHostException -> NativeFtpMappedError(
 				code = "unknown_host",
 				message = "Unable to resolve FTP host: ${root.message ?: "unknown"}",
-				details = root::class.java.simpleName,
+				details = defaultDetails,
 			)
 			is SocketTimeoutException -> NativeFtpMappedError(
 				code = "timeout",
 				message = "FTP connection timed out",
-				details = root::class.java.simpleName,
+				details = defaultDetails,
 			)
 			is ConnectException -> NativeFtpMappedError(
 				code = "connect_failed",
 				message = root.message ?: "Unable to connect to FTP server",
-				details = root::class.java.simpleName,
+				details = defaultDetails,
 			)
 			is SSLException -> {
 				val msg = root.message ?: ""
@@ -108,18 +111,18 @@ class MainActivity: FlutterActivity() {
 				NativeFtpMappedError(
 					code = code,
 					message = root.message ?: "Failed to establish secure FTP connection",
-					details = root::class.java.simpleName,
+					details = defaultDetails,
 				)
 			}
 			is SocketException -> NativeFtpMappedError(
 				code = "network_error",
 				message = root.message ?: "Network error during FTP operation",
-				details = root::class.java.simpleName,
+				details = defaultDetails,
 			)
 			else -> NativeFtpMappedError(
 				code = "native_ftp_error",
 				message = root.message ?: e.message ?: "Unknown native FTP error",
-				details = root::class.java.name,
+				details = detailsOverride ?: root::class.java.name,
 			)
 		}
 	}
@@ -138,6 +141,14 @@ class MainActivity: FlutterActivity() {
 			useFtps -> 21
 			else -> 21
 		}
+		val diagnostics = NativeFtpConnectDiagnostics(
+			host = host,
+			port = port,
+			useFtps = useFtps,
+			useImplicitFtps = useImplicitFtps,
+			acceptAnyCertificate = acceptAnyCertificate,
+			timeoutSeconds = timeoutSeconds,
+		)
 
 		if (host.isEmpty()) {
 			error(result, "invalid_argument", "FTP host is empty")
@@ -154,47 +165,68 @@ class MainActivity: FlutterActivity() {
 			(client as FTPSClient).setTrustManager(org.apache.commons.net.util.TrustManagerUtils.getAcceptAllTrustManager())
 		}
 
-		client.connectTimeout = timeoutSeconds * 1000
-		client.defaultTimeout = timeoutSeconds * 1000
-		client.dataTimeout = Duration.ofSeconds(timeoutSeconds.toLong())
+		try {
+			client.connectTimeout = timeoutSeconds * 1000
+			client.defaultTimeout = timeoutSeconds * 1000
+			client.dataTimeout = Duration.ofSeconds(timeoutSeconds.toLong())
 
-		client.connect(host, port)
+			diagnostics.step = "connect"
+			client.connect(host, port)
 
-		val replyCode = client.replyCode
-		if (!FTPReply.isPositiveCompletion(replyCode)) {
-			runCatching { client.disconnect() }
-			error(result, "connect_failed", "FTP server rejected connection (code $replyCode)")
-			return
-		}
+			diagnostics.step = "check_reply"
+			val replyCode = client.replyCode
+			if (!FTPReply.isPositiveCompletion(replyCode)) {
+				runCatching { client.disconnect() }
+				error(result, "connect_failed", "FTP server rejected connection (code $replyCode)")
+				return
+			}
 
-		if (!client.login(username, password)) {
-			runCatching { client.disconnect() }
-			error(result, "auth_failed", "FTP authentication failed")
-			return
-		}
+			diagnostics.step = "login"
+			if (!client.login(username, password)) {
+				runCatching { client.disconnect() }
+				error(result, "auth_failed", "FTP authentication failed")
+				return
+			}
 
-		if (client is FTPSClient) {
-			runCatching { client.execPBSZ(0) }
-			runCatching { client.execPROT("P") }
-		}
+			if (client is FTPSClient) {
+				diagnostics.step = "ftps_protection"
+				runCatching { client.execPBSZ(0) }
+				runCatching { client.execPROT("P") }
+			}
 
-		client.enterLocalPassiveMode()
-		client.setFileType(FTP.BINARY_FILE_TYPE)
+			diagnostics.step = "passive_mode"
+			client.enterLocalPassiveMode()
+			diagnostics.step = "set_binary_type"
+			client.setFileType(FTP.BINARY_FILE_TYPE)
 
-		if (initialPath.isNotEmpty()) {
-			if (!client.changeWorkingDirectory(initialPath)) {
-				runCatching {
+			if (initialPath.isNotEmpty()) {
+				diagnostics.step = "change_directory"
+				if (!client.changeWorkingDirectory(initialPath)) {
+					runCatching {
+						client.logout()
+						client.disconnect()
+					}
+					error(result, "path_not_found", "Unable to change to FTP path: $initialPath")
+					return
+				}
+			}
+
+			diagnostics.step = "connected"
+			val id = UUID.randomUUID().toString()
+			sessions[id] = NativeFtpSession(id = id, client = client, currentPath = initialPath)
+			success(result, id)
+		} catch (e: Exception) {
+			runCatching {
+				if (client.isConnected) {
 					client.logout()
 					client.disconnect()
 				}
-				error(result, "path_not_found", "Unable to change to FTP path: $initialPath")
-				return
 			}
+			val safeDetails = diagnostics.buildFailureDetails(e)
+			Log.w(logTag, "FTP connect failed: $safeDetails")
+			val mapped = mapNativeFtpException(e, safeDetails)
+			error(result, mapped.code, mapped.message, mapped.details)
 		}
-
-		val id = UUID.randomUUID().toString()
-		sessions[id] = NativeFtpSession(id = id, client = client, currentPath = initialPath)
-		success(result, id)
 	}
 
 	private fun changeDirectory(call: MethodCall, result: MethodChannel.Result) {
@@ -348,3 +380,35 @@ data class NativeFtpMappedError(
 	val message: String,
 	val details: Any? = null,
 )
+
+private data class NativeFtpConnectDiagnostics(
+	val host: String,
+	val port: Int,
+	val useFtps: Boolean,
+	val useImplicitFtps: Boolean,
+	val acceptAnyCertificate: Boolean,
+	val timeoutSeconds: Int,
+	val startedAtMs: Long = System.currentTimeMillis(),
+	var step: String = "init",
+) {
+	fun buildFailureDetails(error: Exception): Map<String, Any> {
+		val root = generateSequence<Throwable>(error) { it.cause }.last()
+		val now = System.currentTimeMillis()
+		return mapOf(
+			"operation" to "ftp_connect",
+			"timestampEpochMs" to now,
+			"elapsedMs" to (now - startedAtMs),
+			"host" to host,
+			"port" to port,
+			"useFtps" to useFtps,
+			"useImplicitFtps" to useImplicitFtps,
+			"acceptAnyCertificate" to acceptAnyCertificate,
+			"timeoutSeconds" to timeoutSeconds,
+			"step" to step,
+			"errorClass" to error::class.java.simpleName,
+			"errorMessage" to (error.message ?: ""),
+			"rootErrorClass" to root::class.java.simpleName,
+			"rootErrorMessage" to (root.message ?: ""),
+		)
+	}
+}

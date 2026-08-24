@@ -33,28 +33,58 @@ AlertDialog buildLoadingIndicator({String text = 'Loading...'}) {
 }
 
 void showErrorDialog(BuildContext context, String text,
-    {String? title}) {
+    {String? title, String? hiddenDetails}) {
   final texts = AppLocalizations.of(context);
+  var showDetails = false;
   showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text(title ?? texts?.error ?? 'Error'),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: <Widget>[
-                Text(text),
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final hasHiddenDetails = (hiddenDetails?.trim().isNotEmpty ?? false);
+            final detailsText = hiddenDetails ?? '';
+            return AlertDialog(
+              title: Text(title ?? texts?.error ?? 'Error'),
+              content: SingleChildScrollView(
+                child: ListBody(
+                  children: <Widget>[
+                    Text(text),
+                    if (showDetails && hasHiddenDetails)
+                      const SizedBox(height: 12),
+                    if (showDetails && hasHiddenDetails)
+                      SelectableText(detailsText),
+                  ],
+                ),
+              ),
+              actions: <Widget>[
+                if (!showDetails && hasHiddenDetails)
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        showDetails = true;
+                      });
+                    },
+                    child: const Text('Meer info'),
+                  ),
+                if (showDetails && hasHiddenDetails)
+                  TextButton(
+                    onPressed: () async {
+                      await Clipboard.setData(ClipboardData(text: detailsText));
+                      if (context.mounted) {
+                        displayInformation(context, 'Diagnostic details copied');
+                      }
+                    },
+                    child: const Text('Copy details'),
+                  ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: Text(texts?.ok ?? 'Ok'),
+                ),
               ],
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text(texts?.ok ?? 'Ok'),
-            ),
-          ],
+            );
+          },
         );
       });
 }

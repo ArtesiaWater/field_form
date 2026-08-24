@@ -102,6 +102,7 @@ Future<Object?>? connectToFtp(BuildContext context, SharedPreferences prefs, {pa
               context,
               _nativeFtpErrorMessage(texts, e2, host),
               title: texts.connectToFtpFailed,
+              hiddenDetails: _nativeFtpDiagnosticsText(e2),
             );
             return null;
           } catch (e2) {
@@ -114,6 +115,7 @@ Future<Object?>? connectToFtp(BuildContext context, SharedPreferences prefs, {pa
         context,
         _nativeFtpErrorMessage(texts, e, host),
         title: texts.connectToFtpFailed,
+        hiddenDetails: _nativeFtpDiagnosticsText(e),
       );
       return null;
     } catch (e) {
@@ -198,6 +200,43 @@ String _nativeFtpErrorMessage(
     return msg;
   }
   return texts.connectToFtpFailed;
+}
+
+String? _nativeFtpDiagnosticsText(PlatformException e) {
+  final details = e.details;
+  if (details is! Map) {
+    return null;
+  }
+
+  String pick(String key) {
+    final value = details[key];
+    if (value == null) {
+      return '-';
+    }
+    final text = value.toString().trim();
+    return text.isEmpty ? '-' : text;
+  }
+
+  final lines = <String>[
+    'Diagnostic report',
+    'operation: ${pick('operation')}',
+    'timestampEpochMs: ${pick('timestampEpochMs')}',
+    'elapsedMs: ${pick('elapsedMs')}',
+    'host: ${pick('host')}',
+    'port: ${pick('port')}',
+    'useFtps: ${pick('useFtps')}',
+    'useImplicitFtps: ${pick('useImplicitFtps')}',
+    'acceptAnyCertificate: ${pick('acceptAnyCertificate')}',
+    'timeoutSeconds: ${pick('timeoutSeconds')}',
+    'step: ${pick('step')}',
+    'errorCode: ${e.code}',
+    'errorClass: ${pick('errorClass')}',
+    'errorMessage: ${pick('errorMessage')}',
+    'rootErrorClass: ${pick('rootErrorClass')}',
+    'rootErrorMessage: ${pick('rootErrorMessage')}',
+  ];
+
+  return lines.join('\n');
 }
 
 String _socketConnectErrorMessage(
