@@ -62,8 +62,9 @@ Future<Object?>? connectToFtp(BuildContext context, SharedPreferences prefs, {pa
       showErrorDialog(context, e.toString(), title: texts.connectToFtpFailed);
       return null;
     }
-  } else if (Platform.isAndroid || Platform.isIOS) {
+  } else if (Platform.isAndroid) {
     path ??= getFtpPath(prefs);
+    final port = use_implicit_ftps ? 990 : 21;
     try {
       final nativeConnection = await NativeFtpConnection.connect(
         host: host,
@@ -72,6 +73,7 @@ Future<Object?>? connectToFtp(BuildContext context, SharedPreferences prefs, {pa
         useFtps: use_ftps,
         useImplicitFtps: use_implicit_ftps,
         path: path,
+        port: port,
       );
       displayInformation(context, texts.connected);
       return nativeConnection;
@@ -93,6 +95,7 @@ Future<Object?>? connectToFtp(BuildContext context, SharedPreferences prefs, {pa
               useFtps: use_ftps,
               useImplicitFtps: use_implicit_ftps,
               path: path,
+              port: port,
               acceptAnyCertificate: true,
             );
             displayInformation(context, texts.connected);
@@ -124,7 +127,8 @@ Future<Object?>? connectToFtp(BuildContext context, SharedPreferences prefs, {pa
     }
   }
   var securityType;
-  if (use_implicit_ftps){
+  final port = use_implicit_ftps ? 990 : 21;
+  if (use_implicit_ftps) {
     securityType = SecurityType.ftps;
   } else if (use_ftps) {
     securityType = SecurityType.ftpes;
@@ -134,10 +138,11 @@ Future<Object?>? connectToFtp(BuildContext context, SharedPreferences prefs, {pa
   var ftpConnect = FTPConnect(host,
       user: user,
       pass: pass,
-      timeout: 1,
+      port: port,
+      timeout: 5,
       securityType: securityType,
       logger: Logger(isEnabled: true));
-  if (use_implicit_ftps){
+  if (use_implicit_ftps) {
     ftpConnect.listCommand = ListCommand.nlst;
   }
   try {

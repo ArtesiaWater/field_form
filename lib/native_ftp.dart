@@ -20,10 +20,11 @@ class NativeFtpConnection {
     required bool useFtps,
     required bool useImplicitFtps,
     required String path,
+    int? port,
     bool acceptAnyCertificate = false,
     int timeoutSeconds = 5,
   }) async {
-    final sessionId = await _channel.invokeMethod<String>('connect', {
+    final arguments = <String, dynamic>{
       'host': host,
       'username': username,
       'password': password,
@@ -32,7 +33,12 @@ class NativeFtpConnection {
       'path': path,
       'acceptAnyCertificate': acceptAnyCertificate,
       'timeout': timeoutSeconds,
-    });
+    };
+    if (port != null) {
+      arguments['port'] = port;
+    }
+
+    final sessionId = await _channel.invokeMethod<String>('connect', arguments);
     if (sessionId == null || sessionId.isEmpty) {
       throw Exception('Native FTP connect returned no session id');
     }

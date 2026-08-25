@@ -80,6 +80,7 @@ import GoogleMaps
     let useImplicitFtps = args["useImplicitFtps"] as? Bool ?? false
     let acceptAnyCertificate = args["acceptAnyCertificate"] as? Bool ?? false
     let timeout = args["timeout"] as? Int ?? 5
+    let port = args["port"] as? Int ?? (useImplicitFtps ? 990 : 21)
     let path = normalizePath(args["path"] as? String ?? "")
     let connectStartedAtMs = Int64(Date().timeIntervalSince1970 * 1000)
 
@@ -96,6 +97,7 @@ import GoogleMaps
       username: username,
       password: password,
       scheme: scheme,
+      port: port,
       timeout: timeout,
       currentPath: path,
       acceptAnyCertificate: acceptAnyCertificate
@@ -124,7 +126,7 @@ import GoogleMaps
         "timestampEpochMs": nowMs,
         "elapsedMs": max(0, nowMs - connectStartedAtMs),
         "host": host,
-        "port": (useImplicitFtps || useFtps) ? 990 : 21,
+        "port": port,
         "useFtps": useFtps,
         "useImplicitFtps": useImplicitFtps,
         "acceptAnyCertificate": acceptAnyCertificate,
@@ -337,6 +339,7 @@ import GoogleMaps
     var components = URLComponents()
     components.scheme = session.scheme
     components.host = session.host
+    components.port = session.port
     components.path = prefix
     if !session.username.isEmpty {
       components.user = session.username
@@ -424,6 +427,7 @@ private struct NativeFtpSession {
   let username: String
   let password: String
   let scheme: String
+  let port: Int
   let timeout: Int
   var currentPath: String
   let acceptAnyCertificate: Bool
