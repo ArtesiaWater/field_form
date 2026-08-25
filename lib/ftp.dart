@@ -52,14 +52,39 @@ Future<Object?>? connectToFtp(BuildContext context, SharedPreferences prefs, {pa
       final sftp = await client.sftp();
       return sftp;
     } on SocketException catch (e) {
-      showErrorDialog(
-          context, _socketConnectErrorMessage(texts, e, host), title: texts.connectToFtpFailed);
+      showErrorDialog(context, _socketConnectErrorMessage(texts, e, host),
+          title: texts.connectToFtpFailed,
+          hiddenDetails: _buildDiagnosticsText(
+            operation: 'sftp_connect',
+            host: host,
+            port: 22,
+            useSftp: true,
+            step: 'socket_connect',
+            error: e,
+          ));
       return null;
     } on SSHAuthFailError catch (e) {
-      showErrorDialog(context, e.toString() + ': ' + texts.authenticationError, title: texts.connectToFtpFailed);
+      showErrorDialog(context, e.toString() + ': ' + texts.authenticationError,
+          title: texts.connectToFtpFailed,
+          hiddenDetails: _buildDiagnosticsText(
+            operation: 'sftp_connect',
+            host: host,
+            port: 22,
+            useSftp: true,
+            step: 'auth',
+            error: e,
+          ));
       return null;
     } catch (e) {
-      showErrorDialog(context, e.toString(), title: texts.connectToFtpFailed);
+      showErrorDialog(context, e.toString(),
+          title: texts.connectToFtpFailed,
+          hiddenDetails: _buildDiagnosticsText(
+            operation: 'sftp_connect',
+            host: host,
+            port: 22,
+            useSftp: true,
+            error: e,
+          ));
       return null;
     }
   } else if (Platform.isAndroid) {
@@ -148,7 +173,16 @@ Future<Object?>? connectToFtp(BuildContext context, SharedPreferences prefs, {pa
   try {
     await ftpConnect.connect();
   } catch (e) {
-    showErrorDialog(context, e.toString(), title:texts.connectToFtpFailed);
+    showErrorDialog(context, e.toString(),
+        title: texts.connectToFtpFailed,
+        hiddenDetails: _buildDiagnosticsText(
+            operation: 'ftpconnect_connect',
+            host: host,
+            port: port,
+            useFtps: use_ftps,
+            useImplicitFtps: use_implicit_ftps,
+            step: 'connect',
+            error: e));
     return null;
   }
   await ftpConnect.setTransferType(TransferType.binary);
@@ -611,4 +645,37 @@ String _unknownHostErrorMessage(AppLocalizations texts, String host) {
     return texts.ftpErrorUnknownHost;
   }
   return texts.ftpErrorUnknownHostWithHostname(normalizedHost);
+}
+
+String _buildDiagnosticsText({
+  required String operation,
+  required String host,
+  required int port,
+  bool? useFtps,
+  bool? useImplicitFtps,
+  bool? useSftp,
+  bool? acceptAnyCertificate,
+  int? timeoutSeconds,
+  String? step,
+  required Object error,
+  String? errorCode,
+}) {
+  final now = DateTime.now().millisecondsSinceEpoch;
+  final lines = <String>[
+    'Diagnostic report',
+    'operation: $operation',
+    'timestampEpochMs: $now',
+    'host: $host',
+    'port: $port',
+    if (useFtps != null) 'useFtps: $useFtps',
+    if (useImplicitFtps != null) 'useImplicitFtps: $useImplicitFtps',
+    if (useSftp != null) 'useSftp: $useSftp',
+    if (acceptAnyCertificate != null) 'acceptAnyCertificate: $acceptAnyCertificate',
+    if (timeoutSeconds != null) 'timeoutSeconds: $timeoutSeconds',
+    if (step != null) 'step: $step',
+    if (errorCode != null) 'errorCode: $errorCode',
+    'errorClass: ${error.runtimeType}',
+    'errorMessage: $error',
+  ];
+  return lines.join('\n');
 }
