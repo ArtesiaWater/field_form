@@ -7,6 +7,10 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
+import com.jcraft.jsch.ChannelSftp
+import com.jcraft.jsch.JSch
+import com.jcraft.jsch.Session
+import com.jcraft.jsch.SftpException
 import org.apache.commons.net.ftp.FTP
 import org.apache.commons.net.ftp.FTPClient
 import org.apache.commons.net.ftp.FTPFile
@@ -15,6 +19,7 @@ import org.apache.commons.net.ftp.FTPSClient
 import org.apache.commons.net.util.TrustManagerUtils
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.io.OutputStream
 import java.net.ConnectException
 import java.net.SocketException
 import java.net.SocketTimeoutException
@@ -22,16 +27,19 @@ import java.net.UnknownHostException
 import javax.net.ssl.SSLException
 import java.time.Duration
 import java.util.UUID
+import java.util.Vector
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 class MainActivity: FlutterActivity() {
 	private val channelName = "nl.artesia.field_form/native_ftp"
+	private val sftpChannelName = "nl.artesia.field_form/native_sftp"
 	private val logTag = "FieldFormNativeFtp"
 	private val mainHandler = Handler(Looper.getMainLooper())
 	private val executor: ExecutorService = Executors.newSingleThreadExecutor()
 	private val sessions = ConcurrentHashMap<String, NativeFtpSession>()
+	private val sftpSessions = ConcurrentHashMap<String, NativeSftpSession>()
 
 	override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
 		super.configureFlutterEngine(flutterEngine)
@@ -41,10 +49,16 @@ class MainActivity: FlutterActivity() {
 					handleCall(call, result)
 				}
 			}
+		MethodChannel(flutterEngine.dartExecutor.binaryMessenger, sftpChannelName)
+			.setMethodCallHandler { call, result ->
+				executor.execute {
+					handleSftpCall(call, result)
+				}
+			}
 	}
 
 	override fun onDestroy() {
-		sessions.values.forEach { session ->
+		for (session in sessions.values) {
 			runCatching {
 				if (session.client.isConnected) {
 					session.client.logout()
@@ -53,6 +67,13 @@ class MainActivity: FlutterActivity() {
 			}
 		}
 		sessions.clear()
+		for (session in sftpSessions.values) {
+			runCatching {
+				session.channel.disconnect()
+				session.session.disconnect()
+			}
+		}
+		sftpSessions.clear()
 		executor.shutdownNow()
 		super.onDestroy()
 	}
@@ -79,6 +100,60 @@ class MainActivity: FlutterActivity() {
 		} catch (e: Exception) {
 			val mapped = mapNativeFtpException(e)
 			error(result, mapped.code, mapped.message, mapped.details)
+		}
+	}
+
+	private fun handleSftpCall(call: MethodCall, result: MethodChannel.Result) {
+		try {
+			when (call.method) {
+				"connect" -> sftpConnect(call, result)
+				"list" -> sftpList(call, result)
+				"upload" -> sftpUpload(call, result)
+				"download" -> sftpDownload(call, result)
+				"changeDirectory" -> sftpChangeDirectory(call, result)
+				"disconnect" -> sftpDisconnect(call, result)
+				else -> mainHandler.post { result.notImplemented() }
+			}
+		} catch (e: Exception) {
+			val mapped = mapNativeSftpException(e)
+			error(result, mapped.code, mapped.message, mapped.details)
+		}
+	}
+
+	private fun mapNativeSftpException(e: Exception, detailsOverride: Any? = null): NativeFtpMappedError {
+		val root = generateSequence<Throwable>(e) { it.cause }.last()
+		val defaultDetails = detailsOverride ?: root::class.java.simpleName
+		return when (root) {
+			is UnknownHostException -> NativeFtpMappedError(
+				code = "unknown_host",
+				message = "Unable to resolve SFTP host: ${root.message ?: "unknown"}",
+				details = defaultDetails,
+			)
+			is SocketTimeoutException -> NativeFtpMappedError(
+				code = "timeout",
+				message = "SFTP connection timed out",
+				details = defaultDetails,
+			)
+			is ConnectException -> NativeFtpMappedError(
+				code = "connect_failed",
+				message = root.message ?: "Unable to connect to SFTP server",
+				details = defaultDetails,
+			)
+			is SftpException -> NativeFtpMappedError(
+				code = "sftp_error",
+				message = root.message ?: "SFTP operation failed (id: ${root.id})",
+				details = defaultDetails,
+			)
+			is SocketException -> NativeFtpMappedError(
+				code = "network_error",
+				message = root.message ?: "Network error during SFTP operation",
+				details = defaultDetails,
+			)
+			else -> NativeFtpMappedError(
+				code = "native_sftp_error",
+				message = root.message ?: e.message ?: "Unknown native SFTP error",
+				details = detailsOverride ?: root::class.java.name,
+			)
 		}
 	}
 
@@ -366,6 +441,208 @@ class MainActivity: FlutterActivity() {
 		val base = normalizePath(basePath)
 		val suffix = normalizePath(normalizedInput)
 		return if (base.isEmpty()) "/$suffix" else "/$base/$suffix"
+	}
+
+	private fun sftpConnect(call: MethodCall, result: MethodChannel.Result) {
+		val host = call.argument<String>("host")?.trim().orEmpty()
+		val username = call.argument<String>("username") ?: ""
+		val password = call.argument<String>("password") ?: ""
+		val port = call.argument<Int>("port") ?: 22
+		val timeoutSeconds = call.argument<Int>("timeout") ?: 5
+		val initialPath = normalizePath(call.argument<String>("path") ?: "")
+
+		val diagnostics = NativeSftpConnectDiagnostics(
+			host = host,
+			port = port,
+			timeoutSeconds = timeoutSeconds,
+		)
+
+		if (host.isEmpty()) {
+			error(result, "invalid_argument", "SFTP host is empty")
+			return
+		}
+
+		executor.execute {
+			var session: Session? = null
+			var channel: ChannelSftp? = null
+			try {
+				diagnostics.step = "jsch_init"
+				val jsch = JSch()
+				session = jsch.getSession(username, host, port)
+				session.setPassword(password)
+				session.setConfig("StrictHostKeyChecking", "no")
+				session.timeout = timeoutSeconds * 1000
+
+				diagnostics.step = "connect_session"
+				session.connect(timeoutSeconds * 1000)
+
+				diagnostics.step = "open_channel"
+				channel = session.openChannel("sftp") as ChannelSftp
+				channel.connect(timeoutSeconds * 1000)
+
+				if (initialPath.isNotEmpty()) {
+					diagnostics.step = "change_directory"
+					channel.cd(initialPath)
+				}
+
+				diagnostics.step = "connected"
+				val id = UUID.randomUUID().toString()
+				sftpSessions[id] = NativeSftpSession(id = id, session = session, channel = channel, currentPath = initialPath)
+				success(result, id)
+			} catch (e: Exception) {
+				runCatching {
+					channel?.disconnect()
+					session?.disconnect()
+				}
+				val safeDetails = diagnostics.buildFailureDetails(e)
+				Log.w(logTag, "SFTP connect failed: $safeDetails")
+				val mapped = mapNativeSftpException(e, safeDetails)
+				error(result, mapped.code, mapped.message, mapped.details)
+			}
+		}
+	}
+
+	private fun sftpList(call: MethodCall, result: MethodChannel.Result) {
+		val sSession = requireSftpSession(call, result) ?: return
+		val pathArg = call.argument<String>("path") ?: ""
+		val effectivePath = resolvePath(sSession.currentPath, pathArg)
+		val names = mutableListOf<String>()
+
+		try {
+			val vectorRaw = sSession.channel.ls(effectivePath)
+			if (vectorRaw != null) {
+				@Suppress("UNCHECKED_CAST")
+				val vector = vectorRaw as Vector<ChannelSftp.LsEntry>
+				for (entry in vector) {
+					val name = entry.filename
+					if (name != "." && name != "..") {
+						names.add(name)
+					}
+				}
+			}
+			success(result, names)
+		} catch (e: Exception) {
+			val mapped = mapNativeSftpException(e)
+			error(result, mapped.code, mapped.message, mapped.details)
+		}
+	}
+
+	private fun sftpUpload(call: MethodCall, result: MethodChannel.Result) {
+		val sSession = requireSftpSession(call, result) ?: return
+		val localPath = call.argument<String>("localPath") ?: ""
+		val remoteName = call.argument<String>("remoteFileName") ?: ""
+		if (localPath.isEmpty() || remoteName.isEmpty()) {
+			error(result, "invalid_argument", "localPath and remoteFileName are required")
+			return
+		}
+		val remotePath = resolvePath(sSession.currentPath, remoteName)
+		try {
+			FileInputStream(localPath).use { stream ->
+				sSession.channel.put(stream, remotePath)
+				success(result, true)
+			}
+		} catch (e: Exception) {
+			val mapped = mapNativeSftpException(e)
+			error(result, mapped.code, mapped.message, mapped.details)
+		}
+	}
+
+	private fun sftpDownload(call: MethodCall, result: MethodChannel.Result) {
+		val sSession = requireSftpSession(call, result) ?: return
+		val localPath = call.argument<String>("localPath") ?: ""
+		val remoteName = call.argument<String>("remoteFileName") ?: ""
+		if (localPath.isEmpty() || remoteName.isEmpty()) {
+			error(result, "invalid_argument", "localPath and remoteFileName are required")
+			return
+		}
+		val remotePath = resolvePath(sSession.currentPath, remoteName)
+		try {
+			FileOutputStream(localPath).use { stream ->
+				val out: OutputStream = stream
+				sSession.channel.get(remotePath, out)
+				success(result, true)
+			}
+		} catch (e: Exception) {
+			val mapped = mapNativeSftpException(e)
+			error(result, mapped.code, mapped.message, mapped.details)
+		}
+	}
+
+	private fun sftpChangeDirectory(call: MethodCall, result: MethodChannel.Result) {
+		val sSession = requireSftpSession(call, result) ?: return
+		val path = normalizePath(call.argument<String>("path") ?: "")
+		if (path.isEmpty()) {
+			success(result, true)
+			return
+		}
+		val absolutePath = resolvePath(sSession.currentPath, path)
+		try {
+			sSession.channel.cd(absolutePath)
+			sSession.currentPath = absolutePath
+			success(result, true)
+		} catch (e: Exception) {
+			val mapped = mapNativeSftpException(e)
+			error(result, mapped.code, mapped.message, mapped.details)
+		}
+	}
+
+	private fun sftpDisconnect(call: MethodCall, result: MethodChannel.Result) {
+		val sessionId = call.argument<String>("sessionId") ?: ""
+		val sSession = sftpSessions.remove(sessionId)
+		if (sSession != null) {
+			runCatching {
+				sSession.channel.disconnect()
+				sSession.session.disconnect()
+			}
+		}
+		success(result, true)
+	}
+
+	private fun requireSftpSession(call: MethodCall, result: MethodChannel.Result): NativeSftpSession? {
+		val id = call.argument<String>("sessionId") ?: ""
+		if (id.isEmpty()) {
+			error(result, "invalid_argument", "sessionId is required")
+			return null
+		}
+		val sSession = sftpSessions[id]
+		if (sSession == null) {
+			error(result, "session_not_found", "No SFTP session found for id $id")
+			return null
+		}
+		return sSession
+	}
+}
+
+data class NativeSftpSession(
+	val id: String,
+	val session: Session,
+	val channel: ChannelSftp,
+	var currentPath: String,
+)
+
+private data class NativeSftpConnectDiagnostics(
+	val host: String,
+	val port: Int,
+	val timeoutSeconds: Int,
+	val startedAtMs: Long = System.currentTimeMillis(),
+	var step: String = "init",
+) {
+	fun buildFailureDetails(error: Exception): Map<String, Any> {
+		val root = generateSequence<Throwable>(error) { it.cause }.last()
+		val now = System.currentTimeMillis()
+		return mapOf(
+			"operation" to "sftp_connect",
+			"timestampEpochMs" to now,
+			"elapsedMs" to (now - startedAtMs),
+			"host" to host,
+			"port" to port,
+			"timeoutSeconds" to timeoutSeconds,
+			"step" to step,
+			"errorClass" to error::class.java.simpleName,
+			"errorMessage" to (error.message ?: ""),
+			"rootErrorClass" to root::class.java.simpleName,
+			"rootErrorMessage" to (root.message ?: ""),
+		)
 	}
 }
 

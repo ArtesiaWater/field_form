@@ -71,6 +71,7 @@ flutter {
 
 dependencies {
     implementation 'commons-net:commons-net:3.10.0'
+    implementation 'com.github.mwiede:jsch:0.2.20'
 }
 
 kotlin {

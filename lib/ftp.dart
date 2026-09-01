@@ -10,6 +10,7 @@ import 'package:dartssh2/dartssh2.dart';
 import 'l10n/app_localizations.dart';
 import 'ftp_configurations.dart';
 import 'native_ftp.dart';
+import 'native_sftp.dart';
 
 import 'dialogs.dart';
 
@@ -22,7 +23,8 @@ class FtpTransferResult {
   final bool isEmptyFile;
 }
 
-Future<Object?>? connectToFtp(BuildContext context, SharedPreferences prefs, {path}) async {
+Future<Object?>? connectToFtp(BuildContext context, SharedPreferences prefs,
+    {path}) async {
   final activeConfig = await getActiveFtpConfiguration(prefs);
   var host = activeConfig.hostname;
   var user = await getActiveFtpUsername(prefs);
@@ -33,16 +35,40 @@ Future<Object?>? connectToFtp(BuildContext context, SharedPreferences prefs, {pa
   var texts = AppLocalizations.of(context)!;
 
   if (host == '') {
-    showErrorDialog(context, texts.noHostnameDefined, title:texts.connectToFtpFailed);
+    showErrorDialog(context, texts.noHostnameDefined,
+        title: texts.connectToFtpFailed);
     return null;
   }
-
 
   if (host.contains('/')) {
     var idx = host.indexOf('/');
     host = host.substring(0, idx);
   }
   if (use_sftp) {
+    if (Platform.isAndroid) {
+      path ??= getFtpPath(prefs);
+      try {
+        final nativeSftp = await NativeSftpConnection.connect(
+          host: host,
+          username: user,
+          password: pass,
+          path: path,
+        );
+        displayInformation(context, texts.connected);
+        return nativeSftp;
+      } on PlatformException catch (e) {
+        showErrorDialog(
+          context,
+          _nativeSftpErrorMessage(texts, e, host),
+          title: texts.connectToFtpFailed,
+          hiddenDetails: _nativeSftpDiagnosticsText(e),
+        );
+        return null;
+      } catch (e) {
+        showErrorDialog(context, e.toString(), title: texts.connectToFtpFailed);
+        return null;
+      }
+    }
     try {
       final client = SSHClient(
         await SSHSocket.connect(host, 22, timeout: const Duration(seconds: 3)),
@@ -134,7 +160,8 @@ Future<Object?>? connectToFtp(BuildContext context, SharedPreferences prefs, {pa
             );
             return null;
           } catch (e2) {
-            showErrorDialog(context, e2.toString(), title: texts.connectToFtpFailed);
+            showErrorDialog(context, e2.toString(),
+                title: texts.connectToFtpFailed);
             return null;
           }
         }
@@ -194,7 +221,7 @@ Future<Object?>? connectToFtp(BuildContext context, SharedPreferences prefs, {pa
   }
   // we do need to change path
   var success = await changeDirectory(ftpConnect, context, path, prefs);
-  if (!success){
+  if (!success) {
     return null;
   }
   return ftpConnect;
@@ -239,6 +266,79 @@ String _nativeFtpErrorMessage(
     return msg;
   }
   return texts.connectToFtpFailed;
+}
+
+String _nativeSftpErrorMessage(
+    AppLocalizations texts, PlatformException e, String host) {
+  switch (e.code) {
+    case 'unknown_host':
+      return _unknownHostErrorMessage(texts, host);
+    case 'auth_failed':
+      return texts.authenticationError;
+    case 'timeout':
+      return texts.ftpErrorTimeout;
+    case 'connect_failed':
+      return texts.ftpErrorConnectFailed;
+    case 'sftp_error':
+      return "SFTP operation failed.";
+    case 'network_error':
+      return texts.ftpErrorNetwork;
+    case 'path_not_found':
+      return texts.ftpErrorPathNotFound;
+    case 'list_failed':
+      return texts.ftpErrorListFailed;
+    case 'upload_failed':
+      return texts.ftpErrorUploadFailed;
+    case 'download_failed':
+      return texts.ftpErrorDownloadFailed;
+    case 'session_not_found':
+      return texts.ftpErrorSessionNotFound;
+    case 'invalid_argument':
+      return texts.ftpErrorInvalidArgument;
+  }
+
+  final msg = e.message?.trim();
+  if (_looksLikeUnknownHost(msg, host)) {
+    return _unknownHostErrorMessage(texts, host);
+  }
+  if (msg != null && msg.isNotEmpty) {
+    return msg;
+  }
+  return texts.connectToFtpFailed;
+}
+
+String? _nativeSftpDiagnosticsText(PlatformException e) {
+  final details = e.details;
+  if (details is! Map) {
+    return null;
+  }
+
+  String pick(String key) {
+    final value = details[key];
+    if (value == null) {
+      return '-';
+    }
+    final text = value.toString().trim();
+    return text.isEmpty ? '-' : text;
+  }
+
+  final lines = <String>[
+    'Diagnostic report',
+    'operation: ${pick('operation')}',
+    'timestampEpochMs: ${pick('timestampEpochMs')}',
+    'elapsedMs: ${pick('elapsedMs')}',
+    'host: ${pick('host')}',
+    'port: ${pick('port')}',
+    'timeoutSeconds: ${pick('timeoutSeconds')}',
+    'step: ${pick('step')}',
+    'errorCode: ${e.code}',
+    'errorClass: ${pick('errorClass')}',
+    'errorMessage: ${pick('errorMessage')}',
+    'rootErrorClass: ${pick('rootErrorClass')}',
+    'rootErrorMessage: ${pick('rootErrorMessage')}',
+  ];
+
+  return lines.join('\n');
 }
 
 String? _nativeFtpDiagnosticsText(PlatformException e) {
@@ -313,15 +413,20 @@ bool _looksLikeUnknownHost(String? message, String host) {
       lower.contains(lowerHost);
 }
 
-Future<bool> changeDirectory(dynamic connection, BuildContext context, String path, SharedPreferences prefs) async {
-  if (connection is NativeFtpConnection) {
+Future<bool> changeDirectory(dynamic connection, BuildContext context,
+    String path, SharedPreferences prefs) async {
+  if (connection is NativeFtpConnection || connection is NativeSftpConnection) {
     try {
       return await connection.changeDirectory(path);
     } on PlatformException catch (e) {
       var texts = AppLocalizations.of(context)!;
       final activeConfig = await getActiveFtpConfiguration(prefs);
       final host = activeConfig.hostname.split('/').first.trim();
-      showErrorDialog(context, _nativeFtpErrorMessage(texts, e, host));
+      if (connection is NativeSftpConnection) {
+        showErrorDialog(context, _nativeSftpErrorMessage(texts, e, host));
+      } else {
+        showErrorDialog(context, _nativeFtpErrorMessage(texts, e, host));
+      }
       return false;
     } catch (e) {
       showErrorDialog(context, e.toString());
@@ -331,7 +436,7 @@ Future<bool> changeDirectory(dynamic connection, BuildContext context, String pa
 
   FTPConnect ftpConnection = connection;
   var success = true;
-  for (var folder in path.split('/')){
+  for (var folder in path.split('/')) {
     if (folder.isNotEmpty) {
       var success;
       var error_text;
@@ -355,14 +460,42 @@ Future<bool> changeDirectory(dynamic connection, BuildContext context, String pa
   return success;
 }
 
-Future<FtpTransferResult> uploadFileToFtp(
-    connection, File file, SharedPreferences prefs, BuildContext context) async {
-  var use_sftp = prefs.getBool('use_sftp') ?? false;
+Future<FtpTransferResult> uploadFileToFtp(connection, File file,
+    SharedPreferences prefs, BuildContext context) async {
   var success;
   final texts = AppLocalizations.of(context)!;
   final activeConfig = await getActiveFtpConfiguration(prefs);
   final host = activeConfig.hostname.split('/').first.trim();
-  if (use_sftp){
+
+  if (connection is NativeSftpConnection) {
+    try {
+      success =
+          await connection.uploadFile(file).timeout(const Duration(minutes: 1));
+    } on TimeoutException {
+      success = false;
+      unawaited(connection.disconnect());
+      return FtpTransferResult(
+        success: false,
+        errorMessage: texts.ftpErrorTimeout,
+      );
+    } on PlatformException catch (e) {
+      success = false;
+      unawaited(connection.disconnect());
+      return FtpTransferResult(
+        success: false,
+        errorMessage: _nativeSftpErrorMessage(texts, e, host),
+      );
+    } catch (e) {
+      success = false;
+    }
+    if (!success) {
+      unawaited(connection.disconnect());
+    }
+    return FtpTransferResult(success: success);
+  }
+
+  var use_sftp = prefs.getBool('use_sftp') ?? false;
+  if (use_sftp) {
     SftpClient sftp = connection;
     try {
       var ftpPath = getFtpPath(prefs) + '/' + basename(file.path);
@@ -421,9 +554,8 @@ Future<FtpTransferResult> uploadFileToFtp(
   return FtpTransferResult(success: success);
 }
 
-Future<FtpTransferResult> downloadFileFromFtp(
-    connection, File file, SharedPreferences prefs, BuildContext context) async {
-  var use_sftp = prefs.getBool('use_sftp') ?? false;
+Future<FtpTransferResult> downloadFileFromFtp(connection, File file,
+    SharedPreferences prefs, BuildContext context) async {
   var success;
   var isEmptyFile = false;
   final texts = AppLocalizations.of(context)!;
@@ -435,57 +567,88 @@ Future<FtpTransferResult> downloadFileFromFtp(
     await tempFile.delete();
   }
 
-  if (use_sftp){
-    SftpClient sftp = connection;
+  if (connection is NativeSftpConnection) {
     try {
-      var ftpPath = getFtpPath(prefs) + '/' + basename(file.path);
-      final sftpFile =
-          await sftp.open(ftpPath).timeout(const Duration(minutes: 1));
-      final data = await sftpFile.readBytes();
-      await tempFile.writeAsBytes(data);
-      success = true;
+      success = await connection
+          .downloadFile(basename(file.path), tempFile)
+          .timeout(const Duration(minutes: 1));
+    } on TimeoutException {
+      success = false;
+      if (await tempFile.exists()) {
+        await tempFile.delete();
+      }
+      closeFtp(connection, prefs);
+      return FtpTransferResult(
+        success: false,
+        errorMessage: texts.ftpErrorTimeout,
+      );
+    } on PlatformException catch (e) {
+      success = false;
+      if (await tempFile.exists()) {
+        await tempFile.delete();
+      }
+      closeFtp(connection, prefs);
+      return FtpTransferResult(
+        success: false,
+        errorMessage: _nativeSftpErrorMessage(texts, e, host),
+      );
     } catch (e) {
       success = false;
     }
   } else {
-    if (connection is NativeFtpConnection) {
+    var use_sftp = prefs.getBool('use_sftp') ?? false;
+    if (use_sftp) {
+      SftpClient sftp = connection;
       try {
-        success = await connection
-            .downloadFile(basename(file.path), tempFile)
-            .timeout(const Duration(minutes: 1));
-      } on TimeoutException {
-        success = false;
-        if (await tempFile.exists()) {
-          await tempFile.delete();
-        }
-        closeFtp(connection, prefs);
-        return FtpTransferResult(
-          success: false,
-          errorMessage: texts.ftpErrorTimeout,
-        );
-      } on PlatformException catch (e) {
-        success = false;
-        if (await tempFile.exists()) {
-          await tempFile.delete();
-        }
-        closeFtp(connection, prefs);
-        return FtpTransferResult(
-          success: false,
-          errorMessage: _nativeFtpErrorMessage(texts, e, host),
-        );
+        var ftpPath = getFtpPath(prefs) + '/' + basename(file.path);
+        final sftpFile =
+            await sftp.open(ftpPath).timeout(const Duration(minutes: 1));
+        final data = await sftpFile.readBytes();
+        await tempFile.writeAsBytes(data);
+        success = true;
       } catch (e) {
         success = false;
       }
     } else {
-      FTPConnect ftp = connection;
-      try {
-        success = await ftp
-            .downloadFile(basename(file.path), tempFile)
-            .timeout(const Duration(minutes: 1));
-      } on TimeoutException {
-        success = false;
-      } catch (e) {
-        success = false;
+      if (connection is NativeFtpConnection) {
+        try {
+          success = await connection
+              .downloadFile(basename(file.path), tempFile)
+              .timeout(const Duration(minutes: 1));
+        } on TimeoutException {
+          success = false;
+          if (await tempFile.exists()) {
+            await tempFile.delete();
+          }
+          closeFtp(connection, prefs);
+          return FtpTransferResult(
+            success: false,
+            errorMessage: texts.ftpErrorTimeout,
+          );
+        } on PlatformException catch (e) {
+          success = false;
+          if (await tempFile.exists()) {
+            await tempFile.delete();
+          }
+          closeFtp(connection, prefs);
+          return FtpTransferResult(
+            success: false,
+            errorMessage: _nativeFtpErrorMessage(texts, e, host),
+          );
+        } catch (e) {
+          success = false;
+        }
+      } else {
+        FTPConnect ftp = connection;
+        try {
+          success = await ftp
+              .downloadFile(basename(file.path), tempFile)
+              .timeout(const Duration(minutes: 1));
+        } on TimeoutException {
+          success = false;
+        } catch (e) {
+          success = false;
+        }
       }
     }
   }
@@ -506,7 +669,7 @@ Future<FtpTransferResult> downloadFileFromFtp(
     await tempFile.rename(file.path);
   }
 
-  if (!success){
+  if (!success) {
     if (await tempFile.exists()) {
       await tempFile.delete();
     }
@@ -517,9 +680,13 @@ Future<FtpTransferResult> downloadFileFromFtp(
   return FtpTransferResult(success: success, isEmptyFile: isEmptyFile);
 }
 
-void closeFtp(connection, prefs){
+void closeFtp(connection, prefs) {
+  if (connection is NativeSftpConnection) {
+    unawaited(connection.disconnect());
+    return;
+  }
   var use_sftp = prefs.getBool('use_sftp') ?? false;
-  if (use_sftp){
+  if (use_sftp) {
     SftpClient sftp = connection;
     sftp.close();
   } else {
@@ -532,57 +699,81 @@ void closeFtp(connection, prefs){
   }
 }
 
-Future<List<String>?> listFilesOnFtp(connection, SharedPreferences prefs, BuildContext context, {String? ftpPath}) async {
+Future<List<String>?> listFilesOnFtp(
+    connection, SharedPreferences prefs, BuildContext context,
+    {String? ftpPath}) async {
   var names;
-  var use_sftp = prefs.getBool('use_sftp') ?? false;
-  if (use_sftp){
-    SftpClient sftp = connection;
+
+  if (connection is NativeSftpConnection) {
     try {
-      ftpPath ??= getFtpPath(prefs);
-      final items = await sftp.listdir('/' + ftpPath);
-      names = items.map((f) => f.filename).whereType<String>().toList();
+      names = await connection.listDirectoryContent(ftpPath: ftpPath);
+    } on PlatformException catch (e) {
+      await connection.disconnect();
+      var texts = AppLocalizations.of(context)!;
+      final activeConfig = await getActiveFtpConfiguration(prefs);
+      final host = activeConfig.hostname.split('/').first.trim();
+      showErrorDialog(context, _nativeSftpErrorMessage(texts, e, host));
+      return null;
     } catch (e) {
-      sftp.close();
+      await connection.disconnect();
       showErrorDialog(context, e.toString());
       return null;
     }
   } else {
-    if (connection is NativeFtpConnection) {
+    var use_sftp = prefs.getBool('use_sftp') ?? false;
+    if (use_sftp) {
+      SftpClient sftp = connection;
       try {
-        names = await connection.listDirectoryContent(ftpPath: ftpPath);
-      } on PlatformException catch (e) {
-        await connection.disconnect();
-        var texts = AppLocalizations.of(context)!;
-        final activeConfig = await getActiveFtpConfiguration(prefs);
-        final host = activeConfig.hostname.split('/').first.trim();
-        showErrorDialog(context, _nativeFtpErrorMessage(texts, e, host));
-        return null;
+        ftpPath ??= getFtpPath(prefs);
+        final items = await sftp.listdir('/' + ftpPath);
+        names = items.map((f) => f.filename).whereType<String>().toList();
       } catch (e) {
-        await connection.disconnect();
+        sftp.close();
         showErrorDialog(context, e.toString());
         return null;
       }
     } else {
-      FTPConnect ftp = connection;
-      try {
-        //Get directory content
-        final list = await ftp.listDirectoryContent();
-        names = list.map((f) => f.name).whereType<String>().toList();
-      } catch (e) {
-        await ftp.disconnect();
-        showErrorDialog(context, e.toString());
-        return null;
+      if (connection is NativeFtpConnection) {
+        try {
+          names = await connection.listDirectoryContent(ftpPath: ftpPath);
+        } on PlatformException catch (e) {
+          await connection.disconnect();
+          var texts = AppLocalizations.of(context)!;
+          final activeConfig = await getActiveFtpConfiguration(prefs);
+          final host = activeConfig.hostname.split('/').first.trim();
+          showErrorDialog(context, _nativeFtpErrorMessage(texts, e, host));
+          return null;
+        } catch (e) {
+          await connection.disconnect();
+          showErrorDialog(context, e.toString());
+          return null;
+        }
+      } else {
+        FTPConnect ftp = connection;
+        try {
+          //Get directory content
+          final list = await ftp.listDirectoryContent();
+          names = list.map((f) => f.name).whereType<String>().toList();
+        } catch (e) {
+          await ftp.disconnect();
+          showErrorDialog(context, e.toString());
+          return null;
+        }
       }
     }
   }
-  names.remove('.');
-  names.remove('..');
-  // sort the files alphabetcally, but igore the extension
-  names.sort((a, b) => basenameWithoutExtension(a).compareTo(basenameWithoutExtension(b)));
+  if (names != null) {
+    names.remove('.');
+    names.remove('..');
+    // sort the files alphabetcally, but igore the extension
+    names.sort((a, b) =>
+        basenameWithoutExtension(a).compareTo(basenameWithoutExtension(b)));
+  }
   return names;
 }
 
-Future<String?> chooseFtpPath(connection, BuildContext context, SharedPreferences prefs) async {
+Future<String?> chooseFtpPath(
+    connection, BuildContext context, SharedPreferences prefs) async {
   var root = getFtpRoot(prefs);
   var names = await listFilesOnFtp(connection, prefs, context, ftpPath: root);
   if (names == null) {
@@ -590,7 +781,7 @@ Future<String?> chooseFtpPath(connection, BuildContext context, SharedPreference
   }
   names.insert(0, "");
   var options = <Widget>[];
-  for (var name in names){
+  for (var name in names) {
     options.add(SimpleDialogOption(
       onPressed: () {
         Navigator.of(context).pop(name);
@@ -607,8 +798,7 @@ Future<String?> chooseFtpPath(connection, BuildContext context, SharedPreference
           title: Text(texts.chooseAFolder),
           children: options,
         );
-      }
-  );
+      });
   return action;
 }
 
@@ -617,7 +807,7 @@ String getFtpRoot(SharedPreferences prefs) {
   var host = prefs.getString('ftp_hostname') ?? '';
   if (host.contains('/')) {
     var idx = host.indexOf('/');
-    root = host.substring(idx+1).trim();
+    root = host.substring(idx + 1).trim();
   }
   return root;
 }
@@ -625,13 +815,13 @@ String getFtpRoot(SharedPreferences prefs) {
 String getFtpPath(SharedPreferences prefs) {
   var path = prefs.getString('ftp_path') ?? '';
   var root = getFtpRoot(prefs);
-  if (root.isNotEmpty){
+  if (root.isNotEmpty) {
     var start = 0;
     var end = root.length;
-    if (root.startsWith('/')){
+    if (root.startsWith('/')) {
       start = start + 1;
     }
-    if (root.endsWith('/')){
+    if (root.endsWith('/')) {
       end = end - 1;
     }
     path = root.substring(start, end) + '/' + path;
@@ -670,7 +860,8 @@ String _buildDiagnosticsText({
     if (useFtps != null) 'useFtps: $useFtps',
     if (useImplicitFtps != null) 'useImplicitFtps: $useImplicitFtps',
     if (useSftp != null) 'useSftp: $useSftp',
-    if (acceptAnyCertificate != null) 'acceptAnyCertificate: $acceptAnyCertificate',
+    if (acceptAnyCertificate != null)
+      'acceptAnyCertificate: $acceptAnyCertificate',
     if (timeoutSeconds != null) 'timeoutSeconds: $timeoutSeconds',
     if (step != null) 'step: $step',
     if (errorCode != null) 'errorCode: $errorCode',
