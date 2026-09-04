@@ -50,6 +50,11 @@ class Measurement {
 class MeasurementProvider {
   late Database db;
   static String table = 'measurements';
+  static const String _upsertSql =
+      'INSERT INTO measurements(location, datetime, type, value, exported) '
+      'VALUES (?, ?, ?, ?, ?) '
+      'ON CONFLICT(location, datetime, type) DO UPDATE SET '
+      'value = excluded.value, exported = excluded.exported';
 
   Future open() async {
     var path = join(await getDatabasesPath(), 'measurements.db');
@@ -64,6 +69,12 @@ create table measurements (
   value TEXT,
   exported INTEGER)
 ''');
+    });
+    await db.transaction((txn) async {
+      await txn.execute(
+          'DELETE FROM measurements WHERE id NOT IN (SELECT MAX(id) FROM measurements GROUP BY location, datetime, type)');
+      await txn.execute(
+          'CREATE UNIQUE INDEX IF NOT EXISTS measurements_unique_key ON measurements(location, datetime, type)');
     });
   }
 
@@ -208,46 +219,43 @@ create table measurements (
     if (LOCATION < 0 || DATE < 0 || TIME < 0 || TYPE < 0 || VALUE < 0) {
       return;
     }
-    for (row in rows.sublist(1)) {
-      if (row.isEmpty) {
-        continue;
+    final requiredIndex = [LOCATION, DATE, TIME, TYPE, VALUE]
+        .reduce((a, b) => a > b ? a : b);
+    final exportInt = exported ? 1 : 0;
+    await db.transaction((txn) async {
+      final batch = txn.batch();
+      for (row in rows.sublist(1)) {
+        if (row.isEmpty) {
+          continue;
+        }
+        if (row.last.endsWith('\r')) {
+          row.last = row.last.substring(0, row.last.length - 1);
+        }
+        if (row.length <= requiredIndex) {
+          continue;
+        }
+        var date = Constant.datetime_format
+            .parse('${row[DATE]} ${row[TIME]}');
+        batch.rawInsert(_upsertSql, [
+          row[LOCATION].toString(),
+          date.microsecondsSinceEpoch,
+          row[TYPE].toString(),
+          row[VALUE].toString().trim(),
+          exportInt,
+        ]);
       }
-      if (row.last.endsWith('\r')) {
-        row.last = row.last.substring(0, row.last.length - 1);
-      }
-      final requiredIndex = [LOCATION, DATE, TIME, TYPE, VALUE]
-          .reduce((a, b) => a > b ? a : b);
-      if (row.length <= requiredIndex) {
-        continue;
-      }
-      var date = Constant.datetime_format
-          .parse('${row[DATE]} ${row[TIME]}');
-      var meas = Measurement(
-          location: row[LOCATION].toString(),
-          datetime: date,
-          value: row[VALUE].toString().trim(),
-          type: row[TYPE].toString(),
-          exported: exported);
-      await update_or_insert(meas);
-    }
+      await batch.commit(noResult: true);
+    });
   }
 
   Future<void> update_or_insert(meas) async {
-    // check if measurement is already defined
-    List<Map> maps = await db.query(table,
-        columns: ['id'],
-        where: 'location = ? and datetime = ? and type = ?',
-        whereArgs: [
-          meas.location,
-          meas.datetime.microsecondsSinceEpoch,
-          meas.type
-        ]);
-    if (maps.isNotEmpty) {
-      meas.id = maps[0]['id'];
-      await update(meas);
-    } else {
-      await insert(meas);
-    }
+    await db.rawInsert(_upsertSql, [
+      meas.location,
+      meas.datetime.microsecondsSinceEpoch,
+      meas.type,
+      meas.value,
+      meas.exported ? 1 : 0,
+    ]);
   }
 }
 
