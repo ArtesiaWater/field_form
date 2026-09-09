@@ -17,6 +17,8 @@ import org.apache.commons.net.ftp.FTPFile
 import org.apache.commons.net.ftp.FTPReply
 import org.apache.commons.net.ftp.FTPSClient
 import org.apache.commons.net.util.TrustManagerUtils
+import org.bouncycastle.jce.provider.BouncyCastleProvider
+import java.security.Security
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.OutputStream
@@ -43,6 +45,12 @@ class MainActivity: FlutterActivity() {
 
 	override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
 		super.configureFlutterEngine(flutterEngine)
+		
+		// Add BouncyCastle provider for improved SSH/SFTP support in JSCH 0.2.x
+		if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
+			Security.addProvider(BouncyCastleProvider())
+		}
+
 		MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channelName)
 			.setMethodCallHandler { call, result ->
 				executor.execute {

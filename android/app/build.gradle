@@ -61,6 +61,7 @@ android {
     buildTypes {
         release {
             signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 }
@@ -71,7 +72,8 @@ flutter {
 
 dependencies {
     implementation 'commons-net:commons-net:3.10.0'
-    implementation 'com.github.mwiede:jsch:0.2.20'
+    implementation 'com.github.mwiede:jsch:0.2.19'
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.78.1'
 }
 
 kotlin {
